@@ -1,0 +1,8 @@
+# Keep text files with \n in the repository and in checkouts, so generated-file hashes and
+# the icon-table parser see the same bytes on every machine.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.ttf binary
+*.jar binary
+*.sqlite binary

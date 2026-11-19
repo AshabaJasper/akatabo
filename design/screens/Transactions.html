@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Akatabo all transactions</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+</style>
+<style>html{background:#C9CEC8}body{display:flex;justify-content:center;padding:24px 0}</style>
+</head>
+<body>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 48px 24px 0; display: flex; flex-direction: column; gap: 10px; background: #F5F6F1; color: #14201B; font-family: 'Geist', system-ui, sans-serif; overflow: hidden">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<a href="Main.html" style="min-height: 44px; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; color: #0F3D30">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+Home</a>
+<div style="display: flex; gap: 8px">
+<a href="Calendar.html" style="min-height: 44px; box-sizing: border-box; padding: 0 14px; display: flex; align-items: center; gap: 6px; border: 1px solid #A9B5AD; border-radius: 22px; background: #FFFFFF; font-size: 14px; font-weight: 600; color: #0F3D30"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M8 3v4M16 3v4"></path></svg>Calendar</a>
+<a href="Transaction.html" aria-label="Add a transaction" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 22px; background: #0F3D30; color: #FFFFFF"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg></a>
+</div>
+</div>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; font-size: 30px; line-height: 34px">Transactions</h1>
+<div style="display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 14px; border: 1px solid #A9B5AD; border-radius: 14px; background: #FFFFFF">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#55635C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.500-4.500"></path></svg>
+<label for="tx-search" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Search transactions</label>
+<input id="tx-search" placeholder="Search a name, note or amount" style="flex: 1; min-width: 0; min-height: 44px; border: 0; background: transparent; color: #14201B; font: 400 15px 'Geist', system-ui, sans-serif">
+</div>
+<div role="group" aria-label="Filter" style="display: flex; gap: 6px">
+<button aria-pressed="true" style="min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid #0F3D30; background: #0F3D30; color: #FFFFFF; font: 600 13px 'Geist', system-ui, sans-serif">All</button>
+<button aria-pressed="false" style="min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid #A9B5AD; background: #FFFFFF; color: #14201B; font: 500 13px 'Geist', system-ui, sans-serif">Money out</button>
+<button aria-pressed="false" style="min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid #A9B5AD; background: #FFFFFF; color: #14201B; font: 500 13px 'Geist', system-ui, sans-serif">Money in</button>
+<a href="Filters.html" style="min-height: 44px; box-sizing: border-box; padding: 0 14px; display: flex; align-items: center; gap: 6px; border-radius: 22px; border: 1px solid #A9B5AD; background: #FFFFFF; color: #14201B; font-size: 13px; font-weight: 500">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+More</a>
+</div>
+<section style="background: #FFFFFF; border: 1px solid #DDE2DA; border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #55635C"><span>Money out each day, November</span><span>the 16th was school fees</span></div>
+<div role="img" aria-label="Bar chart of money out for each of the 19 days so far. Most days are between 30 and 60 thousand; Saturdays are higher; the 16th is far higher at 398 thousand." style="display: grid; grid-template-columns: repeat(19, minmax(0, 1fr)); gap: 3px; align-items: end; height: 56px">
+<div style="height: 13px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 16px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 13px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 14px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 15px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 21px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 38px; border-radius: 3px 3px 0 0; background: #2F7D62"></div>
+<div style="height: 12px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 15px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 13px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 13px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 15px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 20px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 29px; border-radius: 3px 3px 0 0; background: #2F7D62"></div>
+<div style="height: 10px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 56px; border-radius: 3px 3px 0 0; background: #2C6FBB"></div><div style="height: 11px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 10px; border-radius: 3px 3px 0 0; background: #7FA596"></div><div style="height: 18px; border-radius: 3px 3px 0 0; background: #0F3D30"></div>
+</div>
+</section>
+<div style="display: flex; flex-direction: column">
+<div style="min-height: 30px; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 4px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #55635C"><span>Today, 19 Nov</span><span style="font-variant-numeric: tabular-nums">- 53,000</span></div>
+<a href="TransactionDetail.html" style="min-height: 50px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #DDE2DA">
+<span style="width: 36px; height: 36px; border-radius: 10px; background: #1F7A5C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.500 10h-13L4 9z"></path><path d="M9 9l3-5 3 5"></path></svg></span>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Groceries, Nakasero market</span><span style="font-size: 12px; color: #55635C">MTN MoMo, 09:14, fee 1,000</span></span>
+<span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: #B93A0A">- 45,000</span>
+</a>
+<a href="TransactionDetail.html" style="min-height: 50px; display: flex; align-items: center; gap: 12px">
+<span style="width: 36px; height: 36px; border-radius: 10px; background: #E0A030; color: #14201B; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="13" rx="3"></rect><path d="M5 11h14M8 17v3M16 17v3"></path></svg></span>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Boda to town</span><span style="font-size: 12px; color: #55635C">Cash, 08:02</span></span>
+<span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: #B93A0A">- 8,000</span>
+</a>
+<div style="min-height: 30px; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 4px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #55635C"><span>Yesterday, 18 Nov</span><span style="font-variant-numeric: tabular-nums">- 30,000</span></div>
+<a href="TransactionDetail.html" style="min-height: 50px; display: flex; align-items: center; gap: 12px">
+<span style="width: 36px; height: 36px; border-radius: 10px; background: #7B4FA6; color: #FFFFFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3L5 13h6l-1 8 8-10h-6l1-8z"></path></svg></span>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Yaka electricity</span><span style="font-size: 12px; color: #55635C">Airtel Money, 19:40, regular</span></span>
+<span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: #B93A0A">- 30,000</span>
+</a>
+<div style="min-height: 30px; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 4px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #55635C"><span>Tuesday, 17 Nov</span><span style="font-variant-numeric: tabular-nums">+ 216,000</span></div>
+<a href="TransactionDetail.html" style="min-height: 50px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #DDE2DA">
+<span style="width: 36px; height: 36px; border-radius: 10px; background: #DCE6FB; color: #1B4FD1; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7L7 17"></path><path d="M15 17H7V9"></path></svg></span>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Payment from Okello D.</span><span style="font-size: 12px; color: #55635C">Bank, 14:30</span></span>
+<span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: #1B4FD1">+ 250,000</span>
+</a>
+<a href="TransactionDetail.html" style="min-height: 50px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #DDE2DA">
+<span style="width: 36px; height: 36px; border-radius: 10px; background: #1F7A5C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.500 10h-13L4 9z"></path><path d="M9 9l3-5 3 5"></path></svg></span>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Lunch at work</span><span style="font-size: 12px; color: #55635C">Cash, 13:05</span></span>
+<span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: #B93A0A">- 9,000</span>
+</a>
+<a href="TransactionDetail.html" style="min-height: 50px; display: flex; align-items: center; gap: 12px">
+<span style="width: 36px; height: 36px; border-radius: 10px; background: #C2457A; color: #FFFFFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"></rect><circle cx="12" cy="12" r="2.500"></circle></svg></span>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Cash withdrawal</span><span style="font-size: 12px; color: #55635C">MTN MoMo, 10:20, fee and tax 2,400</span></span>
+<span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: #B93A0A">- 25,000</span>
+</a>
+</div>
+</div>
+</body>
+</html>

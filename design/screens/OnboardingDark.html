@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Akatabo onboarding, dark</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+@keyframes ak-up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes ak-pop{0%{opacity:0;transform:scale(.82)}70%{opacity:1;transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes ak-fade{from{opacity:0}to{opacity:1}}
+@keyframes ak-draw{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+@keyframes ak-pulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(2.2);opacity:0}}
+.ak-up{animation:ak-up .55s cubic-bezier(.2,.7,.2,1) both}
+.ak-pop{animation:ak-pop .55s cubic-bezier(.2,.7,.2,1) both}
+.ak-fade{animation:ak-fade .45s ease-out both}
+.ak-draw{stroke-dasharray:100;animation:ak-draw 1.2s ease-out .2s both}
+.ak-pulse{animation:ak-pulse 1.8s ease-out 1.4s infinite;transform-origin:center;transform-box:fill-box}
+.ak-d1{animation-delay:.15s}.ak-d2{animation-delay:.35s}.ak-d3{animation-delay:.55s}.ak-d4{animation-delay:.75s}.ak-d5{animation-delay:.95s}.ak-d6{animation-delay:1.15s}.ak-d7{animation-delay:1.4s}
+@media (prefers-reduced-motion:reduce){.ak-up,.ak-pop,.ak-fade,.ak-draw,.ak-pulse{animation:none}}
+</style>
+<style>html{background:#000}body{display:flex;justify-content:center;padding:24px 0}</style>
+</head>
+<body>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 52px 28px 32px; display: flex; flex-direction: column; gap: 20px; background: #0C1A15; color: #FFFFFF; font-family: 'Geist', system-ui, sans-serif; overflow: hidden">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span style="font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; font-size: 24px; line-height: 1">Akatabo</span>
+<a href="WelcomeDark.html" style="min-height: 44px; padding: 0 4px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: #B7CFC4">Skip</a>
+</div>
+
+<div style="flex: 1; display: flex; flex-direction: column; gap: 28px">
+<div style="height: 340px; display: flex; flex-direction: column; justify-content: center; gap: 12px">
+<div class="ak-pop" style="background: #18221D; color: #ECF1EC; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A3B2AA">Amount, UGX</span>
+<span style="font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; font-size: 44px; line-height: 48px">45,000</span>
+</div>
+<div class="ak-up ak-d2" style="background: #18221D; color: #ECF1EC; border-radius: 14px; padding: 14px 18px; font-size: 15px; font-weight: 500">Groceries, Nakasero market</div>
+<div class="ak-up ak-d4" style="align-self: flex-start; min-height: 44px; padding: 0 14px; display: flex; align-items: center; gap: 10px; border-radius: 22px; background: #FFC078; color: #14201B; font-size: 14px; font-weight: 600">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.5 10h-13L4 9z"></path><path d="M9 9l3-5 3 5"></path></svg>
+Food and shopping, 87% sure</div>
+<div class="ak-up ak-d6" style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #B7CFC4">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFC078" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg>
+Saved in about five seconds</div>
+</div>
+<div class="ak-up ak-d1" style="display: flex; flex-direction: column; gap: 10px">
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; font-size: 36px; line-height: 40px">Add it in seconds</h1>
+<p style="margin: 0; font-size: 16px; line-height: 1.5; color: #D5E3DC">Type an amount and a few words. Akatabo suggests the category, and you tap save.</p>
+</div>
+</div>
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between">
+<div aria-hidden="true" style="display: flex; gap: 6px; align-items: center">
+<span style="width: 28px; height: 8px; border-radius: 4px; background: #FFC078; transition: width .3s"></span>
+<span style="width: 8px; height: 8px; border-radius: 4px; background: #5E8777; transition: width .3s"></span>
+<span style="width: 8px; height: 8px; border-radius: 4px; background: #5E8777; transition: width .3s"></span>
+</div>
+
+<button style="min-height: 54px; padding: 0 28px; display: flex; align-items: center; gap: 8px; border: 0; border-radius: 27px; background: #FFC078; color: #14201B; font: 600 16px 'Geist', system-ui, sans-serif">Next
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+
+
+</div>
+</div>
+</body>
+</html>

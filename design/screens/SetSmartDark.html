@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Akatabo settings, smart help and reminders, dark</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+</style>
+<style>html{background:#000}body{display:flex;justify-content:center;padding:24px 0}</style>
+</head>
+<body>
+<div style="width: 390px; min-height: 1060px; box-sizing: border-box; padding: 48px 24px 40px; display: flex; flex-direction: column; gap: 20px; background: #0E1512; color: #ECF1EC; font-family: 'Geist', system-ui, sans-serif">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<a href="SettingsDark.html" style="min-height: 44px; align-self: flex-start; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; color: #8FD0B5">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+Settings</a>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; font-size: 30px; line-height: 34px">Smart help</h1>
+<p style="margin: 4px 0 0; font-size: 13px; color: #A3B2AA">Akatabo learns from your own entries, on this phone only. Switch off anything you do not want.</p>
+</div>
+<section style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A3B2AA">What it does for you</h2>
+<div style="background: #18221D; border: 1px solid #2C3933; border-radius: 14px; padding: 0 14px; display: flex; flex-direction: column">
+<div style="min-height: 56px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #2C3933"><span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Suggest a category</span><span style="font-size: 12px; color: #A3B2AA">From the words you type when you add</span></span>
+<button role="switch" aria-checked="true" aria-label="Suggest a category" style="width: 48px; height: 44px; padding: 0; border: 0; background: transparent; display: flex; align-items: center; flex-shrink: 0"><span style="width: 48px; height: 28px; box-sizing: border-box; padding: 2px; border-radius: 14px; background: #2F9E78; display: flex; justify-content: flex-end"><span style="width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF"></span></span></button></div>
+<div style="min-height: 56px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #2C3933"><span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Forecast the month</span><span style="font-size: 12px; color: #A3B2AA">Where your spending is heading by month end</span></span>
+<button role="switch" aria-checked="true" aria-label="Forecast the month" style="width: 48px; height: 44px; padding: 0; border: 0; background: transparent; display: flex; align-items: center; flex-shrink: 0"><span style="width: 48px; height: 28px; box-sizing: border-box; padding: 2px; border-radius: 14px; background: #2F9E78; display: flex; justify-content: flex-end"><span style="width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF"></span></span></button></div>
+<div style="min-height: 56px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #2C3933"><span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Point out unusual payments</span><span style="font-size: 12px; color: #A3B2AA">Much larger, or at an odd time for you</span></span>
+<button role="switch" aria-checked="true" aria-label="Point out unusual payments" style="width: 48px; height: 44px; padding: 0; border: 0; background: transparent; display: flex; align-items: center; flex-shrink: 0"><span style="width: 48px; height: 28px; box-sizing: border-box; padding: 2px; border-radius: 14px; background: #2F9E78; display: flex; justify-content: flex-end"><span style="width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF"></span></span></button></div>
+<div style="padding: 12px 0; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid #2C3933">
+<span id="s-sens" style="font-size: 14px; font-weight: 500">How often it points them out</span>
+<div role="group" aria-labelledby="s-sens" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 14px; background: #243029">
+<button aria-pressed="false" style="min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: #A3B2AA; font: 500 14px 'Geist', system-ui, sans-serif">Rarely</button>
+<button aria-pressed="true" style="min-height: 44px; border: 0; border-radius: 10px; background: #3A4A42; color: #ECF1EC; font: 600 14px 'Geist', system-ui, sans-serif">Balanced</button>
+<button aria-pressed="false" style="min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: #A3B2AA; font: 500 14px 'Geist', system-ui, sans-serif">Often</button>
+</div>
+</div>
+<div style="min-height: 56px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #2C3933"><span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500">Notice regular payments</span><span style="font-size: 12px; color: #A3B2AA">Such as Yaka, data bundles and rent</span></span>
+<button role="switch" aria-checked="true" aria-label="Notice regular payments" style="width: 48px; height: 44px; padding: 0; border: 0; background: transparent; display: flex; align-items: center; flex-shrink: 0"><span style="width: 48px; height: 28px; box-sizing: border-box; padding: 2px; border-radius: 14px; background: #2F9E78; display: flex; justify-content: flex-end"><span style="width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF"></span></span></button></div>
+<button style="width: 100%; min-height: 52px; padding: 0; border: 0; background: transparent; display: flex; align-items: center; text-align: left; font: 500 14px 'Geist', system-ui, sans-serif; color: #FF9466">Forget everything it has learned</button>
+</div>
+</section>
+<section style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A3B2AA">Reminders</h2>
+<div style="background: #18221D; border: 1px solid #2C3933; border-radius: 14px; padding: 0 14px; display: flex; flex-direction: column">
+<div style="min-height: 52px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #2C3933"><span style="flex: 1; font-size: 14px; font-weight: 500">Remind me to add each day</span>
+<button role="switch" aria-checked="true" aria-label="Remind me to add each day" style="width: 48px; height: 44px; padding: 0; border: 0; background: transparent; display: flex; align-items: center; flex-shrink: 0"><span style="width: 48px; height: 28px; box-sizing: border-box; padding: 2px; border-radius: 14px; background: #2F9E78; display: flex; justify-content: flex-end"><span style="width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF"></span></span></button></div>
+<button style="width: 100%; min-height: 52px; padding: 0; border: 0; border-bottom: 1px solid #2C3933; background: transparent; display: flex; align-items: center; gap: 12px; text-align: left; font: 500 14px 'Geist', system-ui, sans-serif; color: #ECF1EC"><span style="flex: 1">At</span><span style="font-weight: 400; color: #A3B2AA; font-variant-numeric: tabular-nums">20:00</span></button>
+<div style="padding: 12px 0; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid #2C3933">
+<span id="s-warn" style="font-size: 14px; font-weight: 500">Warn me when a budget reaches</span>
+<div role="group" aria-labelledby="s-warn" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 14px; background: #243029">
+<button aria-pressed="false" style="min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: #A3B2AA; font: 500 14px 'Geist', system-ui, sans-serif">70%</button>
+<button aria-pressed="true" style="min-height: 44px; border: 0; border-radius: 10px; background: #3A4A42; color: #ECF1EC; font: 600 14px 'Geist', system-ui, sans-serif">80%</button>
+<button aria-pressed="false" style="min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: #A3B2AA; font: 500 14px 'Geist', system-ui, sans-serif">90%</button>
+<button aria-pressed="false" style="min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: #A3B2AA; font: 500 14px 'Geist', system-ui, sans-serif">Never</button>
+</div>
+</div>
+<div style="min-height: 52px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #2C3933"><span style="flex: 1; font-size: 14px; font-weight: 500">Tell me before a regular payment</span>
+<button role="switch" aria-checked="true" aria-label="Tell me before a regular payment" style="width: 48px; height: 44px; padding: 0; border: 0; background: transparent; display: flex; align-items: center; flex-shrink: 0"><span style="width: 48px; height: 28px; box-sizing: border-box; padding: 2px; border-radius: 14px; background: #2F9E78; display: flex; justify-content: flex-end"><span style="width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF"></span></span></button></div>
+<div style="min-height: 52px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #2C3933"><span style="flex: 1; font-size: 14px; font-weight: 500">Weekly summary</span>
+<button role="switch" aria-checked="true" aria-label="Weekly summary" style="width: 48px; height: 44px; padding: 0; border: 0; background: transparent; display: flex; align-items: center; flex-shrink: 0"><span style="width: 48px; height: 28px; box-sizing: border-box; padding: 2px; border-radius: 14px; background: #2F9E78; display: flex; justify-content: flex-end"><span style="width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF"></span></span></button></div>
+<button style="width: 100%; min-height: 52px; padding: 0; border: 0; background: transparent; display: flex; align-items: center; gap: 12px; text-align: left; font: 500 14px 'Geist', system-ui, sans-serif; color: #ECF1EC"><span style="flex: 1">Sent on</span><span style="font-weight: 400; color: #A3B2AA">Sunday evening</span></button>
+</div>
+</section>
+</div>
+</body>
+</html>
