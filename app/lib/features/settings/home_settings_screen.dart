@@ -1,10 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../core/theme/ak_theme.dart';
 import '../../data/providers.dart';
 import '../../data/settings/setting_keys.dart';
-import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import 'home_layout.dart';
 import 'settings_page.dart';
@@ -74,13 +72,10 @@ class _HomeSettingsScreenState extends ConsumerState<HomeSettingsScreen> {
     bool value,
     BoolSetting key, {
     bool divider = false,
-  }) => Container(
-    decoration: divider
-        ? BoxDecoration(
-            border: Border(bottom: BorderSide(color: context.colors.line)),
-          )
-        : null,
-    padding: const EdgeInsets.symmetric(horizontal: AkSpace.s4, vertical: AkSpace.s3),
-    child: AkSwitch(label: label, value: value, onChanged: (v) => _save(key, v)),
+  }) => SettingsSwitchRow(
+    label: label,
+    value: value,
+    divider: divider,
+    onChanged: (v) => _save(key, v),
   );
 }

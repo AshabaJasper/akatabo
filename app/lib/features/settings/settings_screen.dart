@@ -15,7 +15,7 @@ class SettingsScreen extends StatelessWidget {
     const rows = <_Entry>[
       _Entry('General', 'Currency, language, dates, number style', Routes.settingsGeneral),
       _Entry('Accounts', 'Cash, MTN MoMo, Airtel Money, bank', Routes.settingsAccounts),
-      _Entry('Categories', 'Names, icons, colours, order, budgets', null),
+      _Entry('Categories', 'Names, icons, colours, order, budgets', Routes.settingsCategories),
       _Entry('Appearance', 'Theme, colours, text size, charts', Routes.settingsAppearance),
       _Entry('Home screen', 'Choose the cards and their order', Routes.settingsHome),
       _Entry('Smart help', 'Suggestions, forecast, unusual payments', null),

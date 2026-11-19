@@ -144,6 +144,12 @@ class CategoryRepository {
   Stream<List<Category>> watchAll() =>
       (_db.select(_db.categories)..orderBy([(c) => OrderingTerm.asc(c.sortOrder)])).watch();
 
+  /// Shows or hides a category on Add and in its lists. Entries already made keep it.
+  Future<void> setHidden(String id, {required bool hidden}) =>
+      (_db.update(_db.categories)..where((c) => c.id.equals(id))).write(
+        CategoriesCompanion(hidden: Value(hidden), updatedAt: Value(clock.now())),
+      );
+
   /// Sets or clears a category's monthly budget. [monthlyBudget] null removes the budget.
   Future<void> setBudget(
     String id, {
@@ -188,6 +194,36 @@ class AccountRepository {
             ..where((a) => a.enabled)
             ..orderBy([(a) => OrderingTerm.asc(a.sortOrder)]))
           .watch();
+
+  /// Adds an account at the end of the list. An empty name is refused.
+  Future<void> add({required String name, required AccountKind kind}) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) throw ArgumentError.value(name, 'name', 'must not be empty');
+    final now = clock.now();
+    final count = (await _db.select(_db.accounts).get()).length;
+    await _db
+        .into(_db.accounts)
+        .insert(
+          AccountsCompanion.insert(
+            id: _uuid.v4(),
+            name: trimmed,
+            kind: kind,
+            colourToken: _colourFor(kind),
+            sortOrder: Value(count),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  /// The colour an account of this kind is drawn in. "Other" has no colour of its own yet,
+  /// so it borrows the bank colour.
+  static String _colourFor(AccountKind kind) => switch (kind) {
+    AccountKind.cash => 'acct-cash',
+    AccountKind.mtn => 'acct-mtn',
+    AccountKind.airtel => 'acct-airtel',
+    AccountKind.bank || AccountKind.other => 'acct-bank',
+  };
 
   /// Switches an account on or off. Off accounts stop being offered on Add; past entries keep them.
   Future<void> setEnabled(String id, {required bool enabled}) => (_db.update(

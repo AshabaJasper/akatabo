@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../app/routes.dart';
+import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../data/providers.dart';
-import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_surfaces.dart';
 import '../add/add_providers.dart';
 import 'settings_page.dart';
 
@@ -48,22 +51,21 @@ class _AccountsSettingsScreenState extends ConsumerState<AccountsSettingsScreen>
           label: 'Accounts you pay from',
           children: [
             for (final (i, a) in list.indexed)
-              Container(
-                decoration: i < list.length - 1
-                    ? BoxDecoration(
-                        border: Border(bottom: BorderSide(color: context.colors.line)),
-                      )
-                    : null,
-                padding: const EdgeInsets.symmetric(horizontal: AkSpace.s4, vertical: AkSpace.s3),
-                child: AkSwitch(
-                  label: a.name,
-                  value: a.enabled,
-                  onChanged: (v) => _setEnabled(a.id, enabled: v),
-                ),
+              SettingsSwitchRow(
+                label: a.name,
+                value: a.enabled,
+                divider: i < list.length - 1,
+                onChanged: (v) => _setEnabled(a.id, enabled: v),
               ),
           ],
         ),
         if (list.isEmpty) const AkEmptyNote('No accounts yet.'),
+        const SizedBox(height: AkSpace.s2),
+        AkTextLink(
+          'Add an account',
+          icon: AkIcons.plus,
+          onTap: () => context.push(Routes.settingsAccountNew),
+        ),
         if (_problem != null) AkEmptyNote(_problem!),
       ],
     );

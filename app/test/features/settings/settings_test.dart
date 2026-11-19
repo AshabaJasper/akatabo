@@ -4,14 +4,20 @@ import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/data/seed/default_data.dart';
 import 'package:akatabo/data/settings/setting_keys.dart';
+import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/settings/appearance_settings_screen.dart';
+import 'package:akatabo/features/settings/categories_settings_screen.dart';
 import 'package:akatabo/features/settings/general_settings_screen.dart';
 import 'package:akatabo/features/settings/home_layout.dart';
+import 'package:akatabo/features/settings/new_account_screen.dart';
 import 'package:akatabo/features/settings/settings_screen.dart';
+import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+
+import '../../support/fixtures.dart';
 
 /// Polls until [condition] holds, so a stored value has time to reach the providers.
 Future<void> _until(bool Function() condition) async {
@@ -238,6 +244,143 @@ void main() {
       expect(layout.whereItWent, isFalse);
       expect(layout.latest, isTrue, reason: 'the other sections keep their default');
       expect(layout.headerTiles, isTrue);
+    });
+  });
+
+  group('new account', () {
+    test('a new account is saved with its kind and colour, and an empty name is refused', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final repo = AccountRepository(db);
+
+      await repo.add(name: '  Airtel wallet  ', kind: AccountKind.airtel);
+      final all = await repo.watchAll().first;
+      final added = all.singleWhere((a) => a.name == 'Airtel wallet');
+      expect(added.kind, AccountKind.airtel);
+      expect(added.colourToken, 'acct-airtel');
+      expect(added.enabled, isTrue);
+
+      await expectLater(repo.add(name: '   ', kind: AccountKind.bank), throwsArgumentError);
+    });
+
+    testWidgets('the form asks for a name, then saves the account', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(tester, const NewAccountScreen(), db);
+
+      await tester.tap(find.text('Save account'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Give the account a name.'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'Airtel wallet');
+      await tester.tap(find.text('Airtel Money'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Save account'));
+      await _settle(tester);
+
+      final names = await tester.runAsync(
+        () async => (await db.select(db.accounts).get()).map((a) => a.name).toList(),
+      );
+      expect(names, contains('Airtel wallet'));
+    });
+  });
+
+  group('categories', () {
+    test('a hidden category leaves the spending list that Add reads', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final repo = CategoryRepository(db);
+      expect(
+        (await repo.watch(CategoryKind.spending).first).any((c) => c.id == DefaultIds.food),
+        isTrue,
+      );
+
+      await repo.setHidden(DefaultIds.food, hidden: true);
+      expect(
+        (await repo.watch(CategoryKind.spending).first).any((c) => c.id == DefaultIds.food),
+        isFalse,
+      );
+
+      await repo.setHidden(DefaultIds.food, hidden: false);
+      expect(
+        (await repo.watch(CategoryKind.spending).first).any((c) => c.id == DefaultIds.food),
+        isTrue,
+      );
+    });
+
+    testWidgets('switching a category off saves it, and fees and tax are not listed', (
+      tester,
+    ) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: (_, _) => null,
+          overrides: [
+            appDatabaseProvider.overrideWithValue(db),
+            storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+            allCategoriesProvider.overrideWith(
+              (ref) => Stream.value([
+                categoryRow(id: DefaultIds.food, name: 'Food and shopping'),
+                categoryRow(id: DefaultIds.fees, name: 'Fees and tax', isSystem: true),
+              ]),
+            ),
+          ],
+          child: MaterialApp(
+            theme: buildAkTheme(Brightness.light, const AkAppearance()),
+            home: const CategoriesSettingsScreen(),
+          ),
+        ),
+      );
+      await _settle(tester);
+      expect(find.text('Food and shopping'), findsOneWidget);
+      expect(find.text('Fees and tax'), findsNothing);
+
+      await tester.tap(find.byType(AkSwitch));
+      await _settle(tester);
+      final hidden = await tester.runAsync(
+        () async => (await (db.select(
+          db.categories,
+        )..where((c) => c.id.equals(DefaultIds.food))).getSingle()).hidden,
+      );
+      expect(hidden, isTrue);
+    });
+  });
+
+  group('new account, review fixes', () {
+    testWidgets('Done pressed twice saves one account', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(tester, const NewAccountScreen(), db);
+
+      await tester.enterText(find.byType(TextField), 'Airtel wallet');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await _settle(tester);
+
+      final count = await tester.runAsync(
+        () async =>
+            (await db.select(db.accounts).get()).where((a) => a.name == 'Airtel wallet').length,
+      );
+      expect(count, 1);
+    });
+
+    testWidgets('typing a name clears the name message', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(tester, const NewAccountScreen(), db);
+
+      await tester.tap(find.text('Save account'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Give the account a name.'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'A');
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Give the account a name.'), findsNothing);
     });
   });
 }

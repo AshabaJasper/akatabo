@@ -17,8 +17,10 @@ import '../features/regular/regular_new_screen.dart';
 import '../features/regular/regular_payments_screen.dart';
 import '../features/settings/accounts_settings_screen.dart';
 import '../features/settings/appearance_settings_screen.dart';
+import '../features/settings/categories_settings_screen.dart';
 import '../features/settings/general_settings_screen.dart';
 import '../features/settings/home_settings_screen.dart';
+import '../features/settings/new_account_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/transactions/transaction_detail_screen.dart';
 import '../features/transactions/transactions_screen.dart';
@@ -114,6 +116,8 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       GoRoute(path: Routes.settingsAppearance, builder: (_, _) => const AppearanceSettingsScreen()),
       GoRoute(path: Routes.settingsAccounts, builder: (_, _) => const AccountsSettingsScreen()),
       GoRoute(path: Routes.settingsHome, builder: (_, _) => const HomeSettingsScreen()),
+      GoRoute(path: Routes.settingsAccountNew, builder: (_, _) => const NewAccountScreen()),
+      GoRoute(path: Routes.settingsCategories, builder: (_, _) => const CategoriesSettingsScreen()),
       GoRoute(
         path: '/transactions/:id',
         parentNavigatorKey: rootKey,

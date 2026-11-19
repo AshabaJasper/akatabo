@@ -302,3 +302,6 @@ Routine decisions made while building, newest last. Each one marked **design che
 - **Home sections are switchable only where they exist.** The header figures, "Where it went" and "Latest" can be switched off. The drawn forecast card and "Budgets at a glance" do not exist on Home yet and get no switch.
 - **Settings values apply at once.** Each switch or segment writes to storage and the screens that read it rebuild from the stored settings stream.
 - **Tests replace the live settings stream** with a fixed one in widget tests (a live drift stream does not settle under the test clock). Saved values are checked in the database, and the providers are tested against a real in-memory database.
+- **Account kind "Other" uses the bank colour** until a colour token for it is added to tokens.json (design check).
+- **Hiding a category** removes it from Add and its lists but keeps past entries. Fees and tax is a system category and cannot be hidden.
+- **Switch rows show their own label.** `AkSwitch` draws only the switch and carries the label for screen readers; `SettingsSwitchRow` draws the visible text beside it.

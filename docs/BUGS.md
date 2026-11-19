@@ -93,3 +93,30 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 2 x severity 2 = 4
 - **Suggested fix:** insert the bad text straight into the settings table (for example '31' for month start, '9' for week start, 'purple' for theme), wait for the provider, and expect the default. Delete the two literal `decode` lines.
 - **Found:** 19 November 2026, Phase 5 bug review
+
+### [bug-review] New account: save failure message shown twice and under the Name field
+
+- **Where:** `app/lib/features/settings/new_account_screen.dart`, `_error` used as the field error and as the note
+- **What happens:** when saving fails, "The account could not be saved. Try again." shows under the Name field and again below the button, which suggests the name is wrong.
+- **How to trigger:** make the account insert fail (for example a locked database), enter a name and save.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** keep a name error and a save problem in separate fields, each shown in one place.
+- **Found:** 20 November 2026, Phase 5 review
+
+### [bug-review] New account: Kind segment labels may break mid-word on narrow phones
+
+- **Where:** `app/lib/features/settings/new_account_screen.dart`, the five-option Kind control
+- **What happens:** five options share about 256 to 286dp, so "Airtel Money" may break inside a word at 360dp or with larger text. Worked out from sizes, not seen on a screen.
+- **How to trigger:** open New account on a 360dp phone, or with Appearance > Text size Large.
+- **Score:** frequency 4 x severity 1 = 4
+- **Suggested fix:** confirm with a 360dp golden; if it breaks, use wrapping chips or a picker, or shorter labels.
+- **Found:** 20 November 2026, Phase 5 review
+
+### [bug-review] New account: screen does not close when opened as the first route
+
+- **Where:** `app/lib/features/settings/new_account_screen.dart` and `app/lib/app/close_screen.dart`
+- **What happens:** `closeScreen` does nothing when the router cannot pop. The account is saved, but the button stays disabled and the screen stays open.
+- **How to trigger:** open `/settings/accounts/new` as the first route (a deep link) and save.
+- **Score:** frequency 1 x severity 3 = 3
+- **Suggested fix:** when the router cannot pop, go to the parent path; or reset `_saving` if the screen is still mounted after `closeScreen`.
+- **Found:** 20 November 2026, Phase 5 review

@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../app/close_screen.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
+import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_surfaces.dart';
 
 /// The frame every Settings page shares: a back link to Settings, the page title, then sections.
@@ -97,6 +98,44 @@ class SettingsValueRow extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A row with a visible label and a switch. [AkSwitch] only draws the switch, so the label
+/// is drawn here; the switch keeps it for screen readers.
+class SettingsSwitchRow extends StatelessWidget {
+  const SettingsSwitchRow({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.divider = false,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final bool divider;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: divider
+          ? BoxDecoration(
+              border: Border(bottom: BorderSide(color: context.colors.line)),
+            )
+          : null,
+      padding: const EdgeInsets.symmetric(horizontal: AkSpace.s4, vertical: AkSpace.s3),
+      child: Row(
+        children: [
+          Expanded(
+            child: ExcludeSemantics(child: Text(label, style: context.type.bodyMd)),
+          ),
+          const SizedBox(width: AkSpace.s3),
+          AkSwitch(label: label, value: value, onChanged: onChanged),
+        ],
       ),
     );
   }

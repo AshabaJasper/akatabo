@@ -165,3 +165,17 @@ The five fixed bugs were re-scored when this was written, because the first scor
 
 1. The Home screen page offers three switches; the drawn page also lists the forecast card and "Budgets at a glance", which Home does not show yet.
 2. The Settings hub rows and the Accounts and Home pages use the drawn labels; the switch rows have no icons.
+
+### Phase 5, second pass (20 November 2026)
+
+- **Works:** New account (name and kind, refuses an empty name, saves once even if Done and Save both fire; the account appears on Accounts and Add). Categories (show or hide each spending and money-in category on Add; Fees and tax is never listed). Switch rows on Accounts, Home screen and Categories now show their label: `AkSwitch` draws only the switch, so a shared labelled row was added.
+- **Tested:** 321 tests pass and `flutter analyze` reports no issues. New tests cover adding an account (trimmed name, kind, colour, empty name refused), the form's validation and save, a double Done saving one account, the name message clearing on typing, hiding a category removing it from the list Add reads, and the Categories page saving a switch and leaving out Fees and tax.
+- **Not built, and not tested:** Smart help, Reminders, Edit a category (names, icons, colours, order), Filters, Choose dates and the pickers. Nothing was checked on a device.
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | Done on the keyboard and Save could create two accounts | 3 x 4 = 12 | Fixed: one save at a time; tested |
+| 2 | "Give the account a name." stayed after typing a name | 3 x 2 = 6 | Fixed: cleared on typing; tested |
+| 3 | A save failure message showed twice, once under Name | 2 x 2 = 4 | Filed in `docs/BUGS.md` |
+| 4 | Kind labels may break mid-word at 360dp | 4 x 1 = 4 | Filed |
+| 5 | New account opened as the first route does not close after saving | 1 x 3 = 3 | Filed |

@@ -9,6 +9,8 @@ abstract final class Routes {
   static const settingsAppearance = '/settings/appearance';
   static const settingsAccounts = '/settings/accounts';
   static const settingsHome = '/settings/home';
+  static const settingsAccountNew = '/settings/accounts/new';
+  static const settingsCategories = '/settings/categories';
 
   /// First launch: three short steps, then Welcome. Outside the tabs.
   static const onboarding = '/onboarding';
