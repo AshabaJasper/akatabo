@@ -18,8 +18,8 @@ class SettingsScreen extends StatelessWidget {
       _Entry('Categories', 'Names, icons, colours, order, budgets', Routes.settingsCategories),
       _Entry('Appearance', 'Theme, colours, text size, charts', Routes.settingsAppearance),
       _Entry('Home screen', 'Choose the cards and their order', Routes.settingsHome),
-      _Entry('Smart help', 'Suggestions, forecast, unusual payments', null),
-      _Entry('Reminders', 'Daily nudge, budget warnings, weekly summary', null),
+      _Entry('Smart help', 'Suggestions, forecast, unusual payments', Routes.settingsSmart),
+      _Entry('Reminders', 'Daily nudge, budget warnings, weekly summary', Routes.settingsReminders),
       _Entry('Privacy and security', 'App lock, hidden amounts', null),
       _Entry('Data and backup', 'Export, back up, restore, delete', null),
     ];

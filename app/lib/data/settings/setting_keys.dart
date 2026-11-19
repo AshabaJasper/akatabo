@@ -59,6 +59,9 @@ final class EnumSetting<T extends Enum> extends SettingKey<T> {
   T decode(String? raw) => values.firstWhere((v) => v.name == raw, orElse: () => defaultValue);
 }
 
+/// "How often it points them out" on Smart help: how readily a payment is called unusual.
+enum UnusualHowOften { rarely, balanced, often }
+
 /// Every setting. Defaults are what the drawn Settings pages show.
 abstract final class SettingKeys {
   // Appearance
@@ -91,6 +94,35 @@ abstract final class SettingKeys {
   /// When "Forget everything it has learned" was last used, in milliseconds since the epoch.
   /// Corrections before this time are ignored. 0 means never.
   static const learningResetAt = IntSetting('smart.learningResetAt', 0, min: 0);
+  static const suggestCategory = BoolSetting('smart.suggestCategory', true);
+  static const forecastMonth = BoolSetting('smart.forecastMonth', true);
+  static const pointOutUnusual = BoolSetting('smart.pointOutUnusual', true);
+  static const unusualHowOften = EnumSetting(
+    'smart.unusualHowOften',
+    UnusualHowOften.balanced,
+    UnusualHowOften.values,
+  );
+  static const noticeRegular = BoolSetting('smart.noticeRegular', true);
+
+  // Reminders
+  /// Reminder switches start off: notification permission is asked only when one is switched on.
+  static const dailyReminder = BoolSetting('reminders.daily', false);
+
+  /// Minutes after midnight, local time. 20:00 as drawn.
+  static const dailyReminderAt = IntSetting('reminders.dailyAt', 20 * 60, min: 0, max: 24 * 60 - 1);
+
+  /// Percent of a budget used before a warning; 0 means Never. 70, 80 or 90 otherwise.
+  static const budgetWarnAt = IntSetting('reminders.budgetWarnAt', 80, min: 0, max: 90);
+  static const regularReminder = BoolSetting('reminders.regular', false);
+  static const weeklySummary = BoolSetting('reminders.weekly', false);
+
+  /// [DateTime.monday] (1) to [DateTime.sunday] (7). Sent in the evening; drawn as Sunday.
+  static const weeklySummaryDay = IntSetting(
+    'reminders.weeklyDay',
+    DateTime.sunday,
+    min: 1,
+    max: 7,
+  );
 
   // First run
   static const onboardingDone = BoolSetting('app.onboardingDone', false);

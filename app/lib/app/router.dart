@@ -25,6 +25,7 @@ import '../features/settings/general_settings_screen.dart';
 import '../features/settings/home_settings_screen.dart';
 import '../features/settings/new_account_screen.dart';
 import '../features/settings/settings_screen.dart';
+import '../features/settings/smart_settings_screen.dart';
 import '../features/transactions/transaction_detail_screen.dart';
 import '../features/transactions/transactions_screen.dart';
 import 'routes.dart';
@@ -124,6 +125,12 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       GoRoute(
         path: '${Routes.settingsCategories}/:id/edit',
         builder: (_, state) => CategoryEditScreen(categoryId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: Routes.settingsSmart,
+        builder: (_, state) => SmartSettingsScreen(
+          openAtReminders: state.uri.queryParameters['section'] == 'reminders',
+        ),
       ),
       GoRoute(path: Routes.filters, builder: (_, _) => const FiltersScreen()),
       GoRoute(path: Routes.chooseDates, builder: (_, _) => const ChooseDatesScreen()),

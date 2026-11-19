@@ -12,6 +12,12 @@ abstract final class Routes {
   static const settingsAccountNew = '/settings/accounts/new';
   static const settingsCategories = '/settings/categories';
 
+  /// Smart help and Reminders, one page reached from both hub rows.
+  static const settingsSmart = '/settings/smart';
+
+  /// The same page, scrolled to its Reminders section.
+  static const settingsReminders = '$settingsSmart?section=reminders';
+
   /// Filters for All transactions, and Choose dates from inside them.
   static const filters = '/filters';
   static const chooseDates = '/filters/dates';
