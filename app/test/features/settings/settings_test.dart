@@ -178,6 +178,7 @@ void main() {
 
       await tester.tap(find.text('The 1st'));
       await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle(); // the choice sheet slides up from below the screen
       // The list of 28 days is taller than the test screen, so scroll to the day first.
       await tester.ensureVisible(find.text('The 25th'));
       await tester.tap(find.text('The 25th'));

@@ -7,6 +7,7 @@ import '../../data/providers.dart';
 import '../../data/settings/setting_keys.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_pickers.dart';
 import 'settings_page.dart';
 
 /// Money and dates, and how a new entry starts. Each change is saved at once.
@@ -56,9 +57,13 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
               value: ordinalDay(monthStart),
               divider: true,
               onTap: () async {
-                final picked = await pickSetting<int>(
+                final picked = await showAkChoiceSheet<int>(
                   context,
                   title: 'Month starts on',
+                  selected: monthStart,
+                  note:
+                      'Monthly totals and budgets start on this day. It goes up to the 28th '
+                      'so that every month has it.',
                   options: [for (var n = 1; n <= 28; n++) (n, ordinalDay(n))],
                 );
                 if (picked != null) await _save(SettingKeys.monthStartsOn, picked);
@@ -69,9 +74,10 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
               value: weekdayNames[weekStart - 1],
               divider: true,
               onTap: () async {
-                final picked = await pickSetting<int>(
+                final picked = await showAkChoiceSheet<int>(
                   context,
                   title: 'Week starts on',
+                  selected: weekStart,
                   options: [
                     for (var d = DateTime.monday; d <= DateTime.sunday; d++)
                       (d, weekdayNames[d - 1]),
@@ -80,12 +86,23 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                 if (picked != null) await _save(SettingKeys.weekStartsOn, picked);
               },
             ),
+            // Fixed by the owner's plan: UGX only, and English until translations exist. The
+            // rows carry no chevron and no tap, and the line below says why, rather than a
+            // picker that offers a single choice.
             const SettingsValueRow(
               title: 'Currency',
               value: 'UGX, Ugandan shilling',
               divider: true,
             ),
-            const SettingsValueRow(title: 'Language', value: 'English'),
+            const SettingsValueRow(title: 'Language', value: 'English', divider: true),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AkSpace.s4, vertical: AkSpace.s3),
+              child: Text(
+                'Akatabo counts in Ugandan shillings and is in English only, so these two '
+                'cannot be changed.',
+                style: context.type.bodySm.copyWith(color: context.colors.inkMuted),
+              ),
+            ),
           ],
         ),
         SettingsSection(

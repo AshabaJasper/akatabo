@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -10,10 +12,13 @@ import '../../core/time/clock_provider.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/repositories.dart';
+import '../../data/settings/setting_keys.dart';
 import '../../widgets/ak_controls.dart';
+import '../../widgets/ak_pickers.dart';
 import '../../widgets/ak_surfaces.dart';
 import 'add_providers.dart';
 import 'amount_text.dart';
+import 'when_text.dart';
 
 /// Add a transaction: money out, money in or a move between two of the person's accounts.
 ///
@@ -34,7 +39,8 @@ class _AddScreenState extends ConsumerState<AddScreen> {
   final _tax = TextEditingController();
   final _note = TextEditingController();
 
-  Direction _direction = Direction.moneyOut;
+  /// The kind the person tapped; until then, "A new entry starts as" from General settings.
+  Direction? _chosenDirection;
   String? _categoryId;
   String? _fromId;
   String? _toId;
@@ -42,8 +48,62 @@ class _AddScreenState extends ConsumerState<AddScreen> {
   bool _saving = false;
   List<String> _problems = const [];
 
+  /// The time now, for the "When" label until the person chooses a moment. A timer keeps it
+  /// to the minute, so Add left open does not show a stale time, or yesterday after midnight.
+  late DateTime _shownNow;
+  Timer? _tick;
+
+  /// The moment the person chose, or null for "the moment of saving".
+  DateTime? _when;
+  String? _whenProblem;
+
+  @override
+  void initState() {
+    super.initState();
+    _shownNow = clock.now();
+    _tick = Timer.periodic(const Duration(seconds: 15), (_) {
+      final n = clock.now();
+      if (n.minute != _shownNow.minute || n.hour != _shownNow.hour || n.day != _shownNow.day) {
+        setState(() => _shownNow = n);
+      }
+    });
+  }
+
+  Direction get _direction {
+    if (_chosenDirection != null) return _chosenDirection!;
+    final stored = ref.read(storedSettingsProvider).value;
+    return SettingKeys.newEntryDirection.decode(stored?[SettingKeys.newEntryDirection.name]);
+  }
+
+  /// Asks for a day and a time. Days run from [earliestEntryDay] to today; a time later
+  /// than now is refused with a message, so an entry is never dated in the future.
+  Future<void> _pickWhen() async {
+    final now = clock.now();
+    final stored = ref.read(storedSettingsProvider).value;
+    final weekStartsOn = SettingKeys.weekStartsOn.decode(stored?[SettingKeys.weekStartsOn.name]);
+    final picked = await showAkDateTimePicker(
+      context,
+      initial: _when ?? now,
+      first: earliestEntryDay(now),
+      last: now,
+      dateHelp: 'When was it',
+      timeHelp: 'At what time',
+      weekStartsOn: weekStartsOn,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      if (picked.isAfter(clock.now())) {
+        _whenProblem = 'That time has not come yet. Choose a time up to now.';
+      } else {
+        _when = picked;
+        _whenProblem = null;
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _tick?.cancel();
     _amount.dispose();
     _what.dispose();
     _fee.dispose();
@@ -54,7 +114,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
 
   void _chooseDirection(Direction direction) {
     setState(() {
-      _direction = direction;
+      _chosenDirection = direction;
       // Each kind has its own categories, so an earlier pick would not match the grid.
       _categoryId = null;
       if (direction != Direction.transfer) _toId = null;
@@ -65,22 +125,26 @@ class _AddScreenState extends ConsumerState<AddScreen> {
   Future<void> _save(Account? defaultAccount, List<Account> accounts) async {
     final from = _fromId ?? defaultAccount?.id;
     final to = _toId ?? _otherAccount(accounts, from)?.id;
-    // The moment of saving, not the screen's cached "now", which only moves once a day.
+    // The chosen moment, or else the moment of saving (not the screen's cached "now", which
+    // only moves once a day).
     final now = clock.now();
-    final isTransfer = _direction == Direction.transfer;
-    final isMoneyIn = _direction == Direction.moneyIn;
+    final occurredAt = _when ?? now;
+    final direction = _direction;
+    final isTransfer = direction == Direction.transfer;
+    final isMoneyIn = direction == Direction.moneyIn;
 
     final problems = <String>[
       if (from == null) 'Choose an account.',
+      if (occurredAt.isAfter(now)) 'That time has not come yet. Choose a time up to now.',
       ...TransactionDraft(
-        direction: _direction,
+        direction: direction,
         amount: parseAmount(_amount.text),
         accountId: from ?? '',
         toAccountId: isTransfer ? to : null,
         categoryId: isTransfer ? null : _categoryId,
         fee: isMoneyIn ? 0 : parseAmount(_fee.text),
         tax: isMoneyIn ? 0 : parseAmount(_tax.text),
-        occurredAt: now,
+        occurredAt: occurredAt,
       ).problems(),
     ];
     if (problems.isNotEmpty) {
@@ -98,7 +162,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
           .read(transactionRepositoryProvider)
           .add(
             TransactionDraft(
-              direction: _direction,
+              direction: direction,
               amount: parseAmount(_amount.text),
               description: _what.text.trim(),
               categoryId: isTransfer ? null : _categoryId,
@@ -107,7 +171,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
               fee: isMoneyIn ? 0 : parseAmount(_fee.text),
               tax: isMoneyIn ? 0 : parseAmount(_tax.text),
               note: note.isEmpty ? null : note,
-              occurredAt: now,
+              occurredAt: occurredAt,
             ),
           );
     } on Object catch (error, stack) {
@@ -129,6 +193,8 @@ class _AddScreenState extends ConsumerState<AddScreen> {
     final c = context.colors;
     final t = context.type;
     final now = ref.watch(appNowProvider);
+    // Rebuild when settings arrive, since the starting kind comes from them.
+    ref.watch(storedSettingsProvider);
     final accounts = ref.watch(enabledAccountsProvider).value ?? const <Account>[];
     final defaultAccount = _defaultAccount(accounts);
     final fromId = _fromId ?? defaultAccount?.id;
@@ -275,9 +341,25 @@ class _AddScreenState extends ConsumerState<AddScreen> {
               AkTextField(label: 'Note', controller: _note, textInputAction: TextInputAction.done),
             ],
             const SizedBox(height: AkSpace.s5),
-            const AkEyebrowLabel('When'),
-            const SizedBox(height: AkSpace.s1),
-            Text(_whenLabel(now), style: t.bodyStrong.copyWith(color: c.ink)),
+            _WhenField(
+              // Unchosen, the entry is stamped when saved, which is always today.
+              label: _when == null ? whenLabel(_shownNow, _shownNow) : whenLabel(_when!, now),
+              onTap: _pickWhen,
+            ),
+            if (_whenProblem != null) ...[
+              const SizedBox(height: AkSpace.s1),
+              Text(_whenProblem!, style: t.bodySm.copyWith(color: c.moneyOut)),
+            ],
+            if (_when != null) ...[
+              const SizedBox(height: AkSpace.s1),
+              AkTextLink(
+                'Use the time of saving',
+                onTap: () => setState(() {
+                  _when = null;
+                  _whenProblem = null;
+                }),
+              ),
+            ],
             if (_problems.isNotEmpty) ...[
               const SizedBox(height: AkSpace.s4),
               for (final p in _problems)
@@ -310,12 +392,67 @@ class _AddScreenState extends ConsumerState<AddScreen> {
     }
     return null;
   }
+}
 
-  /// "Today, 09:14": the moment the entry is saved. Choosing another time comes with the
-  /// date and time picker, which is built in a later phase.
-  String _whenLabel(DateTime now) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return 'Today, ${two(now.hour)}:${two(now.minute)}';
+/// "When", drawn as the design draws it: a 48px field with the moment in it. Tapping it
+/// opens the date picker, then the time picker.
+class _WhenField extends StatelessWidget {
+  const _WhenField({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = context.type;
+    final radius = BorderRadius.circular(context.metrics.lg);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const ExcludeSemantics(child: AkEyebrowLabel('When')),
+        const SizedBox(height: AkSpace.s1h),
+        Semantics(
+          button: true,
+          label: 'When, $label',
+          hint: 'Change the day and time',
+          container: true,
+          excludeSemantics: true,
+          onTap: onTap,
+          child: Material(
+            color: c.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: radius,
+              side: BorderSide(color: c.lineStrong),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              child: Container(
+                constraints: const BoxConstraints(minHeight: AkSize.input),
+                padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3h, vertical: AkSpace.s2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: t.figure.copyWith(
+                          color: c.ink,
+                          fontWeight: FontWeight.w500,
+                          fontSize: t.bodyMd.fontSize,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AkSpace.s2),
+                    AkIcon(AkIcons.calendar, color: c.inkMuted, size: AkSize.iconSm),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
