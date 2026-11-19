@@ -9,6 +9,7 @@ import '../../core/theme/ak_theme.dart';
 import '../../core/time/period.dart';
 import '../../data/seed/default_data.dart';
 import '../../widgets/ak_controls.dart';
+import '../../widgets/ak_pickers.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/amount_text.dart';
 import 'regular_providers.dart';
@@ -48,6 +49,7 @@ class _RegularNewScreenState extends ConsumerState<RegularNewScreen> {
       initialDate: _next ?? today,
       firstDate: today,
       lastDate: addDays(today, 365 * 3),
+      builder: akPickerBuilder,
     );
     if (picked != null) setState(() => _next = picked);
   }
