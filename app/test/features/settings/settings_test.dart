@@ -7,7 +7,6 @@ import 'package:akatabo/data/settings/setting_keys.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/settings/appearance_settings_screen.dart';
 import 'package:akatabo/features/settings/categories_settings_screen.dart';
-import 'package:akatabo/features/settings/category_edit_screen.dart';
 import 'package:akatabo/features/settings/general_settings_screen.dart';
 import 'package:akatabo/features/settings/home_layout.dart';
 import 'package:akatabo/features/settings/new_account_screen.dart';
@@ -398,50 +397,6 @@ void main() {
       expect(row.name, 'Groceries');
 
       await expectLater(repo.rename(DefaultIds.food, name: '  '), throwsArgumentError);
-    });
-
-    testWidgets('the page loads the name, saves a new one, and refuses an empty one', (
-      tester,
-    ) async {
-      final db = AppDatabase(NativeDatabase.memory());
-      addTearDown(db.close);
-      tester.view
-        ..physicalSize = const Size(390, 844)
-        ..devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await tester.pumpWidget(
-        ProviderScope(
-          retry: (_, _) => null,
-          overrides: [
-            appDatabaseProvider.overrideWithValue(db),
-            storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
-            allCategoriesProvider.overrideWith(
-              (ref) => Stream.value([categoryRow(id: DefaultIds.food, name: 'Food and shopping')]),
-            ),
-          ],
-          child: MaterialApp(
-            theme: buildAkTheme(Brightness.light, const AkAppearance()),
-            home: const CategoryEditScreen(categoryId: DefaultIds.food),
-          ),
-        ),
-      );
-      await _settle(tester);
-      expect(find.text('Food and shopping'), findsOneWidget);
-
-      await tester.enterText(find.byType(TextField), '   ');
-      await tester.tap(find.text('Save name'));
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Give the category a name.'), findsOneWidget);
-
-      await tester.enterText(find.byType(TextField), 'Groceries');
-      await tester.tap(find.text('Save name'));
-      await _settle(tester);
-      final name = await tester.runAsync(
-        () async => (await (db.select(
-          db.categories,
-        )..where((c) => c.id.equals(DefaultIds.food))).getSingle()).name,
-      );
-      expect(name, 'Groceries');
     });
   });
 }

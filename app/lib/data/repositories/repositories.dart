@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/time/period.dart';
 import '../../smart/text_normaliser.dart';
 import '../db/app_database.dart';
+import '../seed/default_data.dart';
 import '../settings/setting_keys.dart';
 
 const _uuid = Uuid();
@@ -128,6 +129,15 @@ class TransactionRepository {
       (_db.select(_db.transactions)..where((t) => t.id.equals(id))).watchSingleOrNull();
 }
 
+/// A category name that another category already has.
+class CategoryNameTaken implements Exception {
+  const CategoryNameTaken(this.name);
+  final String name;
+
+  @override
+  String toString() => 'CategoryNameTaken: $name';
+}
+
 class CategoryRepository {
   CategoryRepository(this._db);
   final AppDatabase _db;
@@ -141,17 +151,149 @@ class CategoryRepository {
     return q.watch();
   }
 
-  Stream<List<Category>> watchAll() =>
-      (_db.select(_db.categories)..orderBy([(c) => OrderingTerm.asc(c.sortOrder)])).watch();
+  /// Every category in the person's order. Equal orders fall back to the name, so the list
+  /// never shuffles between reads.
+  Stream<List<Category>> watchAll() => (_db.select(
+    _db.categories,
+  )..orderBy([(c) => OrderingTerm.asc(c.sortOrder), (c) => OrderingTerm.asc(c.name)])).watch();
 
-  /// Renames a category. An empty name is refused; the name is trimmed.
-  Future<void> rename(String id, {required String name}) async {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty) throw ArgumentError.value(name, 'name', 'must not be empty');
+  /// Renames a category. An empty name, or one another category already has, is refused;
+  /// the name is trimmed.
+  Future<void> rename(String id, {required String name}) => _db.transaction(() async {
+    final trimmed = await _checkedName(id, name);
     await (_db.update(_db.categories)..where((c) => c.id.equals(id))).write(
       CategoriesCompanion(name: Value(trimmed), updatedAt: Value(clock.now())),
     );
+  });
+
+  /// The trimmed name, after refusing an empty one or one another category uses (ignoring
+  /// case), so two categories never show the same label.
+  Future<String> _checkedName(String id, String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) throw ArgumentError.value(name, 'name', 'must not be empty');
+    final lower = trimmed.toLowerCase();
+    final all = await _db.select(_db.categories).get();
+    if (all.any((c) => c.id != id && c.name.trim().toLowerCase() == lower)) {
+      throw CategoryNameTaken(trimmed);
+    }
+    return trimmed;
   }
+
+  /// Saves Edit a category: name, icon and colour, and, when [changeBudget] is true, the
+  /// monthly budget ([monthlyBudget] null removes it). All of it is saved or none of it.
+  ///
+  /// The budget goes through [setBudget], so it behaves exactly as one set on Set a budget:
+  /// its carry-over and warn level are kept, and a new budget starts its carry-over clock.
+  Future<void> update(
+    String id, {
+    required String name,
+    required String iconKey,
+    required String colourToken,
+    bool changeBudget = false,
+    int? monthlyBudget,
+  }) => _db.transaction(() async {
+    final current = await _byId(id);
+    if (current == null) throw StateError('No category $id');
+    if (iconKey.trim().isEmpty) throw ArgumentError.value(iconKey, 'iconKey', 'must be set');
+    if (!colourToken.startsWith('cat-')) {
+      throw ArgumentError.value(colourToken, 'colourToken', 'must be a cat- colour');
+    }
+    final trimmed = await _checkedName(id, name);
+    await (_db.update(_db.categories)..where((c) => c.id.equals(id))).write(
+      CategoriesCompanion(
+        name: Value(trimmed),
+        iconKey: Value(iconKey),
+        colourToken: Value(colourToken),
+        updatedAt: Value(clock.now()),
+      ),
+    );
+    if (!changeBudget || monthlyBudget == current.monthlyBudget) return;
+    if (current.isSystem && monthlyBudget != null) {
+      throw ArgumentError('Fees and tax cannot have a budget.');
+    }
+    if (monthlyBudget != null && monthlyBudget <= 0) {
+      throw ArgumentError.value(monthlyBudget, 'monthlyBudget', 'must be above zero');
+    }
+    await setBudget(
+      id,
+      monthlyBudget: monthlyBudget,
+      // Removing a budget resets its options, as "Remove budget" on Set a budget does.
+      carriesOver: monthlyBudget == null ? false : current.budgetCarriesOver,
+      warnAt: monthlyBudget == null ? 80 : current.budgetWarnAt,
+    );
+  });
+
+  Future<Category?> _byId(String id) =>
+      (_db.select(_db.categories)..where((c) => c.id.equals(id))).getSingleOrNull();
+
+  /// Where a deleted category's entries go: Other, or Other money in for an income category.
+  /// Null when [category] cannot be deleted: Fees and tax, and the two Other categories,
+  /// which must always be there to take entries.
+  static String? fallbackFor(Category category) {
+    if (category.isSystem) return null;
+    if (category.id == DefaultIds.other || category.id == DefaultIds.otherIn) return null;
+    return category.kind == CategoryKind.income ? DefaultIds.otherIn : DefaultIds.other;
+  }
+
+  /// How many entries use the category, so the delete question can say what moves.
+  Future<int> entryCount(String id) async {
+    final count = _db.transactions.id.count();
+    final q = _db.selectOnly(_db.transactions)
+      ..addColumns([count])
+      ..where(_db.transactions.categoryId.equals(id));
+    return (await q.getSingle()).read(count) ?? 0;
+  }
+
+  /// Deletes a category. Its entries and regular payments move to [fallbackFor], and its
+  /// budget goes with it. Returns how many entries moved. Fees and tax and the two Other
+  /// categories are refused with a [StateError].
+  Future<int> delete(String id) => _db.transaction(() async {
+    final current = await _byId(id);
+    if (current == null) return 0;
+    final fallback = fallbackFor(current);
+    if (fallback == null) throw StateError('${current.name} cannot be deleted');
+    final now = clock.now();
+    final moved = await (_db.update(_db.transactions)..where((t) => t.categoryId.equals(id))).write(
+      TransactionsCompanion(categoryId: Value(fallback), updatedAt: Value(now)),
+    );
+    await (_db.update(_db.regularPayments)..where((r) => r.categoryId.equals(id))).write(
+      RegularPaymentsCompanion(categoryId: Value(fallback), updatedAt: Value(now)),
+    );
+    await (_db.delete(_db.categories)..where((c) => c.id.equals(id))).go();
+    return moved;
+  });
+
+  /// Puts [orderedIds] in this order. Categories not named keep their places, so reordering
+  /// the spending list leaves Fees and tax and the money-in list where they were.
+  Future<void> reorder(List<String> orderedIds) => _db.transaction(() async {
+    final all = await (_db.select(
+      _db.categories,
+    )..orderBy([(c) => OrderingTerm.asc(c.sortOrder), (c) => OrderingTerm.asc(c.name)])).get();
+    final moving = orderedIds.toSet();
+    final known = {for (final c in all) c.id};
+    final queue = [
+      for (final id in orderedIds)
+        if (known.contains(id)) id,
+    ];
+    if (queue.length != moving.length) {
+      throw ArgumentError.value(orderedIds, 'orderedIds', 'must name each category once');
+    }
+    // Each place a named category held is filled by the next one in the new order.
+    var next = 0;
+    final order = [for (final c in all) moving.contains(c.id) ? queue[next++] : c.id];
+    final now = clock.now();
+    final byId = {for (final c in all) c.id: c};
+    await _db.batch((b) {
+      for (final (i, id) in order.indexed) {
+        if (byId[id]!.sortOrder == i) continue;
+        b.update(
+          _db.categories,
+          CategoriesCompanion(sortOrder: Value(i), updatedAt: Value(now)),
+          where: (c) => c.id.equals(id),
+        );
+      }
+    });
+  });
 
   /// Shows or hides a category on Add and in its lists. Entries already made keep it.
   Future<void> setHidden(String id, {required bool hidden}) =>
