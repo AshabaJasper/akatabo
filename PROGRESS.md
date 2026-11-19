@@ -58,3 +58,35 @@
 | 4 | Editing the middle of an amount threw the cursor to the end | 4 x 3 = 12 | Fixed: the cursor keeps its place among the digits; tested for insert, a new comma and delete |
 | 5 | All transactions and One transaction kept their database watches open after closing | 6 x 2 = 12 | Fixed: both providers auto-dispose |
 | 6 | Home caption "1 to N" and the daily bars ignore "Month starts on" | 1 x 3 = 3 | Filed in `docs/BUGS.md` |
+
+## Phase 2: Core loop, part 2 (19 November 2026, phase 2 complete)
+
+- **Works:** Calendar with Day, Week, Month, Quarter and Year (the Month heat grid, bars for the others, Earlier and Later, a day card that opens that day's entries, the busiest week, and the year's highest, lowest and usual month); Onboarding (three steps, Skip, reduced motion) and Welcome, shown on a first launch only; the Home month pill opens Calendar; All transactions and Calendar link to each other without stacking. On emulator-5554 a fresh install opened on Onboarding, Skip then "Look around first" reached Home, and a cold restart opened Home.
+- **Tested:** 170 tests pass and `flutter analyze` reports no issues. Unit tests cover heat steps (they reproduce the drawn November), day, hour, week and month marks, quarter weeks adding back to the quarter, "Month starts on" 25, the year summary and the midnight refresh of "now" (with `fake_async`). Widget tests cover each Calendar period, stepping, the disabled Later, zero days, loading without false zeros, hours added since the app opened, Onboarding and Welcome paths, the stored flag at start-up, 44px labelled targets, the Home status bar, and goldens in both themes for Calendar, Onboarding, Welcome, Home, Add, All transactions and One transaction.
+- **Not tested:** the new Home month-pill ripple on a device (the build on the emulator predates it); TalkBack; text scale 1.3 and 2.0 (phase 8); a side-by-side design render of each screen.
+
+### For a design check (phase 2, part 2)
+
+1. Onboarding steps 2 and 3, and Calendar Day, Week, Quarter and Year, have no drawn screens; they are built from the rules. A `size-chart` token (160px) was added for their bars.
+2. The Onboarding headline uses `figure-lg` 34/38 where the drawing has 36/40, and the content is centred rather than held in a fixed 340px area.
+3. Welcome's third line says "nothing uploaded" instead of "no permissions", because reminders and fingerprint unlock each ask for one when switched on.
+4. Welcome's outlined button uses `on-brand-muted` for the drawn #7FA596.
+5. The selected Calendar day's 2px outline is drawn inside the cell; future bars are dashed outlines at 25% height; past days with nothing spent show no "0" (the spoken label still says UGX 0).
+6. Calendar heat steps are rank-based within the month, which matches the drawn November exactly.
+7. Add's three kind segments have no icons, because with icons the labels wrapped.
+8. The tap-target floor is 44px (the design system's), so tests use the iOS guideline rather than Android's 48dp.
+
+### Bug review (phase 2, part 2)
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | All transactions opened from Calendar said "Home" on its back link, and its Calendar pill stacked a second Calendar | 5 x 3 = 15 | Fixed: a `from=calendar` route; back says Calendar and the pill returns; tested |
+| 2 | Each Earlier, Later or period switch flashed "UGX 0 out" and "Nothing spent" while the period loaded | 9 x 2 = 18 | Fixed: no figures until rows arrive, an error message if they fail; tested, and the test fails on the old code |
+| 3 | Day view marked hours since the app opened as "not yet", even with entries in them | 4 x 3 = 12 | Fixed: the hours use the time now, and an hour with an entry is never "not yet"; tested, fails on the old code |
+| 4 | "See that day" briefly said "Nothing added on this day." while loading | 6 x 2 = 12 | Fixed: no message until entries load; tested |
+| 5 | The Home month pill showed no ripple, because it was drawn under the green header | 9 x 1 = 9 | Fixed: a transparent Material under the ink; not checked on a device |
+| 6 | A returning person saw Onboarding again if settings took over 3 seconds at start-up | 2 x 3 = 6 | Fixed: the flag is read directly from the database before the first frame; tested |
+| 7 | Quarter labels ignore "Month starts on" | 1 x 2 = 2 | Filed in `docs/BUGS.md` |
+| 8 | Day and Week titles have no year | 2 x 2 = 4 | Filed |
+| 9 | `Reveal` makes a `CurvedAnimation` per build | 2 x 1 = 2 | Filed |
+| 10 | Double-tapping Skip opens Welcome twice | 2 x 1 = 2 | Filed |

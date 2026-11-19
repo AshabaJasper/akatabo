@@ -30,3 +30,39 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 1 x severity 3 = 3
 - **Suggested fix:** build the caption and the bar days from `currentMonthProvider`'s start and end, not from the calendar month, with a test for a month starting on the 25th.
 - **Found:** 19 November 2026, phase 2 review
+
+### [bug-review] Quarter bar labels ignore "Month starts on"
+
+- **Where:** `app/lib/features/calendar/calendar_screen.dart`, the Quarter labels (`_firstOfMonthIn`)
+- **What happens:** Quarter week bars are labelled at the calendar 1st of each month. With a month starting on the 25th, a quarter titled "October to December 2026" (25 Oct to 25 Jan) is labelled "Nov, Dec, Jan".
+- **How to trigger:** set "Month starts on" to 25 (the setting screen comes in phase 5), open Calendar, choose Quarter.
+- **Score:** frequency 1 x severity 2 = 2
+- **Suggested fix:** label the week that holds each month period's start (`calc.month(...).start`), named after that month.
+- **Found:** 19 November 2026, phase 2 part 2 review
+
+### [bug-review] Calendar Day and Week titles have no year
+
+- **Where:** `app/lib/features/calendar/calendar_screen.dart`, `_dayName` and `_range`
+- **What happens:** after stepping back a year in Day or Week, the title reads the same as this year's ("Thursday 19 November", "16 to 22 November").
+- **How to trigger:** Calendar, Year, step back to 2025, then switch to Week.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** add the year to the title when the period's year differs from today's.
+- **Found:** 19 November 2026, phase 2 part 2 review
+
+### [bug-review] Reveal creates a CurvedAnimation on every build
+
+- **Where:** `app/lib/features/onboarding/reveal.dart`, `Reveal.build`
+- **What happens:** each build makes a `CurvedAnimation` that adds a status listener to the group's controller and is never disposed. Listeners pile up until the page goes.
+- **How to trigger:** rotate the phone or change the theme or text size while an Onboarding step is showing.
+- **Score:** frequency 2 x severity 1 = 2
+- **Suggested fix:** compute `Interval(...).transform(controller.value)` inside the `AnimatedBuilder`, or make `Reveal` stateful and dispose its `CurvedAnimation`.
+- **Found:** 19 November 2026, phase 2 part 2 review
+
+### [bug-review] Double-tapping Skip or the last Next opens Welcome twice
+
+- **Where:** `app/lib/features/onboarding/onboarding_screen.dart`, `_toWelcome`
+- **What happens:** each tap pushes `/welcome`, so Back from Welcome lands on a second Welcome.
+- **How to trigger:** on a first launch, double-tap Skip quickly, then press Back on Welcome.
+- **Score:** frequency 2 x severity 1 = 2
+- **Suggested fix:** guard `_toWelcome` with a flag cleared when the pushed route returns.
+- **Found:** 19 November 2026, phase 2 part 2 review

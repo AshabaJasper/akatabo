@@ -153,10 +153,12 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                     semanticLabel: 'Kind of transaction',
                     selected: _direction,
                     onChanged: _chooseDirection,
+                    // Three choices share the row the design drew for two, so the labels go
+                    // without icons; with them, each label broke onto two lines.
                     segments: const [
-                      AkSegment(Direction.moneyOut, 'Money out', icon: AkIcons.sent),
-                      AkSegment(Direction.moneyIn, 'Money in', icon: AkIcons.received),
-                      AkSegment(Direction.transfer, 'Move money', icon: AkIcons.repeat),
+                      AkSegment(Direction.moneyOut, 'Money out'),
+                      AkSegment(Direction.moneyIn, 'Money in'),
+                      AkSegment(Direction.transfer, 'Move money'),
                     ],
                   ),
                 ),

@@ -2,7 +2,10 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../features/add/add_screen.dart';
+import '../features/calendar/calendar_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/onboarding/onboarding_screen.dart';
+import '../features/onboarding/welcome_screen.dart';
 import '../features/placeholder/placeholder_screen.dart';
 import '../features/transactions/transaction_detail_screen.dart';
 import '../features/transactions/transactions_screen.dart';
@@ -49,6 +52,8 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
           ),
         ],
       ),
+      GoRoute(path: Routes.onboarding, builder: (_, _) => const OnboardingScreen()),
+      GoRoute(path: Routes.welcome, builder: (_, _) => const WelcomeScreen()),
       GoRoute(
         path: Routes.add,
         parentNavigatorKey: rootKey,
@@ -61,7 +66,16 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       GoRoute(
         path: Routes.transactions,
         parentNavigatorKey: rootKey,
-        builder: (_, _) => const TransactionsScreen(),
+        builder: (_, state) => TransactionsScreen(
+          day: int.tryParse(state.uri.queryParameters['day'] ?? ''),
+          fromCalendar: state.uri.queryParameters['from'] == 'calendar',
+        ),
+      ),
+      GoRoute(
+        path: Routes.calendar,
+        parentNavigatorKey: rootKey,
+        builder: (_, state) =>
+            CalendarScreen(fromList: state.uri.queryParameters['from'] == 'list'),
       ),
       GoRoute(
         path: '/transactions/:id',

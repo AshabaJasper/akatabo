@@ -10,6 +10,7 @@ import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/add/add_screen.dart';
 import 'package:clock/clock.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -67,6 +68,7 @@ final _income = [
 Future<RecordingTransactionRepository> _pumpAdd(
   WidgetTester tester, {
   RecordingTransactionRepository? repository,
+  Brightness brightness = Brightness.light,
 }) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -85,7 +87,7 @@ Future<RecordingTransactionRepository> _pumpAdd(
         transactionRepositoryProvider.overrideWithValue(repo),
       ],
       child: MaterialApp(
-        theme: buildAkTheme(Brightness.light, const AkAppearance()),
+        theme: buildAkTheme(brightness, const AkAppearance()),
         home: Builder(
           builder: (context) => Scaffold(
             body: Center(
@@ -247,4 +249,25 @@ void main() {
     );
     handle.dispose();
   });
+
+  testWidgets('each kind fits on one line beside the close button', (tester) async {
+    await _pumpAdd(tester);
+    for (final label in ['Money out', 'Money in', 'Move money']) {
+      final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
+      final fontSize = paragraph.text.style?.fontSize ?? 14;
+      // One line is under twice the font size tall; two lines are not.
+      expect(paragraph.size.height, lessThan(fontSize * 2), reason: '$label must not wrap');
+    }
+  });
+
+  for (final b in Brightness.values) {
+    testWidgets('add golden, ${b.name}', (tester) async {
+      await _pumpAdd(tester, brightness: b);
+      await _enterAmount(tester, '45000');
+      await tester.enterText(find.byType(TextField).at(1), 'Groceries, Nakasero market');
+      await tester.tap(find.bySemanticsLabel('Food and shopping'));
+      await tester.pumpAndSettle();
+      await expectLater(find.byType(AddScreen), matchesGoldenFile('goldens/add_${b.name}.png'));
+    });
+  }
 }

@@ -449,3 +449,51 @@ class AkEyebrowLabel extends StatelessWidget {
     style: context.type.eyebrow.copyWith(color: context.colors.inkMuted),
   );
 }
+
+/// A compact 44px link drawn as a pill: `line-strong` outline on `surface`, an icon and a
+/// label in `brand-text`. "List" on Calendar, "Calendar" on All transactions.
+class AkPillButton extends StatelessWidget {
+  const AkPillButton({super.key, required this.label, required this.icon, required this.onTap});
+
+  final String label;
+  final AkIcons icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final radius = BorderRadius.circular(context.metrics.pill);
+    return Semantics(
+      button: true,
+      label: label,
+      container: true,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: Material(
+        color: c.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: radius,
+          side: BorderSide(color: c.lineStrong),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: AkSize.target),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3h),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AkIcon(icon, color: c.brandText, size: AkSize.iconSm),
+                  const SizedBox(width: AkSpace.s1h),
+                  Text(label, style: context.type.bodyStrong.copyWith(color: c.brandText)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

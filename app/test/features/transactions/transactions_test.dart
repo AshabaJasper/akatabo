@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:akatabo/app/appearance.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/time/clock_provider.dart';
@@ -10,6 +12,7 @@ import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/transactions/transaction_detail_screen.dart';
 import 'package:akatabo/features/transactions/transactions_providers.dart';
 import 'package:akatabo/features/transactions/transactions_screen.dart';
+import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -81,7 +84,12 @@ class _FakeRepo extends TransactionRepository {
   Future<void> delete(String id) async => deleted.add(id);
 }
 
-Future<_FakeRepo> _pump(WidgetTester tester, Widget screen) async {
+Future<_FakeRepo> _pump(
+  WidgetTester tester,
+  Widget screen, {
+  Brightness brightness = Brightness.light,
+  Stream<List<Transaction>>? all,
+}) async {
   tester.view
     ..physicalSize = const Size(390, 844)
     ..devicePixelRatio = 1;
@@ -94,13 +102,13 @@ Future<_FakeRepo> _pump(WidgetTester tester, Widget screen) async {
         appearanceProvider.overrideWithValue(const AkAppearance()),
         appNowProvider.overrideWithValue(_now),
         transactionRepositoryProvider.overrideWithValue(repo),
-        allTransactionsProvider.overrideWith((ref) => Stream.value(_rows)),
+        allTransactionsProvider.overrideWith((ref) => all ?? Stream.value(_rows)),
         transactionByIdProvider('groceries').overrideWith((ref) => Stream.value(_rows.first)),
         monthRowsProvider.overrideWith((ref) => Stream.value(_rows)),
         allCategoriesProvider.overrideWith((ref) => Stream.value(_categories)),
         enabledAccountsProvider.overrideWith((ref) => Stream.value(_accounts)),
       ],
-      child: MaterialApp(theme: buildAkTheme(Brightness.light, const AkAppearance()), home: screen),
+      child: MaterialApp(theme: buildAkTheme(brightness, const AkAppearance()), home: screen),
     ),
   );
   await tester.pumpAndSettle();
@@ -167,5 +175,50 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, 'Delete'));
     await tester.pumpAndSettle();
     expect(repo.deleted, ['groceries']);
+  });
+
+  for (final b in Brightness.values) {
+    testWidgets('transactions goldens, ${b.name}', (tester) async {
+      await _pump(tester, const TransactionsScreen(), brightness: b);
+      await expectLater(
+        find.byType(TransactionsScreen),
+        matchesGoldenFile('goldens/transactions_${b.name}.png'),
+      );
+      await _pump(tester, const TransactionDetailScreen(id: 'groceries'), brightness: b);
+      await expectLater(
+        find.byType(TransactionDetailScreen),
+        matchesGoldenFile('goldens/transaction_detail_${b.name}.png'),
+      );
+    });
+  }
+
+  testWidgets('one day from Calendar shows only that day, with its name', (tester) async {
+    await _pump(tester, const TransactionsScreen(day: 20261118));
+    expect(find.text('Wednesday 18 November'), findsOneWidget);
+    expect(find.text('Yaka electricity'), findsOneWidget);
+    expect(find.text('Payment from client'), findsNothing);
+    expect(find.byType(AkPillButton), findsNothing, reason: 'no Calendar pill on one day');
+    expect(find.text('Calendar'), findsOneWidget, reason: 'the back link returns to Calendar');
+  });
+
+  testWidgets('opened from Calendar, back says Calendar and the pill goes back', (tester) async {
+    await _pump(tester, const TransactionsScreen(fromCalendar: true));
+    expect(find.bySemanticsLabel(RegExp('^Calendar')), findsWidgets);
+    expect(find.text('Home'), findsNothing);
+  });
+
+  testWidgets('while entries load, a day is not called empty', (tester) async {
+    await _pump(
+      tester,
+      const TransactionsScreen(day: 20261118),
+      all: StreamController<List<Transaction>>().stream,
+    );
+    expect(find.text('Nothing added on this day.'), findsNothing);
+    expect(find.textContaining('Nothing here yet'), findsNothing);
+  });
+
+  testWidgets('a day with nothing on it says so', (tester) async {
+    await _pump(tester, const TransactionsScreen(day: 20261101));
+    expect(find.text('Nothing added on this day.'), findsOneWidget);
   });
 }

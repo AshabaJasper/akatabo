@@ -5,22 +5,36 @@ import 'package:material_ui/material_ui.dart';
 
 import '../core/theme/ak_theme.dart';
 import '../core/time/clock_provider.dart';
+import '../features/onboarding/onboarding_providers.dart';
 import 'appearance.dart';
 import 'router.dart';
+import 'routes.dart';
 
 /// The app root: theme from tokens and Appearance settings, and the router.
 class AkataboApp extends ConsumerStatefulWidget {
-  const AkataboApp({super.key, this.router});
+  const AkataboApp({super.key, this.router, this.onboardingDone});
 
   /// Tests pass their own router; the app builds one.
   final GoRouter? router;
+
+  /// Read straight from the database at start-up, so a slow settings load never sends a
+  /// returning person back through Onboarding. Null falls back to the settings provider.
+  final bool? onboardingDone;
 
   @override
   ConsumerState<AkataboApp> createState() => _AkataboAppState();
 }
 
 class _AkataboAppState extends ConsumerState<AkataboApp> {
-  late final GoRouter _router = widget.router ?? buildRouter();
+  /// A first launch opens on Onboarding; every later one on Home. Settings are read before
+  /// the first frame, so this is known in time and Home never flashes first.
+  late final GoRouter _router =
+      widget.router ??
+      buildRouter(
+        initialLocation: (widget.onboardingDone ?? ref.read(onboardingDoneProvider))
+            ? Routes.home
+            : Routes.onboarding,
+      );
 
   /// A phone that slept past midnight may not have run the day timer, so coming back to the
   /// app works out "today" again.

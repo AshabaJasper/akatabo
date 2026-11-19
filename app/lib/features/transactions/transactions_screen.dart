@@ -23,8 +23,15 @@ enum _Kind { all, moneyOut, moneyIn }
 
 /// All transactions: search, a kind filter, the month's money out by day, and every entry
 /// grouped by day with the day's net total.
+///
+/// With [day] (yyyymmdd, from Calendar's "See that day") it shows only that day.
 class TransactionsScreen extends ConsumerStatefulWidget {
-  const TransactionsScreen({super.key});
+  const TransactionsScreen({super.key, this.day, this.fromCalendar = false});
+
+  final int? day;
+
+  /// Opened from Calendar's "List": back and the Calendar button return to it.
+  final bool fromCalendar;
 
   @override
   ConsumerState<TransactionsScreen> createState() => _TransactionsScreenState();
@@ -42,6 +49,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   }
 
   bool _matches(Transaction t) {
+    if (widget.day != null && t.localDay != widget.day) return false;
     final kindOk = switch (_kind) {
       _Kind.all => true,
       _Kind.moneyOut => t.direction == Direction.moneyOut,
@@ -61,7 +69,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     final c = context.colors;
     final t = context.type;
     final now = ref.watch(appNowProvider);
-    final all = ref.watch(allTransactionsProvider).value ?? const <Transaction>[];
+    final allAsync = ref.watch(allTransactionsProvider);
+    final all = allAsync.value ?? const <Transaction>[];
     final categories = {
       for (final cat in ref.watch(allCategoriesProvider).value ?? const <Category>[]) cat.id: cat,
     };
@@ -70,6 +79,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     };
     final monthRows = ref.watch(monthRowsProvider).value ?? const <Transaction>[];
     final shown = all.where(_matches).toList();
+    final oneDay = widget.day != null;
 
     // Rows arrive newest first, so each day's rows are already in order.
     final days = <int, List<Transaction>>{};
@@ -83,9 +93,29 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
           children: [
-            AkBackLink('Home', onTap: () => closeScreen(context)),
+            Row(
+              children: [
+                AkBackLink(
+                  oneDay || widget.fromCalendar ? 'Calendar' : 'Home',
+                  onTap: () => closeScreen(context),
+                ),
+                const Spacer(),
+                if (!oneDay)
+                  AkPillButton(
+                    label: 'Calendar',
+                    icon: AkIcons.calendar,
+                    // From Calendar, go back to it rather than stacking a second one.
+                    onTap: widget.fromCalendar
+                        ? () => closeScreen(context)
+                        : () => context.push(Routes.calendarFromList),
+                  ),
+              ],
+            ),
             const SizedBox(height: AkSpace.s2),
-            Text('Transactions', style: t.displayLg.copyWith(color: c.ink)),
+            Text(
+              oneDay ? DateFormat('EEEE d MMMM').format(fromLocalDay(widget.day!)) : 'Transactions',
+              style: t.displayLg.copyWith(color: c.ink),
+            ),
             const SizedBox(height: AkSpace.s4),
             _SearchField(controller: _search, onChanged: (v) => setState(() => _query = v)),
             const SizedBox(height: AkSpace.s3),
@@ -100,11 +130,16 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               ],
             ),
             const SizedBox(height: AkSpace.s5),
-            if (monthRows.isNotEmpty) ...[
+            if (!oneDay && monthRows.isNotEmpty) ...[
               _DailyBars(rows: monthRows, now: now),
               const SizedBox(height: AkSpace.s5),
             ],
-            if (all.isEmpty)
+            // Nothing is said until the entries have loaded: "nothing here" must be true.
+            if (!allAsync.hasValue)
+              const SizedBox.shrink()
+            else if (oneDay && all.every((tx) => tx.localDay != widget.day))
+              const _Notice('Nothing added on this day.')
+            else if (all.isEmpty)
               const _Notice('Nothing here yet. Entries you add appear here, newest first.')
             else if (shown.isEmpty)
               const _Notice('No entries match. Try another word or amount.')

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -118,56 +119,77 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = context.type;
-    return Container(
-      color: c.brand,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s3, AkSpace.s6, AkSpace.s5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text('Akatabo', style: t.displaySm.copyWith(color: c.onBrand)),
-                  const Spacer(),
-                  Container(
-                    constraints: const BoxConstraints(minHeight: AkSize.target),
-                    padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3h),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(context.metrics.pill),
-                      border: Border.all(color: c.onBrandMuted),
+    // The header sits under the status bar and is dark green in both themes, so the clock
+    // and icons above it are light whatever the theme says.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: c.brand.withValues(alpha: 0)),
+      child: Container(
+        color: c.brand,
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s3, AkSpace.s6, AkSpace.s5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text('Akatabo', style: t.displaySm.copyWith(color: c.onBrand)),
+                    const Spacer(),
+                    Semantics(
+                      button: true,
+                      label: '$monthName, open the calendar',
+                      container: true,
+                      excludeSemantics: true,
+                      onTap: () => context.push(Routes.calendar),
+                      // The header is a plain coloured box, so the ripple needs its own
+                      // Material to paint on; without it the ink draws under the green.
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: InkWell(
+                          onTap: () => context.push(Routes.calendar),
+                          borderRadius: BorderRadius.circular(context.metrics.pill),
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: AkSize.target),
+                            padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3h),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(context.metrics.pill),
+                              border: Border.all(color: c.onBrandMuted),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                AkIcon(AkIcons.calendar, color: c.onBrand, size: AkSize.iconSm),
+                                const SizedBox(width: AkSpace.s2),
+                                Text(monthName, style: t.bodyMd.copyWith(color: c.onBrand)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AkIcon(AkIcons.calendar, color: c.onBrand, size: AkSize.iconSm),
-                        const SizedBox(width: AkSpace.s2),
-                        Text(monthName, style: t.bodyMd.copyWith(color: c.onBrand)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AkSpace.s3h),
-              Text(caption, style: t.bodySm.copyWith(color: c.onBrandMuted)),
-              const SizedBox(height: AkSpace.s1),
-              Text(figure, style: t.figureXl.copyWith(color: c.onBrand)),
-              if (comparison != null) ...[
-                const SizedBox(height: AkSpace.s1),
-                Text(comparison!, style: t.bodySm.copyWith(color: c.accent)),
-              ],
-              const SizedBox(height: AkSpace.s4),
-              Row(
-                children: [
-                  for (final (i, tile) in tiles.indexed) ...[
-                    if (i > 0) const SizedBox(width: AkSpace.s2),
-                    Expanded(child: tile),
                   ],
+                ),
+                const SizedBox(height: AkSpace.s3h),
+                Text(caption, style: t.bodySm.copyWith(color: c.onBrandMuted)),
+                const SizedBox(height: AkSpace.s1),
+                Text(figure, style: t.figureXl.copyWith(color: c.onBrand)),
+                if (comparison != null) ...[
+                  const SizedBox(height: AkSpace.s1),
+                  Text(comparison!, style: t.bodySm.copyWith(color: c.accent)),
                 ],
-              ),
-            ],
+                const SizedBox(height: AkSpace.s4),
+                Row(
+                  children: [
+                    for (final (i, tile) in tiles.indexed) ...[
+                      if (i > 0) const SizedBox(width: AkSpace.s2),
+                      Expanded(child: tile),
+                    ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
