@@ -22,6 +22,20 @@ abstract final class Routes {
   /// return to that Calendar instead of opening another.
   static const transactionsFromCalendar = '$transactions?from=calendar';
 
+  /// Categories with this month's shares, and one category's page.
+  static const categories = '/categories';
+  static String category(String id) => '$categories/$id';
+
+  /// Fees and tax this month, split three ways.
+  static const fees = '/fees';
+
+  /// The month-end forecast and how it adds up.
+  static const forecast = '/forecast';
+
+  /// Regular payments still due, and adding one by hand.
+  static const regular = '/regular';
+  static const regularNew = '/regular/new';
+
   /// One transaction, by id.
   static String transaction(String id) => '/transactions/$id';
 

@@ -274,3 +274,18 @@ Routine decisions made while building, newest last. Each one marked **design che
 - **A month that starts on the 25th of October is named October** (it is named after the month it starts in). **design check**: the design does not say.
 - **The clock in tests:** a clock fixed around the whole test run does not reach test bodies, so tests that read the time wrap their body in `atTestNow`; widgets will read "today" through a clock provider that widget tests override.
 - **The debug demo seed moves to phase 2**, where Home and Insights first need it.
+
+### Phase 3 (19 November 2026)
+
+- **The forecast range is deterministic.** The plan's bootstrap is replaced by plus or minus one standard deviation of daily spending, scaled by the square root of the days left, plus the regular payments' low and high amounts. The result is clamped so it always contains the point. Reason: it is reproducible in tests and needs no random seed on the phone. The range is a first estimate and is not yet checked against real months.
+- **One-offs in thin categories use the pooled line.** A category with fewer than four entries uses the outlier line from all spending pooled, so a single school payment is still recognised as a one-off.
+- **Insights has no period stepping.** The period segment (Week, Month, 3 months, Year) changes the view; Earlier and Later are not built. Design check: the drawn screen has no stepper.
+- **Categories covers the current month only.** Past months are reachable from Insights later.
+- **Not built in phase 3:** Edit a category, the budget row (phase 4), the "See all" link, the six-month stacked fee chart, the "How close it has been" snapshot section, the remind toggle, the bubble timeline, and the day-by-day heat strip on Categories.
+- **Manual regular payments default to Bills.** The form does not ask for a category.
+- **Copy:** "You added these by hand." sits under the regular payments total, because detection from entries is not built yet and the person should see where each figure came from.
+- **Fees rules, as decided by the owner:** a fee on a transfer to a Cash account is "Withdrawing cash"; every other fee is "Sending money"; all tax is "Tax", or "Tax on withdrawals" only when every tax came from withdrawals.
+- **Monthly and Yearly step by calendar month and year** (intervals 30 and 365), keeping the day of the month and clamping it to shorter months. Other intervals step by days.
+- **A regular payment's entries are matched by payee.** Until detection links entries to payments, an entry whose payee key equals an active regular payment's is left out of the everyday rate, and a payment due today that already has such an entry today is not added again.
+- **The rest of today is forecast.** Everyday spending still to come is the rate less what was spent today (never below zero), plus the rate times the days after today. The drawn rule counts only the days after today; design check.
+- **One-off spread floor:** Q3 + 3 × max(IQR, Q3 / 4), so a category of equal fares does not turn every slightly larger amount into a one-off.

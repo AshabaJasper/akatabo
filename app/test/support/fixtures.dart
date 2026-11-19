@@ -17,6 +17,7 @@ Transaction txRow({
   DateTime? at,
   int? day,
   bool categoryWasCorrected = false,
+  String? regularPaymentId,
 }) {
   final when = at ?? DateTime(2026, 11, 19, 9, 14);
   return Transaction(
@@ -38,6 +39,7 @@ Transaction txRow({
     categoryWasCorrected: categoryWasCorrected,
     flaggedUnusual: false,
     flagDismissed: false,
+    regularPaymentId: regularPaymentId,
   );
 }
 
@@ -71,6 +73,8 @@ Account accountRow({
   required String name,
   String colourToken = 'acct-mtn',
   bool isDefault = false,
+  AccountKind kind = AccountKind.mtn,
+  bool enabled = true,
 }) {
   final now = DateTime(2026, 11);
   return Account(
@@ -78,13 +82,43 @@ Account accountRow({
     createdAt: now,
     updatedAt: now,
     name: name,
-    kind: AccountKind.mtn,
+    kind: kind,
     colourToken: colourToken,
     openingBalance: 0,
     askFeeEachTime: false,
     countInTotals: true,
-    enabled: true,
+    enabled: enabled,
     isDefault: isDefault,
     sortOrder: 0,
+  );
+}
+
+RegularPayment regularRow({
+  String id = 'reg',
+  String label = 'Data bundle',
+  int typicalAmount = 10000,
+  int? amountLow,
+  int? amountHigh,
+  required int nextDueOn,
+  int intervalDays = 7,
+  bool dismissed = false,
+}) {
+  final now = DateTime(2026, 11);
+  return RegularPayment(
+    id: id,
+    createdAt: now,
+    updatedAt: now,
+    label: label,
+    categoryId: DefaultIds.bills,
+    payeeKey: label.toLowerCase(),
+    typicalAmount: typicalAmount,
+    amountLow: amountLow ?? typicalAmount,
+    amountHigh: amountHigh ?? typicalAmount,
+    intervalDays: intervalDays,
+    nextDueOn: nextDueOn,
+    timesSeen: 0,
+    source: RegularSource.manual,
+    remind: false,
+    dismissed: dismissed,
   );
 }

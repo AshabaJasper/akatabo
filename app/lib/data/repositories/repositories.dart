@@ -154,6 +154,10 @@ class AccountRepository {
             ..where((a) => a.enabled)
             ..orderBy([(a) => OrderingTerm.asc(a.sortOrder)]))
           .watch();
+
+  /// Every account, switched off ones too, so past entries keep their account's name and kind.
+  Stream<List<Account>> watchAll() =>
+      (_db.select(_db.accounts)..orderBy([(a) => OrderingTerm.asc(a.sortOrder)])).watch();
 }
 
 class SettingsRepository {
@@ -179,5 +183,54 @@ class SettingsRepository {
       .into(_db.settings)
       .insertOnConflictUpdate(
         SettingsCompanion.insert(key: key.name, value: key.encode(value), updatedAt: clock.now()),
+      );
+}
+
+class RegularPaymentRepository {
+  RegularPaymentRepository(this._db);
+  final AppDatabase _db;
+
+  /// Payments the person has not dismissed, the soonest first.
+  Stream<List<RegularPayment>> watchActive() =>
+      (_db.select(_db.regularPayments)
+            ..where((r) => r.dismissed.not())
+            ..orderBy([(r) => OrderingTerm.asc(r.nextDueOn)]))
+          .watch();
+
+  /// Adds a payment the person entered. The amount is one typical figure with no range.
+  Future<String> add({
+    required String label,
+    required int amount,
+    required int intervalDays,
+    required int nextDueOn,
+    String? categoryId,
+  }) async {
+    final now = clock.now();
+    final id = _uuid.v4();
+    await _db
+        .into(_db.regularPayments)
+        .insert(
+          RegularPaymentsCompanion.insert(
+            id: id,
+            createdAt: now,
+            updatedAt: now,
+            label: label.trim(),
+            categoryId: Value(categoryId),
+            payeeKey: Value(payeeKeyOf(label)),
+            typicalAmount: amount,
+            amountLow: amount,
+            amountHigh: amount,
+            intervalDays: intervalDays,
+            nextDueOn: nextDueOn,
+            source: RegularSource.manual,
+          ),
+        );
+    return id;
+  }
+
+  /// Takes a payment off the list. It is kept, so the same payee is not detected again.
+  Future<void> dismiss(String id) =>
+      (_db.update(_db.regularPayments)..where((r) => r.id.equals(id))).write(
+        RegularPaymentsCompanion(dismissed: const Value(true), updatedAt: Value(clock.now())),
       );
 }

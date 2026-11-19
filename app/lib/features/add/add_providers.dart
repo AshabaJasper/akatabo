@@ -20,6 +20,11 @@ final incomeCategoriesProvider = StreamProvider<List<Category>>(
   (ref) => ref.watch(categoryRepositoryProvider).watch(CategoryKind.income),
 );
 
+/// Every account, including switched-off ones, to name and classify past entries.
+final allAccountsProvider = StreamProvider<List<Account>>(
+  (ref) => ref.watch(accountRepositoryProvider).watchAll(),
+);
+
 /// The accounts the person can pay from or move money between.
 final enabledAccountsProvider = StreamProvider<List<Account>>(
   (ref) => ref.watch(accountRepositoryProvider).watchEnabled(),

@@ -66,3 +66,12 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 2 x severity 1 = 2
 - **Suggested fix:** guard `_toWelcome` with a flag cleared when the pushed route returns.
 - **Found:** 19 November 2026, phase 2 part 2 review
+
+### [bug-review] A yearly payment due more than 400 days after month end is not listed
+
+- **Where:** `app/lib/features/regular/regular_payments_screen.dart`, the "later" lookup
+- **What happens:** the list looks for the next due date only up to 400 days after the month ends, but the date picker allows dates up to three years ahead. A payment due later than that is neither "this month" nor "later", so it is not listed anywhere.
+- **How to trigger:** on 19 November 2026, add a Yearly payment with next due 1 March 2028.
+- **Score:** frequency 1 x severity 4 = 4
+- **Suggested fix:** when `nextDueOn` is after the month end, list it at `fromLocalDay(p.nextDueOn)`, or search up to the picker's limit.
+- **Found:** 19 November 2026, phase 3 review

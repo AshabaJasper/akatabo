@@ -90,3 +90,33 @@
 | 8 | Day and Week titles have no year | 2 x 2 = 4 | Filed |
 | 9 | `Reveal` makes a `CurvedAnimation` per build | 2 x 1 = 2 | Filed |
 | 10 | Double-tapping Skip opens Welcome twice | 2 x 1 = 2 | Filed |
+
+## Phase 3: Understanding (19 November 2026)
+
+- **Works:** Insights (Week, Month, 3 months and Year; spent so far with the same days before drawn as a dashed line; cash flow; the three biggest changes; links onward); Categories and the one category page (share bars, change on last month, week by week, what it went on); Fees and tax (sending, withdrawing and tax, by account); Forecast (gated until seven days this month have entries; point, range, the running total with the forecast and band drawn beyond today, and how it adds up); Regular payments, added by hand, listed with their dues this month and later, and removable after a confirmation. All are reached from Insights, which is now a real tab.
+- **Tested:** 234 tests pass and `flutter analyze` reports no issues. Unit tests cover the forecast rule, the 7-day gate, the rate window and short history, one-offs (per category, pooled for thin categories, and a spread floor when most amounts are equal), regular dues by calendar month and year, a due today counted once, the rate without a regular payment's entries, today's spending still to come, the drawn 96,000, and the fee split summing to its total. Widget tests cover the empty and filled state of each screen, the forecast gate message, removing with confirmation, adding with validation, a cash-out to a switched-off Cash account, and painter goldens for Forecast (light and dark) and Insights.
+- **Not tested:** the new screens on the emulator or a device; tapping a Biggest-changes row (it uses go_router, which the widget tests do not mount); the forecast against real months of the owner's data; TalkBack and large text (phase 8); a side-by-side design render.
+
+### For a design check (phase 3)
+
+1. Insights has no Earlier and Later stepping; Categories shows the current month only.
+2. The forecast's everyday line now reads "Everyday, rest of today and 11 more days", because the rest of today is counted (see the bug table). The drawn screen says "Everyday, 11 days".
+3. A new `size-stroke` token (2px) for the Insights legend line.
+4. Regular payments show "You added these by hand." under the total, because detection from entries is not built yet.
+5. Not built yet: Edit a category, the budget row, "See all", the six-month stacked fee chart, "How close it has been", the remind toggle, the bubble timeline, and the heat strip on Categories.
+
+### Bug review (phase 3)
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | "Monthly" stepped 30 days, so a bill due on the 1st also fell on 31 December and was counted twice | 7 x 6 = 42 | Fixed: Monthly and Yearly step by calendar month and year, clamped to the month's length; tested |
+| 2 | A regular payment's own entries stayed in the daily rate and were added again as "Regular bills due" | 6 x 6 = 36 | Fixed: entries to a regular payment's payee are left out of the rate; tested |
+| 3 | A payment due today was dropped from the forecast and the list | 6 x 5 = 30 | Fixed: dues count from today, unless an entry for it was already made today; tested both ways |
+| 4 | A morning forecast left out today's spending still to come | 9 x 3 = 27 | Fixed: the rest of today (the rate less today's spending, never below 0) is added; tested |
+| 5 | The Fees and tax row under Biggest changes opened an empty category page | 6 x 4 = 24 | Fixed: it opens Fees and tax, as Categories does; not covered by a widget test |
+| 6 | When most amounts in a category were equal, a slightly larger one counted as a one-off | 5 x 4 = 20 | Fixed: the spread is never less than a quarter of Q3; tested, and a school payment among equal amounts is still caught |
+| 7 | "Tax on withdrawals" had the detail "On money out and withdrawals" | 7 x 2 = 14 | Fixed: the detail matches the title; tested |
+| 8 | The regular amount field kept "46000.50" as 4,600,050 | 2 x 7 = 14 | Fixed: the same formatter and parser as Add |
+| 9 | A `height: 2` literal in the Insights legend | 10 x 1 = 10 | Fixed: the `size-stroke` token |
+| 10 | Fees to a switched-off Cash account showed as "Sending money" | 2 x 3 = 6 | Fixed: Fees reads every account; tested |
+| 11 | A yearly payment due more than 400 days after month end is not listed | 1 x 4 = 4 | Filed in `docs/BUGS.md` |
