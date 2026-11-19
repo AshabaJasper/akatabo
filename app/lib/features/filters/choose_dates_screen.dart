@@ -40,18 +40,33 @@ class _ChooseDatesScreenState extends ConsumerState<ChooseDatesScreen> {
   late DateTime _last;
   late DateTime _month;
 
+  /// "All dates" is picked: no day limit at all. Applying it clears the date choice.
+  late bool _allDates;
+
   @override
   void initState() {
     super.initState();
-    final period = ref.read(chosenPeriodProvider);
-    _preset = ref.read(dateChoiceProvider).preset;
+    _allDates = ref.read(dateChoiceProvider) == null;
+    // With all dates chosen, the screen opens on This month: the first range a person picks
+    // from is the one they can see on the calendar.
+    final period =
+        ref.read(chosenPeriodProvider) ??
+        presetPeriod(
+          DatePreset.thisMonth,
+          ref.read(appNowProvider),
+          ref.read(periodCalculatorProvider),
+        );
+    _preset = ref.read(dateChoiceProvider)?.preset ?? DatePreset.thisMonth;
     _first = period.start;
     _last = period.lastDate;
     _month = DateTime(_last.year, _last.month);
   }
 
+  void _chooseAllDates() => setState(() => _allDates = true);
+
   void _choose(DatePreset p) {
     setState(() {
+      _allDates = false;
       _preset = p;
       if (p == DatePreset.custom) return;
       final period = presetPeriod(p, ref.read(appNowProvider), ref.read(periodCalculatorProvider));
@@ -64,6 +79,7 @@ class _ChooseDatesScreenState extends ConsumerState<ChooseDatesScreen> {
   void _tapDay(DateTime day) {
     final picked = pickDay(_first, _last, day);
     setState(() {
+      _allDates = false;
       _preset = DatePreset.custom;
       _first = picked.first;
       _last = picked.last;
@@ -72,7 +88,9 @@ class _ChooseDatesScreenState extends ConsumerState<ChooseDatesScreen> {
 
   Future<void> _apply() async {
     final notifier = ref.read(dateChoiceProvider.notifier);
-    if (_preset == DatePreset.custom) {
+    if (_allDates) {
+      notifier.clear();
+    } else if (_preset == DatePreset.custom) {
       notifier.chooseCustom(_first, _last);
     } else {
       notifier.choosePreset(_preset);
@@ -90,6 +108,11 @@ class _ChooseDatesScreenState extends ConsumerState<ChooseDatesScreen> {
     final days = isCustom
         ? inclusiveDays(_first, _last)
         : presetPeriod(_preset, today, calc).lengthInDays;
+    final buttonLabel = _allDates
+        ? 'Show all transactions'
+        : days == 1
+        ? 'Show this day'
+        : 'Show these $days days';
 
     return Scaffold(
       body: SafeArea(
@@ -104,12 +127,19 @@ class _ChooseDatesScreenState extends ConsumerState<ChooseDatesScreen> {
               spacing: AkSpace.s2,
               runSpacing: AkSpace.s2,
               children: [
+                AkChip(label: 'All dates', selected: _allDates, onTap: _chooseAllDates),
                 for (final p in DatePreset.values)
-                  AkChip(label: _label(p), selected: p == _preset, onTap: () => _choose(p)),
+                  AkChip(
+                    label: _label(p),
+                    selected: !_allDates && p == _preset,
+                    onTap: () => _choose(p),
+                  ),
               ],
             ),
             const SizedBox(height: AkSpace.s4),
-            if (isCustom) ...[
+            if (_allDates)
+              Text('Every entry, whatever its date.', style: t.bodyMd.copyWith(color: c.inkMuted))
+            else if (isCustom) ...[
               Text('From ${_shortDate.format(_first)}', style: t.bodyMd),
               Text('To ${_shortDate.format(_last)}', style: t.bodyMd),
               const SizedBox(height: AkSpace.s4),
@@ -133,10 +163,7 @@ class _ChooseDatesScreenState extends ConsumerState<ChooseDatesScreen> {
                 style: t.bodyMd.copyWith(color: c.inkMuted),
               ),
             const SizedBox(height: AkSpace.s6),
-            AkPrimaryButton(
-              label: days == 1 ? 'Show this day' : 'Show these $days days',
-              onPressed: _apply,
-            ),
+            AkPrimaryButton(label: buttonLabel, onPressed: _apply),
           ],
         ),
       ),

@@ -12,14 +12,15 @@ import '../../core/time/clock_provider.dart';
 import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
 import '../../domain/spending.dart';
+import '../../domain/transaction_filter.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/add_providers.dart';
+import '../filters/date_choice_providers.dart';
+import '../filters/transaction_filter_providers.dart';
 import '../home/home_providers.dart';
 import 'transaction_row.dart';
 import 'transactions_providers.dart';
-
-enum _Kind { all, moneyOut, moneyIn }
 
 /// All transactions: search, a kind filter, the month's money out by day, and every entry
 /// grouped by day with the day's net total.
@@ -38,9 +39,15 @@ class TransactionsScreen extends ConsumerStatefulWidget {
 }
 
 class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
-  final _search = TextEditingController();
-  _Kind _kind = _Kind.all;
-  String _query = '';
+  late final TextEditingController _search;
+
+  @override
+  void initState() {
+    super.initState();
+    // The search words and direction are held in the filter, so they are still here when the
+    // person comes back from Filters.
+    _search = TextEditingController(text: ref.read(transactionFilterProvider).query);
+  }
 
   @override
   void dispose() {
@@ -48,24 +55,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     super.dispose();
   }
 
-  bool _matches(Transaction t) {
-    if (widget.day != null && t.localDay != widget.day) return false;
-    final kindOk = switch (_kind) {
-      _Kind.all => true,
-      _Kind.moneyOut => t.direction == Direction.moneyOut,
-      _Kind.moneyIn => t.direction == Direction.moneyIn,
-    };
-    if (!kindOk) return false;
-    final q = _query.trim().toLowerCase();
-    if (q.isEmpty) return true;
-    final digits = q.replaceAll(RegExp('[^0-9]'), '');
-    return t.description.toLowerCase().contains(q) ||
-        (t.note ?? '').toLowerCase().contains(q) ||
-        (digits.isNotEmpty && t.amount.toString().contains(digits));
-  }
-
   @override
   Widget build(BuildContext context) {
+    // The search words live in the filter, so another screen (the day view, or a list pushed
+    // from it) can change them. Keep the box showing what is really applied.
+    ref.listen(transactionFilterProvider.select((f) => f.query), (_, q) {
+      if (_search.text != q) _search.text = q;
+    });
     final c = context.colors;
     final t = context.type;
     final now = ref.watch(appNowProvider);
@@ -78,14 +74,38 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       for (final a in ref.watch(enabledAccountsProvider).value ?? const <Account>[]) a.id: a.name,
     };
     final monthRows = ref.watch(monthRowsProvider).value ?? const <Transaction>[];
-    final shown = all.where(_matches).toList();
+    final filter = ref.watch(transactionFilterProvider);
+    final period = ref.watch(chosenPeriodProvider);
     final oneDay = widget.day != null;
+    // The day view has the search box and direction, not the Filters choices or dates, so it
+    // uses only those and stays newest first.
+    final scope = oneDay ? filter.listControlsOnly : filter;
+    final order = oneDay ? FilterOrder.newest : filter.order;
+    final shown = orderedRows(
+      all
+          .where((tx) => !oneDay || tx.localDay == widget.day)
+          .where((tx) => matchesFilter(tx, scope, oneDay ? null : period))
+          .toList(),
+      order,
+    );
+    // Filters on: a Filters choice or a date range. Search and direction have their own controls.
+    final filtersOn = filter.narrows || period != null;
+    final listNarrowed = filter.query.trim().isNotEmpty || filter.kind != TransactionKind.all;
 
-    // Rows arrive newest first, so each day's rows are already in order.
+    // Rows arrive in the chosen order, so each day's rows are in order too.
     final days = <int, List<Transaction>>{};
     for (final tx in shown) {
       days.putIfAbsent(tx.localDay, () => []).add(tx);
     }
+
+    Widget rowFor(Transaction tx) => TransactionRow(
+      transaction: tx,
+      now: now,
+      category: categories[tx.categoryId],
+      accountName: accounts[tx.accountId] ?? '',
+      toAccountName: tx.toAccountId == null ? null : accounts[tx.toAccountId],
+      onTap: () => context.push(Routes.transaction(tx.id)),
+    );
 
     return Scaffold(
       backgroundColor: c.ground,
@@ -100,6 +120,14 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   onTap: () => closeScreen(context),
                 ),
                 const Spacer(),
+                if (!oneDay) ...[
+                  AkPillButton(
+                    label: filtersOn ? 'Filters on' : 'Filters',
+                    icon: AkIcons.filter,
+                    onTap: () => context.push(Routes.filters),
+                  ),
+                  const SizedBox(width: AkSpace.s2),
+                ],
                 if (!oneDay)
                   AkPillButton(
                     label: 'Calendar',
@@ -117,16 +145,19 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               style: t.displayLg.copyWith(color: c.ink),
             ),
             const SizedBox(height: AkSpace.s4),
-            _SearchField(controller: _search, onChanged: (v) => setState(() => _query = v)),
+            _SearchField(
+              controller: _search,
+              onChanged: (v) => ref.read(transactionFilterProvider.notifier).setQuery(v),
+            ),
             const SizedBox(height: AkSpace.s3),
-            AkSegmented<_Kind>(
+            AkSegmented<TransactionKind>(
               semanticLabel: 'Filter',
-              selected: _kind,
-              onChanged: (k) => setState(() => _kind = k),
+              selected: filter.kind,
+              onChanged: (k) => ref.read(transactionFilterProvider.notifier).setKind(k),
               segments: const [
-                AkSegment(_Kind.all, 'All'),
-                AkSegment(_Kind.moneyOut, 'Money out'),
-                AkSegment(_Kind.moneyIn, 'Money in'),
+                AkSegment(TransactionKind.all, 'All'),
+                AkSegment(TransactionKind.moneyOut, 'Money out'),
+                AkSegment(TransactionKind.moneyIn, 'Money in'),
               ],
             ),
             const SizedBox(height: AkSpace.s5),
@@ -142,19 +173,19 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             else if (all.isEmpty)
               const _Notice('Nothing here yet. Entries you add appear here, newest first.')
             else if (shown.isEmpty)
-              const _Notice('No entries match. Try another word or amount.')
+              _Notice(
+                // Say what actually emptied the list: the Filters choices, or the search word.
+                filtersOn && !listNarrowed
+                    ? 'Nothing matches these filters. Clear all in Filters.'
+                    : 'No entries match. Try another word or amount.',
+              )
+            else if (order == FilterOrder.largest)
+              // Largest is one list, not days: the biggest first, whatever the day.
+              for (final tx in shown) ...[rowFor(tx), const SizedBox(height: AkSpace.s2)]
             else
               for (final entry in days.entries) ...[
                 _DayHeader(day: entry.key, rows: entry.value, now: now),
-                for (final tx in entry.value)
-                  TransactionRow(
-                    transaction: tx,
-                    now: now,
-                    category: categories[tx.categoryId],
-                    accountName: accounts[tx.accountId] ?? '',
-                    toAccountName: tx.toAccountId == null ? null : accounts[tx.toAccountId],
-                    onTap: () => context.push(Routes.transaction(tx.id)),
-                  ),
+                for (final tx in entry.value) rowFor(tx),
                 const SizedBox(height: AkSpace.s4),
               ],
           ],

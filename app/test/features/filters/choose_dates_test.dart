@@ -31,21 +31,28 @@ Future<void> _flush() async {
 
 void main() {
   group('date choice provider', () {
-    test('starts on this month', () {
+    test('starts with all dates, so the list is not narrowed by day', () {
       final c = _container();
       addTearDown(c.dispose);
-      expect(c.read(dateChoiceProvider).preset, DatePreset.thisMonth);
-      final period = c.read(chosenPeriodProvider);
-      expect(period.start, DateTime(2026, 11));
-      expect(period.lastDate, DateTime(2026, 11, 30));
+      expect(c.read(dateChoiceProvider), isNull);
+      expect(c.read(chosenPeriodProvider), isNull);
+    });
+
+    test('clear goes back to all dates', () {
+      final c = _container();
+      addTearDown(c.dispose);
+      c.read(dateChoiceProvider.notifier).choosePreset(DatePreset.thisMonth);
+      expect(c.read(chosenPeriodProvider), isNotNull);
+      c.read(dateChoiceProvider.notifier).clear();
+      expect(c.read(chosenPeriodProvider), isNull);
     });
 
     test('a preset is worked out from today', () {
       final c = _container();
       addTearDown(c.dispose);
       c.read(dateChoiceProvider.notifier).choosePreset(DatePreset.lastMonth);
-      expect(c.read(dateChoiceProvider).preset, DatePreset.lastMonth);
-      final period = c.read(chosenPeriodProvider);
+      expect(c.read(dateChoiceProvider)?.preset, DatePreset.lastMonth);
+      final period = c.read(chosenPeriodProvider)!;
       expect(period.start, DateTime(2026, 10));
       expect(period.lastDate, DateTime(2026, 10, 31));
     });
@@ -56,8 +63,8 @@ void main() {
       c
           .read(dateChoiceProvider.notifier)
           .chooseCustom(DateTime(2026, 11, 5), DateTime(2026, 11, 19));
-      expect(c.read(dateChoiceProvider).preset, DatePreset.custom);
-      final period = c.read(chosenPeriodProvider);
+      expect(c.read(dateChoiceProvider)?.preset, DatePreset.custom);
+      final period = c.read(chosenPeriodProvider)!;
       expect(period.start, DateTime(2026, 11, 5));
       expect(period.lastDate, DateTime(2026, 11, 19));
       expect(period.lengthInDays, 15);
@@ -92,15 +99,15 @@ void main() {
           .chooseCustom(DateTime(2026, 11, 5), DateTime(2026, 11, 19));
       settings.add({SettingKeys.monthStartsOn.name: '25'});
       await _flush();
-      expect(c.read(dateChoiceProvider).preset, DatePreset.custom);
-      expect(c.read(chosenPeriodProvider).start, DateTime(2026, 11, 5));
-      expect(c.read(chosenPeriodProvider).lastDate, DateTime(2026, 11, 19));
+      expect(c.read(dateChoiceProvider)?.preset, DatePreset.custom);
+      expect(c.read(chosenPeriodProvider)!.start, DateTime(2026, 11, 5));
+      expect(c.read(chosenPeriodProvider)!.lastDate, DateTime(2026, 11, 19));
 
       // "This month" follows the setting: with months from the 25th, 19 November falls in
       // 25 October to 24 November.
       c.read(dateChoiceProvider.notifier).choosePreset(DatePreset.thisMonth);
-      expect(c.read(chosenPeriodProvider).start, DateTime(2026, 10, 25));
-      expect(c.read(chosenPeriodProvider).lastDate, DateTime(2026, 11, 24));
+      expect(c.read(chosenPeriodProvider)!.start, DateTime(2026, 10, 25));
+      expect(c.read(chosenPeriodProvider)!.lastDate, DateTime(2026, 11, 24));
     });
   });
 
@@ -127,11 +134,12 @@ void main() {
       addTearDown(container.dispose);
       await pumpScreen(tester, container);
 
-      // Starts on This month: 1 to 30 November.
-      expect(find.text('Show these 30 days'), findsOneWidget);
+      // Opens on All dates, as the app starts; Custom starts from This month: 1 to 30 November.
+      expect(find.text('Show all transactions'), findsOneWidget);
 
       await tester.tap(find.text('Custom'));
       await tester.pump();
+      expect(find.text('Show these 30 days'), findsOneWidget);
       expect(find.text('From 1 Nov 2026'), findsOneWidget);
       expect(find.text('To 30 Nov 2026'), findsOneWidget);
 
@@ -149,8 +157,8 @@ void main() {
       await tester.tap(find.text('Show these 6 days'));
       await tester.pump();
 
-      expect(container.read(dateChoiceProvider).preset, DatePreset.custom);
-      final period = container.read(chosenPeriodProvider);
+      expect(container.read(dateChoiceProvider)?.preset, DatePreset.custom);
+      final period = container.read(chosenPeriodProvider)!;
       expect(period.start, DateTime(2026, 11, 10));
       expect(period.lastDate, DateTime(2026, 11, 15));
     });
@@ -167,10 +175,28 @@ void main() {
       await tester.tap(find.text('Show these 7 days'));
       await tester.pump();
 
-      expect(container.read(dateChoiceProvider).preset, DatePreset.last7Days);
-      final period = container.read(chosenPeriodProvider);
+      expect(container.read(dateChoiceProvider)?.preset, DatePreset.last7Days);
+      final period = container.read(chosenPeriodProvider)!;
       expect(period.start, DateTime(2026, 11, 13));
       expect(period.lastDate, DateTime(2026, 11, 19));
+    });
+
+    testWidgets('All dates clears the range again', (tester) async {
+      final container = _container();
+      addTearDown(container.dispose);
+      container
+          .read(dateChoiceProvider.notifier)
+          .chooseCustom(DateTime(2026, 11, 5), DateTime(2026, 11, 19));
+      await pumpScreen(tester, container);
+
+      await tester.tap(find.text('All dates'));
+      await tester.pump();
+      expect(find.text('Show all transactions'), findsOneWidget);
+
+      await tester.tap(find.text('Show all transactions'));
+      await tester.pump();
+      expect(container.read(dateChoiceProvider), isNull);
+      expect(container.read(chosenPeriodProvider), isNull);
     });
 
     testWidgets('opens on the range already chosen', (tester) async {

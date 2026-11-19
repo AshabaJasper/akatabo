@@ -12,7 +12,8 @@ abstract final class Routes {
   static const settingsAccountNew = '/settings/accounts/new';
   static const settingsCategories = '/settings/categories';
 
-  /// Choose dates, reached from Filters.
+  /// Filters for All transactions, and Choose dates from inside them.
+  static const filters = '/filters';
   static const chooseDates = '/filters/dates';
 
   /// Renaming one category.

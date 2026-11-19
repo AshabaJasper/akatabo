@@ -202,3 +202,20 @@ The five fixed bugs were re-scored when this was written, because the first scor
 | 1 | The start of a custom range could never move later (the drawn tap rule) | 7 x 5 = 35 | Fixed: a tap on a longer range starts a new one; tested |
 | 2 | Saving any setting, or midnight, reset the chosen dates to This month | 4 x 4 = 16 | Fixed: only the choice is held; dates worked out when read; tested |
 | 3 | A preset's range text can go stale if the screen stays open past midnight | 1 x 3 = 3 | Filed in `docs/BUGS.md` |
+
+### Phase 5, fifth pass: Filters (21 November 2026)
+
+- **Works:** Filters at `/filters`, opened from a "Filters" pill on All transactions that reads "Filters on" while anything narrows the list. Categories, Paid from (every account), an amount range in UGX, Dates (opens Choose dates, now with an "All dates" chip), Only ones with a fee, Only ones marked unusual, and Newest, Largest or Oldest order. The button counts the matching entries; Clear all resets the choices and dates. Search and direction moved into the same filter, so the count and the list always agree.
+- **Tested:** 376 tests pass and `flutter analyze` reports no issues. New tests cover each filter rule and their combination, search and direction, the order rules, the day view ignoring Filters, the screen's count, toggles, amounts, an out-of-order amount pair, a switched-off account's chip, Clear all, All dates on Choose dates, the search box following a search changed elsewhere, and the day heading under Largest. The All transactions goldens were regenerated with the Filters pill and checked by eye.
+- **Not built, and not tested:** Smart help, Reminders, the pickers, Money-in categories, category icon, colour and order. Filters are not saved across app restarts (by design). Nothing was checked on a device.
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | The Filters count ignored the search words and direction, so it could disagree with the list | 6 x 5 = 30 | Fixed: one rule for both; tested |
+| 2 | The day view applied the global Filters and dates | 4 x 5 = 20 | Fixed: the day view uses only its own search and direction; tested |
+| 3 | The search box could show old words after the day view changed the search | 3 x 4 = 12 | Fixed: the box follows the filter; tested |
+| 4 | No way back to "all dates" once a range was chosen | 4 x 3 = 12 | Fixed: "All dates" chip on Choose dates; tested |
+| 5 | A lowest amount above the highest silently emptied the list | 3 x 3 = 9 | Fixed: no limit applies, explained, Show disabled; tested |
+| 6 | The day view lost its day heading when the order was Largest | 2 x 3 = 6 | Fixed: the day view is always newest first by day; tested |
+| 7 | A very long typed amount silently becomes no limit | 1 x 2 = 2 | Filed in `docs/BUGS.md` |
+| 8 | Rows from a switched-off account show no account name | 2 x 2 = 4 | Filed |

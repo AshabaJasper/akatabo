@@ -147,3 +147,21 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 1 x severity 3 = 3
 - **Suggested fix:** when not on Custom, work out the text in `build()` from `presetPeriod(_preset, today, calc)`.
 - **Found:** 20 November 2026, Phase 5 review
+
+### [bug-review] Filters: a very long typed amount silently becomes no limit
+
+- **Where:** `app/lib/features/filters/filters_screen.dart`, `_parseAmount` (used by both amount fields)
+- **What happens:** when the typed amount is too large for an int, parsing fails and that limit is dropped without a message.
+- **How to trigger:** type 20 or more digits into "At least, UGX".
+- **Score:** frequency 1 x severity 2 = 2
+- **Suggested fix:** add `LengthLimitingTextInputFormatter(15)` to both amount fields.
+- **Found:** 21 November 2026, Filters review
+
+### [bug-review] All transactions: rows from a switched-off account show no account name
+
+- **Where:** `app/lib/features/transactions/transactions_screen.dart`, the `accounts` name map (built from `enabledAccountsProvider`)
+- **What happens:** an entry paid from an account that was later switched off shows a blank account name in its row, and a transfer to it shows no destination. Filters can now narrow the list to such an account, which makes these rows easy to reach.
+- **How to trigger:** add an entry from Cash, switch Cash off in Settings > Accounts, open All transactions.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** build the name map from `allAccountsProvider`, as the Filters screen does.
+- **Found:** 21 November 2026, Filters second review

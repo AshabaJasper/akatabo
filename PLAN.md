@@ -306,8 +306,14 @@ Routine decisions made while building, newest last. Each one marked **design che
 - **Hiding a category** removes it from Add and its lists but keeps past entries. Fees and tax is a system category and cannot be hidden.
 - **Switch rows show their own label.** `AkSwitch` draws only the switch and carries the label for screen readers; `SettingsSwitchRow` draws the visible text beside it.
 - **Edit a category is rename only for now.** Icon, colour and order are not editable yet; the default categories keep the icons and colours from the design. Duplicate names are allowed (filed as a bug to tighten).
-- **Choose dates is held in memory and not saved.** The chosen range resets to This month when the app opens. It is reached at `/filters/dates`, from Filters, which is not built yet; until then the route is reachable only by its path.
+- **Choose dates is held in memory and not saved.** The chosen range resets to All dates when the app opens. It is reached at `/filters/dates`, from the Dates row on Filters.
 - **Only the choice is held, not its dates.** A preset's days are worked out when read (`chosenPeriodProvider`), so "Last 7 days" moves on at midnight and "This month" follows "Month starts on". Saving a setting never resets the choice.
 - **Choose dates applies on its button.** Presets show their own length ("Show these 7 days"). A custom range counts both ends.
 - **Custom range tap rule changed from the drawn hint (design check).** The drawn rule, "a tap before the start moves the start, any later tap moves the end", could never move the start later: 10 to 15 November could not be picked from 1 to 30 November. Now a tap on a range of more than one day starts a new one-day range, and the next tap sets the other end. The hint reads "Tap the first day, then the last day. A third tap starts again."
 - **Custom range months start on the person's week start,** and the grid shows one month at a time with previous and next buttons (the drawn screen shows only November).
+- **Filters are held in memory, like Choose dates,** and apply at once; the button counts the matching entries and returns to the list. All dates is the default, so opening All transactions shows every entry, as before Filters existed. Choose dates gained an "All dates" chip to go back to it.
+- **Search words and the money in or out choice live in the filter,** so the Filters count and the list use one rule (`matchesFilter`) and always agree. Clear all on Filters keeps them, because they have their own controls on the list.
+- **The day view ignores Filters and dates.** A day opened from Calendar uses only its search box and direction, and stays newest first with its day heading.
+- **Largest is one flat list,** biggest first, without day headings; Newest and Oldest stay grouped by day.
+- **A lowest amount above the highest applies no limit** and says so under the fields; Show is disabled until the pair is in order.
+- **Filters list every account, switched off or not,** because an account switched off later still has entries.

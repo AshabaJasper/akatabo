@@ -7,7 +7,9 @@ import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/data/seed/default_data.dart';
+import 'package:akatabo/domain/transaction_filter.dart';
 import 'package:akatabo/features/add/add_providers.dart';
+import 'package:akatabo/features/filters/transaction_filter_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/transactions/transaction_detail_screen.dart';
 import 'package:akatabo/features/transactions/transactions_providers.dart';
@@ -221,5 +223,26 @@ void main() {
   testWidgets('a day with nothing on it says so', (tester) async {
     await _pump(tester, const TransactionsScreen(day: 20261101));
     expect(find.text('Nothing added on this day.'), findsOneWidget);
+  });
+
+  ProviderContainer containerOf(WidgetTester tester) =>
+      ProviderScope.containerOf(tester.element(find.byType(TransactionsScreen)));
+
+  testWidgets('the search box follows a search changed on another screen', (tester) async {
+    await _pump(tester, const TransactionsScreen());
+    // As when the day view, sharing the same filter, changes the words.
+    containerOf(tester).read(transactionFilterProvider.notifier).setQuery('yaka');
+    await tester.pump();
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, 'yaka');
+    expect(find.text('Yaka electricity'), findsOneWidget);
+    expect(find.text('Boda to town'), findsNothing);
+  });
+
+  testWidgets('the day view keeps its day heading when the list order is Largest', (tester) async {
+    await _pump(tester, const TransactionsScreen(day: 20261119));
+    containerOf(tester).read(transactionFilterProvider.notifier).setOrder(FilterOrder.largest);
+    await tester.pump();
+    expect(find.text('Today, 19 Nov'), findsOneWidget);
+    expect(find.text('- 54,000'), findsOneWidget, reason: 'the day total stays');
   });
 }

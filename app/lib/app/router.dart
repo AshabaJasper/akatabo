@@ -9,6 +9,7 @@ import '../features/categories/categories_screen.dart';
 import '../features/categories/category_detail_screen.dart';
 import '../features/fees/fees_screen.dart';
 import '../features/filters/choose_dates_screen.dart';
+import '../features/filters/filters_screen.dart';
 import '../features/forecast/forecast_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/insights/insights_screen.dart';
@@ -124,6 +125,7 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
         path: '${Routes.settingsCategories}/:id/edit',
         builder: (_, state) => CategoryEditScreen(categoryId: state.pathParameters['id']!),
       ),
+      GoRoute(path: Routes.filters, builder: (_, _) => const FiltersScreen()),
       GoRoute(path: Routes.chooseDates, builder: (_, _) => const ChooseDatesScreen()),
       GoRoute(
         path: '/transactions/:id',
