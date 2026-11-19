@@ -13,9 +13,13 @@ import '../features/home/home_screen.dart';
 import '../features/insights/insights_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/onboarding/welcome_screen.dart';
-import '../features/placeholder/placeholder_screen.dart';
 import '../features/regular/regular_new_screen.dart';
 import '../features/regular/regular_payments_screen.dart';
+import '../features/settings/accounts_settings_screen.dart';
+import '../features/settings/appearance_settings_screen.dart';
+import '../features/settings/general_settings_screen.dart';
+import '../features/settings/home_settings_screen.dart';
+import '../features/settings/settings_screen.dart';
 import '../features/transactions/transaction_detail_screen.dart';
 import '../features/transactions/transactions_screen.dart';
 import 'routes.dart';
@@ -42,12 +46,7 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
             routes: [GoRoute(path: Routes.budgets, builder: (_, _) => const BudgetsScreen())],
           ),
           StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: Routes.settings,
-                builder: (_, _) => const PlaceholderScreen(title: 'Settings'),
-              ),
-            ],
+            routes: [GoRoute(path: Routes.settings, builder: (_, _) => const SettingsScreen())],
           ),
         ],
       ),
@@ -111,6 +110,10 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
         parentNavigatorKey: rootKey,
         builder: (_, state) => BudgetEditScreen(categoryId: state.pathParameters['id'] ?? ''),
       ),
+      GoRoute(path: Routes.settingsGeneral, builder: (_, _) => const GeneralSettingsScreen()),
+      GoRoute(path: Routes.settingsAppearance, builder: (_, _) => const AppearanceSettingsScreen()),
+      GoRoute(path: Routes.settingsAccounts, builder: (_, _) => const AccountsSettingsScreen()),
+      GoRoute(path: Routes.settingsHome, builder: (_, _) => const HomeSettingsScreen()),
       GoRoute(
         path: '/transactions/:id',
         parentNavigatorKey: rootKey,

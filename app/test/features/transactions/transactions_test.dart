@@ -99,6 +99,7 @@ Future<_FakeRepo> _pump(
     ProviderScope(
       retry: (_, _) => null,
       overrides: [
+        storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
         appearanceProvider.overrideWithValue(const AkAppearance()),
         appNowProvider.overrideWithValue(_now),
         transactionRepositoryProvider.overrideWithValue(repo),

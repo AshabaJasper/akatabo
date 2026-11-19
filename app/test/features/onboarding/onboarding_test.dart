@@ -47,6 +47,7 @@ Future<_RecordingSettings> _pumpFirstLaunch(
     ProviderScope(
       retry: (_, _) => null,
       overrides: [
+        storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
         appearanceProvider.overrideWithValue(AkAppearance(themeMode: mode)),
         onboardingDoneProvider.overrideWithValue(false),
         settingsRepositoryProvider.overrideWithValue(settings),

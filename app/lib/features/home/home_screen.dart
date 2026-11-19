@@ -15,6 +15,7 @@ import '../../data/seed/default_data.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/add_providers.dart';
+import '../settings/home_layout.dart';
 import '../transactions/transaction_row.dart';
 import 'home_providers.dart';
 
@@ -41,6 +42,7 @@ class HomeScreen extends ConsumerWidget {
       for (final a in ref.watch(enabledAccountsProvider).value ?? const <Account>[]) a.id: a.name,
     };
 
+    final layout = ref.watch(homeLayoutProvider);
     final totals = totalsOf(rows);
     final previousOut = totalsOf(previousRows).moneyOut;
     final change = percentChange(current: totals.moneyOut, previous: previousOut);
@@ -61,38 +63,44 @@ class HomeScreen extends ConsumerWidget {
                 : change >= 0
                 ? '$change% above this point in $prevName'
                 : '${-change}% below this point in $prevName',
-            tiles: [
-              _StatTile(label: 'Money in', value: formatShort(totals.moneyIn)),
-              _StatTile(label: 'Fees and tax', value: formatAmount(feesAndTax)),
-            ],
+            tiles: layout.headerTiles
+                ? [
+                    _StatTile(label: 'Money in', value: formatShort(totals.moneyIn)),
+                    _StatTile(label: 'Fees and tax', value: formatAmount(feesAndTax)),
+                  ]
+                : const [],
           ),
-          const SizedBox(height: AkSpace.s5),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AkSpace.s6),
-            child: _WhereItWent(parts: parts, categories: categories, total: totals.moneyOut),
-          ),
-          const SizedBox(height: AkSpace.s5),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AkSpace.s6),
-            child: AkSectionTitle(
-              'Latest',
-              actionLabel: 'See all',
-              onAction: () => context.push(Routes.transactions),
-            ),
-          ),
-          const SizedBox(height: AkSpace.s1),
-          for (final tx in latest)
+          if (layout.whereItWent) ...[
+            const SizedBox(height: AkSpace.s5),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AkSpace.s6),
-              child: TransactionRow(
-                transaction: tx,
-                now: now,
-                category: categories[tx.categoryId],
-                accountName: accounts[tx.accountId] ?? '',
-                toAccountName: tx.toAccountId == null ? null : accounts[tx.toAccountId],
-                onTap: () => context.push(Routes.transaction(tx.id)),
+              child: _WhereItWent(parts: parts, categories: categories, total: totals.moneyOut),
+            ),
+          ],
+          if (layout.latest) ...[
+            const SizedBox(height: AkSpace.s5),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AkSpace.s6),
+              child: AkSectionTitle(
+                'Latest',
+                actionLabel: 'See all',
+                onAction: () => context.push(Routes.transactions),
               ),
             ),
+            const SizedBox(height: AkSpace.s1),
+            for (final tx in latest)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AkSpace.s6),
+                child: TransactionRow(
+                  transaction: tx,
+                  now: now,
+                  category: categories[tx.categoryId],
+                  accountName: accounts[tx.accountId] ?? '',
+                  toAccountName: tx.toAccountId == null ? null : accounts[tx.toAccountId],
+                  onTap: () => context.push(Routes.transaction(tx.id)),
+                ),
+              ),
+          ],
           const SizedBox(height: AkSpace.s6),
         ],
       ),

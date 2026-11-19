@@ -58,6 +58,7 @@ Future<void> _pump(
     ProviderScope(
       retry: (_, _) => null,
       overrides: [
+        storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
         appearanceProvider.overrideWithValue(const AkAppearance()),
         appNowProvider.overrideWithValue(now ?? _now),
         periodCalculatorProvider.overrideWithValue(calc),

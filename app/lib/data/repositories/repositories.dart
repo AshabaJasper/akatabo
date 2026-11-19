@@ -189,6 +189,11 @@ class AccountRepository {
             ..orderBy([(a) => OrderingTerm.asc(a.sortOrder)]))
           .watch();
 
+  /// Switches an account on or off. Off accounts stop being offered on Add; past entries keep them.
+  Future<void> setEnabled(String id, {required bool enabled}) => (_db.update(
+    _db.accounts,
+  )..where((a) => a.id.equals(id))).write(AccountsCompanion(enabled: Value(enabled)));
+
   /// Every account, switched off ones too, so past entries keep their account's name and kind.
   Stream<List<Account>> watchAll() =>
       (_db.select(_db.accounts)..orderBy([(a) => OrderingTerm.asc(a.sortOrder)])).watch();

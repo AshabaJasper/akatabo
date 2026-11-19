@@ -84,3 +84,12 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 2 x severity 2 = 4
 - **Suggested fix:** sort by `status.index` first (Over, Nearly used, A little ahead, On track), then by ratio.
 - **Found:** 19 November 2026, phase 4 review
+
+### [bug-review] Settings "damaged stored value" test never stores a damaged value
+
+- **Where:** `app/test/features/settings/settings_test.dart`, the test "a damaged stored value falls back to the default"
+- **What happens:** the test writes a valid 25 and then only calls `decode` on the literal strings '31' and 'abc'. The stored row is never damaged, so the provider path (`periodCalculatorProvider`, `storedAppearanceProvider`) and the screens are not tested against a bad stored value.
+- **How to trigger:** change `periodCalculatorProvider` to parse the raw stored string without `decode`. The test still passes.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** insert the bad text straight into the settings table (for example '31' for month start, '9' for week start, 'purple' for theme), wait for the provider, and expect the default. Delete the two literal `decode` lines.
+- **Found:** 19 November 2026, Phase 5 bug review

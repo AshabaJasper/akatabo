@@ -26,6 +26,7 @@ Future<void> _pumpApp(
     ProviderScope(
       retry: (_, _) => null,
       overrides: [
+        storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
         appearanceProvider.overrideWithValue(AkAppearance(themeMode: mode)),
         // Home reads the database; the shell test uses an empty, fixed Home instead.
         periodCalculatorProvider.overrideWithValue(const PeriodCalculator()),

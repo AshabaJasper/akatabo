@@ -5,6 +5,7 @@ import 'package:akatabo/core/time/period.dart';
 import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/seed/default_data.dart';
+import 'package:akatabo/data/settings/setting_keys.dart';
 import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/home/home_screen.dart';
@@ -31,6 +32,7 @@ Future<void> _pumpHome(
   List<Transaction> month = const [],
   List<Transaction> previous = const [],
   Brightness brightness = Brightness.light,
+  Map<String, String> settings = const {},
 }) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -40,6 +42,7 @@ Future<void> _pumpHome(
     ProviderScope(
       retry: (_, _) => null,
       overrides: [
+        storedSettingsProvider.overrideWith((ref) => Stream.value(settings)),
         appearanceProvider.overrideWithValue(const AkAppearance()),
         appNowProvider.overrideWithValue(_now),
         // The default calculator: "Month starts on" the 1st, weeks start on Sunday.
@@ -84,6 +87,19 @@ Future<void> _pumpHome(
 }
 
 void main() {
+  testWidgets('a switched-off Latest section leaves the rest of Home', (tester) async {
+    final (a, b, c, oct) = _filled();
+    await _pumpHome(
+      tester,
+      latest: [a, b, c],
+      month: [a, b, c],
+      previous: [oct],
+      settings: {SettingKeys.homeShowLatest.name: '0'},
+    );
+    expect(find.text('Latest'), findsNothing);
+    expect(find.text('Where it went'), findsOneWidget);
+  });
+
   testWidgets('the first day shows three steps, not empty charts', (tester) async {
     await _pumpHome(tester, latest: const []);
     expect(find.text('Three steps to get going'), findsOneWidget);

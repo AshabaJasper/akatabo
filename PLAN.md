@@ -298,3 +298,7 @@ Routine decisions made while building, newest last. Each one marked **design che
 - **Fees and tax cannot be budgeted.** It is a system category whose total comes from fee and tax fields.
 - **Eyebrow section labels stay** on Budgets and Set a budget, as the design system draws them.
 - **The budget bar's pace tick** uses the `size-stroke` token in ink.
+- **Settings hub rows map to phases.** General, Appearance, Accounts and Home screen are built in phase 5. Categories, Smart help, Reminders, Edit a category, New account, Money-in categories, Filters, Choose dates and the pickers are still to build in phase 5. Privacy and security and Data and backup belong to phase 6.
+- **Home sections are switchable only where they exist.** The header figures, "Where it went" and "Latest" can be switched off. The drawn forecast card and "Budgets at a glance" do not exist on Home yet and get no switch.
+- **Settings values apply at once.** Each switch or segment writes to storage and the screens that read it rebuild from the stored settings stream.
+- **Tests replace the live settings stream** with a fixed one in widget tests (a live drift stream does not settle under the test clock). Saved values are checked in the database, and the providers are tested against a real in-memory database.

@@ -82,6 +82,11 @@ abstract final class SettingKeys {
     Direction.values,
   );
 
+  // Home screen: which sections show. The header figures, "Where it went" and "Latest".
+  static const homeShowHeaderTiles = BoolSetting('home.showHeaderTiles', true);
+  static const homeShowWhereItWent = BoolSetting('home.showWhereItWent', true);
+  static const homeShowLatest = BoolSetting('home.showLatest', true);
+
   // Smart help
   /// When "Forget everything it has learned" was last used, in milliseconds since the epoch.
   /// Corrections before this time are ignored. 0 means never.

@@ -5,6 +5,10 @@ abstract final class Routes {
   static const budgets = '/budgets';
   static String budget(String id) => '$budgets/$id';
   static const settings = '/settings';
+  static const settingsGeneral = '/settings/general';
+  static const settingsAppearance = '/settings/appearance';
+  static const settingsAccounts = '/settings/accounts';
+  static const settingsHome = '/settings/home';
 
   /// First launch: three short steps, then Welcome. Outside the tabs.
   static const onboarding = '/onboarding';

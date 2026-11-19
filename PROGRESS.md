@@ -147,3 +147,21 @@ The five fixed bugs were re-scored when this was written, because the first scor
 | 4 | A database error left both screens loading forever | 1 x 6 = 6 | Fixed: an error message; tested with a failing stream on each screen |
 | 5 | A failed "Remove budget" threw with no message | 1 x 5 = 5 | Fixed: "The budget could not be removed. Try again."; tested |
 | 6 | Rows sorted by ratio can put "A little ahead" above "Nearly used" | 2 x 2 = 4 | Filed in `docs/BUGS.md` |
+
+## Phase 5: Customising (partly built, 19 November 2026)
+
+- **Works:** the Settings tab lists the drawn pages. General (month and week start, new entry as money out or in; a month start of the 25th changes the periods the app reads), Appearance (theme, text size and corners, read back and applied to the theme), Accounts (switch an account off and it stops being offered on Add), Home screen (switch the header figures, "Where it went" and "Latest" off; Home redraws). Each change saves at once.
+- **Tested:** 313 tests pass and `flutter analyze` reports no issues. Tests cover each setting's effect at the provider or database level, the General and Appearance pages' saves, a long value at 2x text scale without overflow, and a switched-off Latest section on Home.
+- **Not built, and not tested:** Categories, Smart help, Reminders (the notifications plugin is in pubspec but no reminder is scheduled), Edit a category, New account, Money-in categories, Filters, Choose dates and the pickers. Privacy and security and Data and backup belong to Phase 6 and still open placeholders. Main colour is not changeable. Home's forecast and budgets cards do not exist on Home yet, so there are no switches for them.
+
+### Bug review (phase 5)
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | A long settings value (e.g. Currency at 2x text) overflowed its row instead of wrapping | 4 x 3 = 12 | Fixed: the value area is capped at half the width; tested at 320 wide with 2x text |
+| 2 | The "damaged stored value" test never stored a damaged value | 2 x 2 = 4 | Filed in `docs/BUGS.md` |
+
+### For a design check (phase 5)
+
+1. The Home screen page offers three switches; the drawn page also lists the forecast card and "Budgets at a glance", which Home does not show yet.
+2. The Settings hub rows and the Accounts and Home pages use the drawn labels; the switch rows have no icons.
