@@ -23,6 +23,8 @@ import '../features/settings/categories_settings_screen.dart';
 import '../features/settings/category_edit_screen.dart';
 import '../features/settings/general_settings_screen.dart';
 import '../features/settings/home_settings_screen.dart';
+import '../features/settings/income_categories_screen.dart';
+import '../features/settings/income_category_new_screen.dart';
 import '../features/settings/new_account_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/transactions/transaction_detail_screen.dart';
@@ -124,6 +126,14 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       GoRoute(
         path: '${Routes.settingsCategories}/:id/edit',
         builder: (_, state) => CategoryEditScreen(categoryId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: Routes.settingsIncomeCategories,
+        builder: (_, _) => const IncomeCategoriesScreen(),
+      ),
+      GoRoute(
+        path: Routes.settingsIncomeCategoryNew,
+        builder: (_, _) => const IncomeCategoryNewScreen(),
       ),
       GoRoute(path: Routes.filters, builder: (_, _) => const FiltersScreen()),
       GoRoute(path: Routes.chooseDates, builder: (_, _) => const ChooseDatesScreen()),

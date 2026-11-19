@@ -12,6 +12,10 @@ abstract final class Routes {
   static const settingsAccountNew = '/settings/accounts/new';
   static const settingsCategories = '/settings/categories';
 
+  /// Money-in categories with this month's money in, and adding one.
+  static const settingsIncomeCategories = '$settingsCategories/income';
+  static const settingsIncomeCategoryNew = '$settingsIncomeCategories/new';
+
   /// Filters for All transactions, and Choose dates from inside them.
   static const filters = '/filters';
   static const chooseDates = '/filters/dates';

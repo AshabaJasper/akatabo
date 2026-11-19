@@ -192,6 +192,40 @@ class CategoryRepository {
       ),
     );
   }
+
+  // --- Added for Money-in categories (phase 5). Kept apart from the methods above, which
+  // Edit a category owns, so the two can be merged without conflict. ---
+
+  /// Adds a category at the end of the person's order and returns its id. An empty name is
+  /// refused; the name is trimmed.
+  Future<String> add({
+    required String name,
+    required CategoryKind kind,
+    required String iconKey,
+    required String colourToken,
+  }) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) throw ArgumentError.value(name, 'name', 'must not be empty');
+    final now = clock.now();
+    final id = _uuid.v4();
+    final last = _db.categories.sortOrder.max();
+    final top = await (_db.selectOnly(_db.categories)..addColumns([last])).getSingle();
+    await _db
+        .into(_db.categories)
+        .insert(
+          CategoriesCompanion.insert(
+            id: id,
+            name: trimmed,
+            iconKey: iconKey,
+            colourToken: colourToken,
+            kind: kind,
+            sortOrder: Value((top.read(last) ?? -1) + 1),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+    return id;
+  }
 }
 
 class AccountRepository {
