@@ -2,6 +2,8 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../features/add/add_screen.dart';
+import '../features/budgets/budget_edit_screen.dart';
+import '../features/budgets/budgets_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/categories/categories_screen.dart';
 import '../features/categories/category_detail_screen.dart';
@@ -37,12 +39,7 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
             routes: [GoRoute(path: Routes.insights, builder: (_, _) => const InsightsScreen())],
           ),
           StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: Routes.budgets,
-                builder: (_, _) => const PlaceholderScreen(title: 'Budgets'),
-              ),
-            ],
+            routes: [GoRoute(path: Routes.budgets, builder: (_, _) => const BudgetsScreen())],
           ),
           StatefulShellBranch(
             routes: [
@@ -108,6 +105,11 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
         path: Routes.regularNew,
         parentNavigatorKey: rootKey,
         builder: (_, _) => const RegularNewScreen(),
+      ),
+      GoRoute(
+        path: '${Routes.budgets}/:id',
+        parentNavigatorKey: rootKey,
+        builder: (_, state) => BudgetEditScreen(categoryId: state.pathParameters['id'] ?? ''),
       ),
       GoRoute(
         path: '/transactions/:id',

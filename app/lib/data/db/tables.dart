@@ -79,6 +79,10 @@ class Categories extends Table with _Synced {
   /// The "Nearly used" level, as a whole percent of the budget.
   IntColumn get budgetWarnAt => integer().withDefault(const Constant(80))();
 
+  /// The local day (yyyymmdd) the budget started, or carry-over was switched on. Carry-over
+  /// counts only once the budget covered all of last month. Null with no budget. Schema v2.
+  IntColumn get budgetSince => integer().nullable()();
+
   /// Fees and tax: its totals are built from the fee and tax fields, not chosen on Add.
   BoolColumn get isSystem => boolean().withDefault(const Constant(false))();
 }

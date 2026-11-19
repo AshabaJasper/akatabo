@@ -75,3 +75,12 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 1 x severity 4 = 4
 - **Suggested fix:** when `nextDueOn` is after the month end, list it at `fromLocalDay(p.nextDueOn)`, or search up to the picker's limit.
 - **Found:** 19 November 2026, phase 3 review
+
+### [bug-review] Budget rows sorted by ratio can put "A little ahead" above "Nearly used"
+
+- **Where:** `app/lib/features/budgets/budgets_screen.dart`, the sort of budget lines
+- **What happens:** rows are ordered by spent over budget. With different warn levels, a budget at 85% with a 90% warn level ("A little ahead") sorts above one at 82% with a 80% warn level ("Nearly used"), so the more urgent status sits lower.
+- **How to trigger:** Food at 85% of its budget with warn level 90, Bills at 82% with warn level 80, past the pace.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** sort by `status.index` first (Over, Nearly used, A little ahead, On track), then by ratio.
+- **Found:** 19 November 2026, phase 4 review

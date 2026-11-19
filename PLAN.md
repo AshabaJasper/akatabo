@@ -289,3 +289,12 @@ Routine decisions made while building, newest last. Each one marked **design che
 - **A regular payment's entries are matched by payee.** Until detection links entries to payments, an entry whose payee key equals an active regular payment's is left out of the everyday rate, and a payment due today that already has such an entry today is not added again.
 - **The rest of today is forecast.** Everyday spending still to come is the rate less what was spent today (never below zero), plus the rate times the days after today. The drawn rule counts only the days after today; design check.
 - **One-off spread floor:** Q3 + 3 × max(IQR, Q3 / 4), so a category of equal fares does not turn every slightly larger amount into a one-off.
+- **Phase 4 statuses:** Over (spent above the budget), then Nearly used (spent at or above the warn level), then A little ahead (spent above pace), then On track. Pace is the day of the budget month over its length, so it follows "Month starts on".
+- **Carry-over is one month and does not compound.** Last month's unspent part is added to this month's budget, never last month's carry. It applies only once the budget has covered a whole month: a `budgetSince` day (schema v2) is set when a budget is created or carry-over is switched on, kept when the amount or warn level changes, and cleared when the budget is removed.
+- **Suggested budget:** the 80th percentile of the last six months' money out in the category (index ceil(0.8n) - 1 of the sorted months), rounded up to 10,000. It needs at least three months with spending; months with none count as zero.
+- **Warn levels are 60, 70, 80 and 90 percent**, 80 by default.
+- **The daily allowance is rounded down to the hundred**, so it never promises more than is left. On the last day it shows what is left for today.
+- **The overall figure is net:** the sum of the budgets less the sum of what was spent, so an overspend in one category reduces what is left overall.
+- **Fees and tax cannot be budgeted.** It is a system category whose total comes from fee and tax fields.
+- **Eyebrow section labels stay** on Budgets and Set a budget, as the design system draws them.
+- **The budget bar's pace tick** uses the `size-stroke` token in ink.

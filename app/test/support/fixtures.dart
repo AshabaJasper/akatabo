@@ -50,6 +50,10 @@ Category categoryRow({
   String colourToken = 'cat-green',
   CategoryKind kind = CategoryKind.spending,
   bool isSystem = false,
+  int? monthlyBudget,
+  bool budgetCarriesOver = false,
+  int budgetWarnAt = 80,
+  int? budgetSince,
 }) {
   final now = DateTime(2026, 11);
   return Category(
@@ -62,8 +66,10 @@ Category categoryRow({
     kind: kind,
     sortOrder: 0,
     hidden: false,
-    budgetCarriesOver: false,
-    budgetWarnAt: 80,
+    monthlyBudget: monthlyBudget,
+    budgetCarriesOver: budgetCarriesOver,
+    budgetWarnAt: budgetWarnAt,
+    budgetSince: budgetSince,
     isSystem: isSystem,
   );
 }

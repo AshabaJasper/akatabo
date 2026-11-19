@@ -3,6 +3,7 @@ abstract final class Routes {
   static const home = '/home';
   static const insights = '/insights';
   static const budgets = '/budgets';
+  static String budget(String id) => '$budgets/$id';
   static const settings = '/settings';
 
   /// First launch: three short steps, then Welcome. Outside the tabs.

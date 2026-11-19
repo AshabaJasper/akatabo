@@ -6,6 +6,8 @@ analyzer:
     - android/**
     - ios/**
     - "**/*.g.dart"
+    # Written by drift_dev make-migrations; regenerated with each schema version.
+    - test/drift/**
   language:
     strict-casts: true
     strict-inference: true

@@ -120,3 +120,30 @@
 | 9 | A `height: 2` literal in the Insights legend | 10 x 1 = 10 | Fixed: the `size-stroke` token |
 | 10 | Fees to a switched-off Cash account showed as "Sending money" | 2 x 3 = 6 | Fixed: Fees reads every account; tested |
 | 11 | A yearly payment due more than 400 days after month end is not listed | 1 x 4 = 4 | Filed in `docs/BUGS.md` |
+
+## Phase 4: Planning (19 November 2026)
+
+- **Works:** Budgets (left to spend this month, the daily allowance for the days left or "Left for today" on the last day, a bar with a pace tick, every budget with its status in words, and categories with spending but no budget offered "Set one"); Set a budget (amount, a suggestion from the last six months with how many months it would have covered, history bars with the current budget as a dashed line, carry-over, warn level 60, 70, 80 or 90, save and remove with a confirmation). Carry-over adds last month's unspent part once the budget has covered a whole month. Fees and tax cannot be budgeted.
+- **Tested:** 294 tests pass and `flutter analyze` reports no issues. Unit tests cover pace, all four statuses at their boundaries (exactly at the budget, one shilling over, exactly at the warn level, one below, exactly on pace, one above), the daily allowance rounded down to the hundred and on the last day, the net overall figure, carry-over and when it applies, the suggestion (five of six months, three-month minimum, latest six only) and money out per month. The schema 1 to 2 migration is tested with drift's generated tests, and the repository test checks when `budgetSince` starts, stays and clears. Widget tests cover the drawn figures, the statuses, the unbudgeted offer, a month starting on the 25th, carry-over before and after a full month, the last day, database errors on both screens, save, validation, remove and a failed remove; goldens in light and dark.
+- **Not tested:** the screens on the emulator or a device (the emulator was not running); tapping "Set one" or a budget row through go_router; TalkBack and large text (phase 8); a side-by-side design render; carry-over across a change of "Month starts on".
+
+### For a design check (phase 4)
+
+1. "Left for today" replaces "A day, for N days" on the last day of the month; not drawn.
+2. Error states on both screens ("Budgets could not load. Close Akatabo and open it again."); not drawn.
+3. The pace tick on the budget bar uses the `size-stroke` token (2px) in ink.
+4. Section labels stay as eyebrows, as the design system draws them.
+5. The suggestion note when there is too little history ("A suggestion appears after three months with spending in ..."); not drawn.
+
+### Bug review (phase 4)
+
+The five fixed bugs were re-scored when this was written, because the first scores were lost when the session's context was summarised.
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | Pace and status used the calendar day, wrong when "Month starts on" is not the 1st | 3 x 4 = 12 | Fixed: the day of the budget month (`elapsedDays`); tested with a month starting on the 25th |
+| 2 | Carry-over added last month's unspent part even when the budget was set this month | 4 x 4 = 16 | Fixed: a `budgetSince` column (schema v2); carry applies only once the budget covered a whole month; tested in domain, repository and widget tests |
+| 3 | On the last day the summary read "A day, for 0 days" | 3 x 2 = 6 | Fixed: "Left for today", in the text and the screen-reader label; tested |
+| 4 | A database error left both screens loading forever | 1 x 6 = 6 | Fixed: an error message; tested with a failing stream on each screen |
+| 5 | A failed "Remove budget" threw with no message | 1 x 5 = 5 | Fixed: "The budget could not be removed. Try again."; tested |
+| 6 | Rows sorted by ratio can put "A little ahead" above "Nearly used" | 2 x 2 = 4 | Filed in `docs/BUGS.md` |

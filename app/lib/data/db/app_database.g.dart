@@ -125,6 +125,15 @@ class $CategoriesTable extends Categories with TableInfo<$CategoriesTable, Categ
     requiredDuringInsert: false,
     defaultValue: const Constant(80),
   );
+  static const VerificationMeta _budgetSinceMeta = const VerificationMeta('budgetSince');
+  @override
+  late final GeneratedColumn<int> budgetSince = GeneratedColumn<int>(
+    'budget_since',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _isSystemMeta = const VerificationMeta('isSystem');
   @override
   late final GeneratedColumn<bool> isSystem = GeneratedColumn<bool>(
@@ -150,6 +159,7 @@ class $CategoriesTable extends Categories with TableInfo<$CategoriesTable, Categ
     monthlyBudget,
     budgetCarriesOver,
     budgetWarnAt,
+    budgetSince,
     isSystem,
   ];
   @override
@@ -230,6 +240,12 @@ class $CategoriesTable extends Categories with TableInfo<$CategoriesTable, Categ
         budgetWarnAt.isAcceptableOrUnknown(data['budget_warn_at']!, _budgetWarnAtMeta),
       );
     }
+    if (data.containsKey('budget_since')) {
+      context.handle(
+        _budgetSinceMeta,
+        budgetSince.isAcceptableOrUnknown(data['budget_since']!, _budgetSinceMeta),
+      );
+    }
     if (data.containsKey('is_system')) {
       context.handle(
         _isSystemMeta,
@@ -286,6 +302,10 @@ class $CategoriesTable extends Categories with TableInfo<$CategoriesTable, Categ
         DriftSqlType.int,
         data['${effectivePrefix}budget_warn_at'],
       )!,
+      budgetSince: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}budget_since'],
+      ),
       isSystem: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_system'],
@@ -322,6 +342,10 @@ class Category extends DataClass implements Insertable<Category> {
   /// The "Nearly used" level, as a whole percent of the budget.
   final int budgetWarnAt;
 
+  /// The local day (yyyymmdd) the budget started, or carry-over was switched on. Carry-over
+  /// counts only once the budget covered all of last month. Null with no budget. Schema v2.
+  final int? budgetSince;
+
   /// Fees and tax: its totals are built from the fee and tax fields, not chosen on Add.
   final bool isSystem;
   const Category({
@@ -337,6 +361,7 @@ class Category extends DataClass implements Insertable<Category> {
     this.monthlyBudget,
     required this.budgetCarriesOver,
     required this.budgetWarnAt,
+    this.budgetSince,
     required this.isSystem,
   });
   @override
@@ -358,6 +383,9 @@ class Category extends DataClass implements Insertable<Category> {
     }
     map['budget_carries_over'] = Variable<bool>(budgetCarriesOver);
     map['budget_warn_at'] = Variable<int>(budgetWarnAt);
+    if (!nullToAbsent || budgetSince != null) {
+      map['budget_since'] = Variable<int>(budgetSince);
+    }
     map['is_system'] = Variable<bool>(isSystem);
     return map;
   }
@@ -378,6 +406,7 @@ class Category extends DataClass implements Insertable<Category> {
           : Value(monthlyBudget),
       budgetCarriesOver: Value(budgetCarriesOver),
       budgetWarnAt: Value(budgetWarnAt),
+      budgetSince: budgetSince == null && nullToAbsent ? const Value.absent() : Value(budgetSince),
       isSystem: Value(isSystem),
     );
   }
@@ -397,6 +426,7 @@ class Category extends DataClass implements Insertable<Category> {
       monthlyBudget: serializer.fromJson<int?>(json['monthlyBudget']),
       budgetCarriesOver: serializer.fromJson<bool>(json['budgetCarriesOver']),
       budgetWarnAt: serializer.fromJson<int>(json['budgetWarnAt']),
+      budgetSince: serializer.fromJson<int?>(json['budgetSince']),
       isSystem: serializer.fromJson<bool>(json['isSystem']),
     );
   }
@@ -416,6 +446,7 @@ class Category extends DataClass implements Insertable<Category> {
       'monthlyBudget': serializer.toJson<int?>(monthlyBudget),
       'budgetCarriesOver': serializer.toJson<bool>(budgetCarriesOver),
       'budgetWarnAt': serializer.toJson<int>(budgetWarnAt),
+      'budgetSince': serializer.toJson<int?>(budgetSince),
       'isSystem': serializer.toJson<bool>(isSystem),
     };
   }
@@ -433,6 +464,7 @@ class Category extends DataClass implements Insertable<Category> {
     Value<int?> monthlyBudget = const Value.absent(),
     bool? budgetCarriesOver,
     int? budgetWarnAt,
+    Value<int?> budgetSince = const Value.absent(),
     bool? isSystem,
   }) => Category(
     id: id ?? this.id,
@@ -447,6 +479,7 @@ class Category extends DataClass implements Insertable<Category> {
     monthlyBudget: monthlyBudget.present ? monthlyBudget.value : this.monthlyBudget,
     budgetCarriesOver: budgetCarriesOver ?? this.budgetCarriesOver,
     budgetWarnAt: budgetWarnAt ?? this.budgetWarnAt,
+    budgetSince: budgetSince.present ? budgetSince.value : this.budgetSince,
     isSystem: isSystem ?? this.isSystem,
   );
   Category copyWithCompanion(CategoriesCompanion data) {
@@ -465,6 +498,7 @@ class Category extends DataClass implements Insertable<Category> {
           ? data.budgetCarriesOver.value
           : this.budgetCarriesOver,
       budgetWarnAt: data.budgetWarnAt.present ? data.budgetWarnAt.value : this.budgetWarnAt,
+      budgetSince: data.budgetSince.present ? data.budgetSince.value : this.budgetSince,
       isSystem: data.isSystem.present ? data.isSystem.value : this.isSystem,
     );
   }
@@ -484,6 +518,7 @@ class Category extends DataClass implements Insertable<Category> {
           ..write('monthlyBudget: $monthlyBudget, ')
           ..write('budgetCarriesOver: $budgetCarriesOver, ')
           ..write('budgetWarnAt: $budgetWarnAt, ')
+          ..write('budgetSince: $budgetSince, ')
           ..write('isSystem: $isSystem')
           ..write(')'))
         .toString();
@@ -503,6 +538,7 @@ class Category extends DataClass implements Insertable<Category> {
     monthlyBudget,
     budgetCarriesOver,
     budgetWarnAt,
+    budgetSince,
     isSystem,
   );
   @override
@@ -521,6 +557,7 @@ class Category extends DataClass implements Insertable<Category> {
           other.monthlyBudget == this.monthlyBudget &&
           other.budgetCarriesOver == this.budgetCarriesOver &&
           other.budgetWarnAt == this.budgetWarnAt &&
+          other.budgetSince == this.budgetSince &&
           other.isSystem == this.isSystem);
 }
 
@@ -537,6 +574,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<int?> monthlyBudget;
   final Value<bool> budgetCarriesOver;
   final Value<int> budgetWarnAt;
+  final Value<int?> budgetSince;
   final Value<bool> isSystem;
   final Value<int> rowid;
   const CategoriesCompanion({
@@ -552,6 +590,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     this.monthlyBudget = const Value.absent(),
     this.budgetCarriesOver = const Value.absent(),
     this.budgetWarnAt = const Value.absent(),
+    this.budgetSince = const Value.absent(),
     this.isSystem = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -568,6 +607,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     this.monthlyBudget = const Value.absent(),
     this.budgetCarriesOver = const Value.absent(),
     this.budgetWarnAt = const Value.absent(),
+    this.budgetSince = const Value.absent(),
     this.isSystem = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -590,6 +630,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Expression<int>? monthlyBudget,
     Expression<bool>? budgetCarriesOver,
     Expression<int>? budgetWarnAt,
+    Expression<int>? budgetSince,
     Expression<bool>? isSystem,
     Expression<int>? rowid,
   }) {
@@ -606,6 +647,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       if (monthlyBudget != null) 'monthly_budget': monthlyBudget,
       if (budgetCarriesOver != null) 'budget_carries_over': budgetCarriesOver,
       if (budgetWarnAt != null) 'budget_warn_at': budgetWarnAt,
+      if (budgetSince != null) 'budget_since': budgetSince,
       if (isSystem != null) 'is_system': isSystem,
       if (rowid != null) 'rowid': rowid,
     });
@@ -624,6 +666,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Value<int?>? monthlyBudget,
     Value<bool>? budgetCarriesOver,
     Value<int>? budgetWarnAt,
+    Value<int?>? budgetSince,
     Value<bool>? isSystem,
     Value<int>? rowid,
   }) {
@@ -640,6 +683,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       monthlyBudget: monthlyBudget ?? this.monthlyBudget,
       budgetCarriesOver: budgetCarriesOver ?? this.budgetCarriesOver,
       budgetWarnAt: budgetWarnAt ?? this.budgetWarnAt,
+      budgetSince: budgetSince ?? this.budgetSince,
       isSystem: isSystem ?? this.isSystem,
       rowid: rowid ?? this.rowid,
     );
@@ -684,6 +728,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     if (budgetWarnAt.present) {
       map['budget_warn_at'] = Variable<int>(budgetWarnAt.value);
     }
+    if (budgetSince.present) {
+      map['budget_since'] = Variable<int>(budgetSince.value);
+    }
     if (isSystem.present) {
       map['is_system'] = Variable<bool>(isSystem.value);
     }
@@ -708,6 +755,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
           ..write('monthlyBudget: $monthlyBudget, ')
           ..write('budgetCarriesOver: $budgetCarriesOver, ')
           ..write('budgetWarnAt: $budgetWarnAt, ')
+          ..write('budgetSince: $budgetSince, ')
           ..write('isSystem: $isSystem, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -3988,6 +4036,7 @@ typedef $$CategoriesTableCreateCompanionBuilder = CategoriesCompanion Function({
   Value<int?> monthlyBudget,
   Value<bool> budgetCarriesOver,
   Value<int> budgetWarnAt,
+  Value<int?> budgetSince,
   Value<bool> isSystem,
   Value<int> rowid,
 });
@@ -4004,6 +4053,7 @@ typedef $$CategoriesTableUpdateCompanionBuilder = CategoriesCompanion Function({
   Value<int?> monthlyBudget,
   Value<bool> budgetCarriesOver,
   Value<int> budgetWarnAt,
+  Value<int?> budgetSince,
   Value<bool> isSystem,
   Value<int> rowid,
 });
@@ -4094,6 +4144,9 @@ class $$CategoriesTableFilterComposer extends Composer<_$AppDatabase, $Categorie
 
   ColumnFilters<int> get budgetWarnAt =>
       $composableBuilder(column: $table.budgetWarnAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get budgetSince =>
+      $composableBuilder(column: $table.budgetSince, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get isSystem =>
       $composableBuilder(column: $table.isSystem, builder: (column) => ColumnFilters(column));
@@ -4187,6 +4240,9 @@ class $$CategoriesTableOrderingComposer extends Composer<_$AppDatabase, $Categor
   ColumnOrderings<int> get budgetWarnAt =>
       $composableBuilder(column: $table.budgetWarnAt, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get budgetSince =>
+      $composableBuilder(column: $table.budgetSince, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get isSystem =>
       $composableBuilder(column: $table.isSystem, builder: (column) => ColumnOrderings(column));
 }
@@ -4234,6 +4290,9 @@ class $$CategoriesTableAnnotationComposer extends Composer<_$AppDatabase, $Categ
 
   GeneratedColumn<int> get budgetWarnAt =>
       $composableBuilder(column: $table.budgetWarnAt, builder: (column) => column);
+
+  GeneratedColumn<int> get budgetSince =>
+      $composableBuilder(column: $table.budgetSince, builder: (column) => column);
 
   GeneratedColumn<bool> get isSystem =>
       $composableBuilder(column: $table.isSystem, builder: (column) => column);
@@ -4317,6 +4376,7 @@ class $$CategoriesTableTableManager
                 Value<int?> monthlyBudget = const Value.absent(),
                 Value<bool> budgetCarriesOver = const Value.absent(),
                 Value<int> budgetWarnAt = const Value.absent(),
+                Value<int?> budgetSince = const Value.absent(),
                 Value<bool> isSystem = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CategoriesCompanion(
@@ -4332,6 +4392,7 @@ class $$CategoriesTableTableManager
                 monthlyBudget: monthlyBudget,
                 budgetCarriesOver: budgetCarriesOver,
                 budgetWarnAt: budgetWarnAt,
+                budgetSince: budgetSince,
                 isSystem: isSystem,
                 rowid: rowid,
               ),
@@ -4349,6 +4410,7 @@ class $$CategoriesTableTableManager
                 Value<int?> monthlyBudget = const Value.absent(),
                 Value<bool> budgetCarriesOver = const Value.absent(),
                 Value<int> budgetWarnAt = const Value.absent(),
+                Value<int?> budgetSince = const Value.absent(),
                 Value<bool> isSystem = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CategoriesCompanion.insert(
@@ -4364,6 +4426,7 @@ class $$CategoriesTableTableManager
                 monthlyBudget: monthlyBudget,
                 budgetCarriesOver: budgetCarriesOver,
                 budgetWarnAt: budgetWarnAt,
+                budgetSince: budgetSince,
                 isSystem: isSystem,
                 rowid: rowid,
               ),

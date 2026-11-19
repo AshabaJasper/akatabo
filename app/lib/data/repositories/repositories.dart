@@ -143,6 +143,40 @@ class CategoryRepository {
 
   Stream<List<Category>> watchAll() =>
       (_db.select(_db.categories)..orderBy([(c) => OrderingTerm.asc(c.sortOrder)])).watch();
+
+  /// Sets or clears a category's monthly budget. [monthlyBudget] null removes the budget.
+  Future<void> setBudget(
+    String id, {
+    required int? monthlyBudget,
+    required bool carriesOver,
+    required int warnAt,
+  }) async {
+    final now = clock.now();
+    final current = await (_db.select(
+      _db.categories,
+    )..where((c) => c.id.equals(id))).getSingleOrNull();
+    // A new budget, or carry-over switched on, starts its clock today; changing the amount
+    // or the warn level keeps it, so a long-standing budget keeps carrying.
+    final int? since;
+    if (monthlyBudget == null) {
+      since = null;
+    } else if (current?.monthlyBudget == null ||
+        (carriesOver && !(current?.budgetCarriesOver ?? false)) ||
+        current?.budgetSince == null) {
+      since = toLocalDay(now);
+    } else {
+      since = current!.budgetSince;
+    }
+    await (_db.update(_db.categories)..where((c) => c.id.equals(id))).write(
+      CategoriesCompanion(
+        monthlyBudget: Value(monthlyBudget),
+        budgetCarriesOver: Value(carriesOver),
+        budgetWarnAt: Value(warnAt),
+        budgetSince: Value(since),
+        updatedAt: Value(now),
+      ),
+    );
+  }
 }
 
 class AccountRepository {
