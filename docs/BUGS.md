@@ -138,3 +138,12 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 2 x severity 2 = 4
 - **Suggested fix:** give `AkTextLink` an optional `semanticLabel` and pass "Rename <name>".
 - **Found:** 20 November 2026, Phase 5 review
+
+### [bug-review] Choose dates: preset range text goes stale across midnight
+
+- **Where:** `app/lib/features/filters/choose_dates_screen.dart`, the range line under the presets (`_first` and `_last`)
+- **What happens:** the dates shown under a preset are copied when the screen opens or a chip is tapped. The day count on the button and the applied range use today. If the screen stays open past midnight, the text can show yesterday's range while today's is applied.
+- **How to trigger:** choose "Last 7 days", leave the screen open past midnight, then tap the button.
+- **Score:** frequency 1 x severity 3 = 3
+- **Suggested fix:** when not on Custom, work out the text in `build()` from `presetPeriod(_preset, today, calc)`.
+- **Found:** 20 November 2026, Phase 5 review

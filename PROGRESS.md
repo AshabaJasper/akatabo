@@ -190,3 +190,15 @@ The five fixed bugs were re-scored when this was written, because the first scor
 |---|---|---|---|
 | 1 | A category can be renamed to a name another category already uses | 2 x 2 = 4 | Filed in `docs/BUGS.md` |
 | 2 | "Rename" links do not say which category they rename to screen readers | 2 x 2 = 4 | Filed |
+
+### Phase 5, fourth pass (20 November 2026)
+
+- **Works:** Choose dates at `/filters/dates`: six presets (Last 7 days, This month, Last month, Last 3 months, This year, Custom), a custom range on a month grid with previous and next months, and a button that names the length ("Show these 15 days", "Show this day"). The choice is held in memory; a preset's dates are worked out when read, so they follow today and "Month starts on".
+- **Tested:** 345 tests pass and `flutter analyze` reports no issues. New tests cover every preset's dates on 19 November 2026, the custom tap rule (including 10 to 15 November from 1 to 30 November), a range ending before it starts being refused, the choice surviving a settings change while "This month" follows the new month start, and the screen picking a custom range, applying a preset and opening on the range already chosen.
+- **Not built, and not tested:** Filters, so nothing links to Choose dates yet and no screen reads the chosen range; Smart help, Reminders, the pickers. **Design check:** the custom tap rule and its hint differ from the drawn screen (see the PLAN.md decision log). Nothing was checked on a device.
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | The start of a custom range could never move later (the drawn tap rule) | 7 x 5 = 35 | Fixed: a tap on a longer range starts a new one; tested |
+| 2 | Saving any setting, or midnight, reset the chosen dates to This month | 4 x 4 = 16 | Fixed: only the choice is held; dates worked out when read; tested |
+| 3 | A preset's range text can go stale if the screen stays open past midnight | 1 x 3 = 3 | Filed in `docs/BUGS.md` |

@@ -12,6 +12,9 @@ abstract final class Routes {
   static const settingsAccountNew = '/settings/accounts/new';
   static const settingsCategories = '/settings/categories';
 
+  /// Choose dates, reached from Filters.
+  static const chooseDates = '/filters/dates';
+
   /// Renaming one category.
   static String categoryEdit(String id) => '$settingsCategories/$id/edit';
 
