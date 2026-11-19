@@ -9,6 +9,7 @@ import '../../data/providers.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../home/home_providers.dart';
+import 'income_categories_screen.dart';
 import 'settings_page.dart';
 
 /// Shows or hides each category on Add. A hidden category keeps its past entries.
@@ -75,6 +76,17 @@ class _CategoriesSettingsScreenState extends ConsumerState<CategoriesSettingsScr
       children: [
         SettingsSection(label: 'Spending', children: [rows(spending)]),
         SettingsSection(label: 'Money in', children: [rows(income)]),
+        Padding(
+          padding: const EdgeInsets.only(bottom: AkSpace.s6),
+          child: AkCard(
+            padding: EdgeInsets.zero,
+            child: SettingsValueRow(
+              title: 'Money-in categories',
+              value: incomeCategoryWords(income),
+              onTap: () => context.push(Routes.settingsIncomeCategories),
+            ),
+          ),
+        ),
         if (_problem != null) AkEmptyNote(_problem!),
       ],
     );
