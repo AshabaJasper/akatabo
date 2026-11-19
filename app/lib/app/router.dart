@@ -18,6 +18,7 @@ import '../features/regular/regular_payments_screen.dart';
 import '../features/settings/accounts_settings_screen.dart';
 import '../features/settings/appearance_settings_screen.dart';
 import '../features/settings/categories_settings_screen.dart';
+import '../features/settings/category_edit_screen.dart';
 import '../features/settings/general_settings_screen.dart';
 import '../features/settings/home_settings_screen.dart';
 import '../features/settings/new_account_screen.dart';
@@ -118,6 +119,10 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       GoRoute(path: Routes.settingsHome, builder: (_, _) => const HomeSettingsScreen()),
       GoRoute(path: Routes.settingsAccountNew, builder: (_, _) => const NewAccountScreen()),
       GoRoute(path: Routes.settingsCategories, builder: (_, _) => const CategoriesSettingsScreen()),
+      GoRoute(
+        path: '${Routes.settingsCategories}/:id/edit',
+        builder: (_, state) => CategoryEditScreen(categoryId: state.pathParameters['id']!),
+      ),
       GoRoute(
         path: '/transactions/:id',
         parentNavigatorKey: rootKey,

@@ -179,3 +179,14 @@ The five fixed bugs were re-scored when this was written, because the first scor
 | 3 | A save failure message showed twice, once under Name | 2 x 2 = 4 | Filed in `docs/BUGS.md` |
 | 4 | Kind labels may break mid-word at 360dp | 4 x 1 = 4 | Filed |
 | 5 | New account opened as the first route does not close after saving | 1 x 3 = 3 | Filed |
+
+### Phase 5, third pass (20 November 2026)
+
+- **Works:** renaming a category. Each row on Settings > Categories has a "Rename" link that opens Rename category; the name is trimmed, an empty name is refused, a second tap while saving is ignored, and the new name shows everywhere the category appears.
+- **Tested:** 324 tests pass and `flutter analyze` reports no issues. New tests cover the repository rename (trimmed, empty refused) and the screen (empty name refused, new name saved to the database).
+- **Not built, and not tested:** category icon, colour and order; Smart help, Reminders, Filters, Choose dates and the pickers. Not tested: that the screen closes after saving, and that each Rename link opens its own category. Nothing was checked on a device.
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | A category can be renamed to a name another category already uses | 2 x 2 = 4 | Filed in `docs/BUGS.md` |
+| 2 | "Rename" links do not say which category they rename to screen readers | 2 x 2 = 4 | Filed |

@@ -144,6 +144,15 @@ class CategoryRepository {
   Stream<List<Category>> watchAll() =>
       (_db.select(_db.categories)..orderBy([(c) => OrderingTerm.asc(c.sortOrder)])).watch();
 
+  /// Renames a category. An empty name is refused; the name is trimmed.
+  Future<void> rename(String id, {required String name}) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) throw ArgumentError.value(name, 'name', 'must not be empty');
+    await (_db.update(_db.categories)..where((c) => c.id.equals(id))).write(
+      CategoriesCompanion(name: Value(trimmed), updatedAt: Value(clock.now())),
+    );
+  }
+
   /// Shows or hides a category on Add and in its lists. Entries already made keep it.
   Future<void> setHidden(String id, {required bool hidden}) =>
       (_db.update(_db.categories)..where((c) => c.id.equals(id))).write(

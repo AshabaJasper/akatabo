@@ -12,6 +12,9 @@ abstract final class Routes {
   static const settingsAccountNew = '/settings/accounts/new';
   static const settingsCategories = '/settings/categories';
 
+  /// Renaming one category.
+  static String categoryEdit(String id) => '$settingsCategories/$id/edit';
+
   /// First launch: three short steps, then Welcome. Outside the tabs.
   static const onboarding = '/onboarding';
   static const welcome = '/welcome';

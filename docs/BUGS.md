@@ -120,3 +120,21 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 1 x severity 3 = 3
 - **Suggested fix:** when the router cannot pop, go to the parent path; or reset `_saving` if the screen is still mounted after `closeScreen`.
 - **Found:** 20 November 2026, Phase 5 review
+
+### [bug-review] Renaming a category allows a name another category already uses
+
+- **Where:** `app/lib/features/settings/category_edit_screen.dart`, `_save`; also `CategoryRepository.rename` in `app/lib/data/repositories/repositories.dart`
+- **What happens:** the save goes through when another category already has that name, so two categories show the same label on Add, Insights, Budgets and Settings. Only the icon and colour tell them apart. No code looks categories up by name, so no data is lost.
+- **How to trigger:** Settings > Categories > Rename on "Food and shopping", type "Transport", save.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** refuse a name that matches another category's (trimmed, ignoring case, different id) with "Another category already has this name."; optionally check again in the repository.
+- **Found:** 20 November 2026, Phase 5 review
+
+### [bug-review] Categories settings: "Rename" links do not say which category they rename
+
+- **Where:** `app/lib/features/settings/categories_settings_screen.dart`, the `AkTextLink('Rename', ...)` on each row
+- **What happens:** every link is announced as "Rename, button". Voice Access users cannot say "Rename Food", and TalkBack's controls list shows identical entries.
+- **How to trigger:** turn on TalkBack or Voice Access and open Settings > Categories.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** give `AkTextLink` an optional `semanticLabel` and pass "Rename <name>".
+- **Found:** 20 November 2026, Phase 5 review

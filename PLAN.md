@@ -305,3 +305,4 @@ Routine decisions made while building, newest last. Each one marked **design che
 - **Account kind "Other" uses the bank colour** until a colour token for it is added to tokens.json (design check).
 - **Hiding a category** removes it from Add and its lists but keeps past entries. Fees and tax is a system category and cannot be hidden.
 - **Switch rows show their own label.** `AkSwitch` draws only the switch and carries the label for screen readers; `SettingsSwitchRow` draws the visible text beside it.
+- **Edit a category is rename only for now.** Icon, colour and order are not editable yet; the default categories keep the icons and colours from the design. Duplicate names are allowed (filed as a bug to tighten).

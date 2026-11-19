@@ -1,9 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../app/routes.dart';
+import '../../core/theme/ak_theme.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_surfaces.dart';
 import '../home/home_providers.dart';
 import 'settings_page.dart';
 
@@ -45,11 +49,23 @@ class _CategoriesSettingsScreenState extends ConsumerState<CategoriesSettingsScr
     Widget rows(List<Category> list) => Column(
       children: [
         for (final (i, c) in list.indexed)
-          SettingsSwitchRow(
-            label: c.name,
-            value: !c.hidden,
-            divider: i < list.length - 1,
-            onChanged: (shown) => _setHidden(c.id, hidden: !shown),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SettingsSwitchRow(
+                label: c.name,
+                value: !c.hidden,
+                onChanged: (shown) => _setHidden(c.id, hidden: !shown),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(AkSpace.s4, 0, AkSpace.s4, AkSpace.s3),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: AkTextLink('Rename', onTap: () => context.push(Routes.categoryEdit(c.id))),
+                ),
+              ),
+              if (i < list.length - 1) const Divider(height: 1),
+            ],
           ),
       ],
     );
