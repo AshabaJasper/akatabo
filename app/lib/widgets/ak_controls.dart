@@ -116,6 +116,7 @@ class AkSwitch extends StatelessWidget {
       toggled: value,
       label: label,
       enabled: onChanged != null,
+      container: true,
       excludeSemantics: true,
       onTap: onChanged == null ? null : () => onChanged!(!value),
       child: GestureDetector(

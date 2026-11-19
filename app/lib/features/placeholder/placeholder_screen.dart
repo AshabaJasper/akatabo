@@ -27,6 +27,7 @@ class PlaceholderScreen extends StatelessWidget {
                 Semantics(
                   button: true,
                   label: 'Close',
+                  container: true,
                   excludeSemantics: true,
                   onTap: () => context.pop(),
                   child: Material(

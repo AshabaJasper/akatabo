@@ -7,4 +7,10 @@ abstract final class Routes {
 
   /// Add a transaction. Sits on the root navigator, above the tabs.
   static const add = '/add';
+
+  /// Every transaction, newest first. Pushed over the tabs.
+  static const transactions = '/transactions';
+
+  /// One transaction, by id.
+  static String transaction(String id) => '/transactions/$id';
 }

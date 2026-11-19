@@ -21,3 +21,12 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 4 x severity 1 = 4
 - **Suggested fix:** override `==` and `hashCode` with `monthStartsOn` and `weekStartsOn`.
 - **Found:** 19 November 2026, phase 1 review
+
+### [bug-review] Month captions and daily bars ignore "Month starts on"
+
+- **Where:** `app/lib/features/home/home_screen.dart` (the "Money out, 1 to {day} {Month}" caption) and `app/lib/features/transactions/transactions_screen.dart` (the daily bars)
+- **What happens:** the totals use the chosen month start, but the Home caption always says "1 to 19 November", and the daily bars always start on the 1st. With a month starting on the 25th, the caption and the bars disagree with the figure beside them.
+- **How to trigger:** set "Month starts on" to any day other than the 1st (the setting screen comes in phase 5), add entries, open Home and All transactions.
+- **Score:** frequency 1 x severity 3 = 3
+- **Suggested fix:** build the caption and the bar days from `currentMonthProvider`'s start and end, not from the calendar month, with a test for a month starting on the 25th.
+- **Found:** 19 November 2026, phase 2 review

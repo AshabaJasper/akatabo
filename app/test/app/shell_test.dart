@@ -1,6 +1,12 @@
 import 'package:akatabo/app/app.dart';
 import 'package:akatabo/app/appearance.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
+import 'package:akatabo/core/time/clock_provider.dart';
+import 'package:akatabo/core/time/period.dart';
+import 'package:akatabo/data/db/app_database.dart';
+import 'package:akatabo/data/providers.dart';
+import 'package:akatabo/features/add/add_providers.dart';
+import 'package:akatabo/features/home/home_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -13,7 +19,18 @@ Future<void> _pumpApp(WidgetTester tester, {ThemeMode mode = ThemeMode.light}) a
   await tester.pumpWidget(
     ProviderScope(
       retry: (_, _) => null,
-      overrides: [appearanceProvider.overrideWithValue(AkAppearance(themeMode: mode))],
+      overrides: [
+        appearanceProvider.overrideWithValue(AkAppearance(themeMode: mode)),
+        // Home reads the database; the shell test uses an empty, fixed Home instead.
+        periodCalculatorProvider.overrideWithValue(const PeriodCalculator()),
+        // A fixed day, and no midnight timer left pending when the test ends.
+        appNowProvider.overrideWithValue(DateTime(2026, 11, 19, 9, 30)),
+        latestRowsProvider.overrideWith((ref) => Stream.value(const <Transaction>[])),
+        monthRowsProvider.overrideWith((ref) => Stream.value(const <Transaction>[])),
+        previousSameDaysRowsProvider.overrideWith((ref) => Stream.value(const <Transaction>[])),
+        allCategoriesProvider.overrideWith((ref) => Stream.value(const <Category>[])),
+        enabledAccountsProvider.overrideWith((ref) => Stream.value(const <Account>[])),
+      ],
       child: const AkataboApp(),
     ),
   );
@@ -44,10 +61,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.bySemanticsLabel('Add a transaction'));
     await tester.pumpAndSettle();
-    expect(find.text('Add a transaction'), findsOneWidget);
+    expect(find.text('Save transaction'), findsOneWidget);
     await tester.tap(find.bySemanticsLabel('Close'));
     await tester.pumpAndSettle();
-    expect(find.text('Add a transaction'), findsNothing);
+    expect(find.text('Save transaction'), findsNothing);
     expect(find.widgetWithText(Scaffold, 'Insights'), findsWidgets);
   });
 

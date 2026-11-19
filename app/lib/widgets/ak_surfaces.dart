@@ -226,6 +226,7 @@ class AkBackLink extends StatelessWidget {
       child: Semantics(
         button: true,
         label: 'Back to $label',
+        container: true,
         excludeSemantics: true,
         onTap: onTap,
         child: InkWell(

@@ -1,7 +1,11 @@
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../features/add/add_screen.dart';
+import '../features/home/home_screen.dart';
 import '../features/placeholder/placeholder_screen.dart';
+import '../features/transactions/transaction_detail_screen.dart';
+import '../features/transactions/transactions_screen.dart';
 import 'routes.dart';
 import 'shell_scaffold.dart';
 
@@ -17,12 +21,7 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
         builder: (context, state, shell) => ShellScaffold(shell: shell),
         branches: [
           StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: Routes.home,
-                builder: (_, _) => const PlaceholderScreen(title: 'Home'),
-              ),
-            ],
+            routes: [GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen())],
           ),
           StatefulShellBranch(
             routes: [
@@ -56,8 +55,18 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
         pageBuilder: (_, state) => MaterialPage<void>(
           key: state.pageKey,
           fullscreenDialog: true,
-          child: const PlaceholderScreen(title: 'Add a transaction', closable: true),
+          child: const AddScreen(),
         ),
+      ),
+      GoRoute(
+        path: Routes.transactions,
+        parentNavigatorKey: rootKey,
+        builder: (_, _) => const TransactionsScreen(),
+      ),
+      GoRoute(
+        path: '/transactions/:id',
+        parentNavigatorKey: rootKey,
+        builder: (_, state) => TransactionDetailScreen(id: state.pathParameters['id'] ?? ''),
       ),
     ],
   );

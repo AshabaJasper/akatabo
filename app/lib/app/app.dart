@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../core/theme/ak_theme.dart';
+import '../core/time/clock_provider.dart';
 import 'appearance.dart';
 import 'router.dart';
 
@@ -21,8 +22,21 @@ class AkataboApp extends ConsumerStatefulWidget {
 class _AkataboAppState extends ConsumerState<AkataboApp> {
   late final GoRouter _router = widget.router ?? buildRouter();
 
+  /// A phone that slept past midnight may not have run the day timer, so coming back to the
+  /// app works out "today" again.
+  late final AppLifecycleListener _lifecycle = AppLifecycleListener(
+    onResume: () => ref.invalidate(appNowProvider),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle; // Start listening now; `late` would otherwise wait for the first use.
+  }
+
   @override
   void dispose() {
+    _lifecycle.dispose();
     if (widget.router == null) _router.dispose();
     super.dispose();
   }

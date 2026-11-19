@@ -33,3 +33,28 @@
 
 - `flutter_file_dialog` applies the Kotlin Gradle Plugin; Flutter warns that a future version will fail to build with it. Watch for a plugin update or replace it before then.
 - The release APK is signed with the debug key. This is a launch blocker until the owner provides an upload key.
+
+## Phase 2: Core loop, part 1 (19 November 2026, not yet complete)
+
+- **Works:** Add for money out, money in and move money, with fee, tax and a note under "More details", validation from the repository's own rules, and save-then-close; Home with the first-day three steps, or the filled month (totals, the split of money out by category, the latest three, and the comparison with the same days last month); All transactions grouped by day with each day's net, search by words or amount, a kind filter and the month's daily bars; One transaction with fee, tax and total cost, and a delete that asks first. Money rules live in `lib/domain/spending.dart`. Demo entries load only with `--dart-define=AKATABO_DEMO=true` into an empty database.
+- **Tested:** 114 tests pass and `flutter analyze` reports no issues. Unit tests cover the money rules (transfers count only fee and tax, categories add back to the total, same-days sums, percentage change) and the amount field's cursor. Widget tests cover Add (validation, save, the time stamp taken at saving, a failed save, fee, money in, move money and its same-account check, semantics), Home (first day and a filled month), All transactions (grouping, search, filter) and One transaction (fee and total, delete confirmation). Shell goldens were regenerated because Home is now the first-day screen.
+- **Not built or not tested yet:** Calendar with its five periods; Onboarding and Welcome; the "New" category tile on Add and the date and time picker behind "When" (it is fixed to now); the "Left in budgets" tile and the forecast card (phases 3 and 4); the category suggestion (phase 7); the Restore row on the first-day screen (phase 6); goldens for Add, Home, All transactions and One transaction; a side-by-side design check of each screen in both themes.
+
+### For a design check (phase 2)
+
+1. Move money has no drawn screen. Its layout is my reading of the money rules and the owner's decision.
+2. The first-day card's dashed outline is drawn solid. Flutter has no built-in dashed border.
+3. Home shows two of the three stat tiles (money in, fees and tax). "Left in budgets" waits for phase 4.
+4. "When" on Add is fixed to the moment of saving; the design shows a time value that can be changed.
+5. Money out includes fees and tax, so an entry of 45,000 with a 1,000 fee counts as 46,000. The design's sample day shows 53,000, the same entries without the fee. This is the kept difference from the design's "Rules for the numbers" section; it is flagged, not settled.
+
+### Bug review (phase 2, part 1)
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | New entries were stamped with the time the app opened, because "now" was cached once Home watched it | 10 x 8 = 80 | Fixed: Add stamps `clock.now()` at saving; tested |
+| 2 | Home and All transactions kept yesterday's "today" and last month's totals after midnight or the 1st | 6 x 4 = 24 | Fixed: "now" refreshes itself after local midnight and when the app returns to the foreground. The midnight timer is not tested directly; screens are tested with a fixed day |
+| 3 | Add stayed on "Saving" with a dead button if the database refused the entry | 2 x 5 = 10 | Fixed: the error is reported, the entry is kept and a message asks to try again; tested |
+| 4 | Editing the middle of an amount threw the cursor to the end | 4 x 3 = 12 | Fixed: the cursor keeps its place among the digits; tested for insert, a new comma and delete |
+| 5 | All transactions and One transaction kept their database watches open after closing | 6 x 2 = 12 | Fixed: both providers auto-dispose |
+| 6 | Home caption "1 to N" and the daily bars ignore "Month starts on" | 1 x 3 = 3 | Filed in `docs/BUGS.md` |

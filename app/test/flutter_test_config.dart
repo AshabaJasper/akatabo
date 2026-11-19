@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
+import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -18,6 +19,9 @@ T atTestNow<T>(T Function() body) => withClock(Clock.fixed(testNow), body);
 /// Loads the bundled fonts so goldens show real text instead of boxes.
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   TestWidgetsFlutterBinding.ensureInitialized();
+  // Test fakes each open their own in-memory database, so drift's warning about one database
+  // opened twice over the same connection does not apply here. The app opens exactly one.
+  driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   await _loadFont('Bricolage Grotesque', 'assets/fonts/BricolageGrotesque-Variable.ttf');
   await _loadFont('Geist', 'assets/fonts/Geist-Variable.ttf');
   await testMain();

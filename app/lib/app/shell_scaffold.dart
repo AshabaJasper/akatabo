@@ -122,6 +122,7 @@ class _NavItem extends StatelessWidget {
         button: true,
         selected: selected,
         label: label,
+        container: true,
         excludeSemantics: true,
         // excludeSemantics drops the InkWell's own tap action, so it is given here,
         // or TalkBack and Switch Access cannot open the tab.
@@ -160,6 +161,7 @@ class _AddDisc extends StatelessWidget {
     return Semantics(
       button: true,
       label: 'Add a transaction',
+      container: true,
       excludeSemantics: true,
       onTap: onTap,
       child: Center(
