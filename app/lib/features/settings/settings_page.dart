@@ -123,6 +123,7 @@ class SettingsSwitchRow extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.divider = false,
+    this.detail,
   });
 
   final String label;
@@ -130,8 +131,13 @@ class SettingsSwitchRow extends StatelessWidget {
   final ValueChanged<bool> onChanged;
   final bool divider;
 
+  /// A line under the label in `ink-muted`, saying what the switch does. Screen readers read
+  /// it as text before the switch.
+  final String? detail;
+
   @override
   Widget build(BuildContext context) {
+    final t = context.type;
     return Container(
       decoration: divider
           ? BoxDecoration(
@@ -142,7 +148,17 @@ class SettingsSwitchRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: ExcludeSemantics(child: Text(label, style: context.type.bodyMd)),
+            child: detail == null
+                ? ExcludeSemantics(child: Text(label, style: t.bodyMd))
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ExcludeSemantics(
+                        child: Text(label, style: t.bodyMd.copyWith(fontWeight: FontWeight.w500)),
+                      ),
+                      Text(detail!, style: t.caption.copyWith(color: context.colors.inkMuted)),
+                    ],
+                  ),
           ),
           const SizedBox(width: AkSpace.s3),
           AkSwitch(label: label, value: value, onChanged: onChanged),

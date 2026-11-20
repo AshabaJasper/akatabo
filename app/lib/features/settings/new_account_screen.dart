@@ -1,23 +1,43 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/close_screen.dart';
+import '../../app/routes.dart';
 import '../../core/theme/ak_theme.dart';
-import '../../data/db/tables.dart';
+import '../../core/theme/contrast.dart';
+import '../../core/theme/token_colour.dart';
+import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
+import '../../data/repositories/repositories.dart';
 import '../../widgets/ak_controls.dart';
-import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_surfaces.dart';
+import '../add/add_providers.dart';
+import '../add/amount_text.dart';
 import 'settings_page.dart';
 
-String _kindLabel(AccountKind k) => switch (k) {
-  AccountKind.cash => 'Cash',
-  AccountKind.mtn => 'MTN MoMo',
-  AccountKind.airtel => 'Airtel Money',
-  AccountKind.bank => 'Bank',
-  AccountKind.other => 'Other',
+/// The four kinds New account offers, as drawn. The two default mobile money accounts keep
+/// their own kinds (`mtn`, `airtel`); one the person adds is `mobile`.
+const List<(AccountKind, String)> newAccountKinds = [
+  (AccountKind.cash, 'Cash'),
+  (AccountKind.mobile, 'Mobile'),
+  (AccountKind.bank, 'Bank'),
+  (AccountKind.other, 'Other'),
+];
+
+/// The names screen readers say for [AccountRepository.accountColourTokens], in order.
+const Map<String, String> accountColourNames = {
+  'acct-mtn': 'Yellow',
+  'acct-airtel': 'Red',
+  'acct-bank': 'Blue',
+  'acct-cash': 'Olive',
+  'cat-purple': 'Purple',
+  'cat-teal': 'Teal',
 };
 
-/// Adds an account the person pays from. Saved accounts appear on the Accounts page and on Add.
+/// Adds an account the person pays from, with everything drawn on New account: name, kind,
+/// colour, what is in it today, and the three switches. Saved accounts appear on the Accounts
+/// page and on Add.
 class NewAccountScreen extends ConsumerStatefulWidget {
   const NewAccountScreen({super.key});
 
@@ -27,13 +47,27 @@ class NewAccountScreen extends ConsumerStatefulWidget {
 
 class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
   final _name = TextEditingController();
+  final _opening = TextEditingController();
   AccountKind _kind = AccountKind.other;
-  String? _error;
+
+  /// The chosen colour, or null to follow the kind until the person picks one.
+  String? _pickedColour;
+  bool _askFee = true;
+  bool _makeDefault = false;
+  bool _countInTotals = true;
+
+  /// Kept apart, so each shows in one place: a name problem under Name, a save problem
+  /// under the button.
+  String? _nameError;
+  String? _problem;
   bool _saving = false;
+
+  String get _colour => _pickedColour ?? AccountRepository.colourForKind(_kind);
 
   @override
   void dispose() {
     _name.dispose();
+    _opening.dispose();
     super.dispose();
   }
 
@@ -42,67 +76,246 @@ class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
     if (_saving) return;
     final name = _name.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = 'Give the account a name.');
+      setState(() {
+        _nameError = 'Give the account a name.';
+        _problem = null;
+      });
       return;
     }
     setState(() {
-      _error = null;
+      _nameError = null;
+      _problem = null;
       _saving = true;
     });
     try {
-      await ref.read(accountRepositoryProvider).add(name: name, kind: _kind);
-      if (mounted) await closeScreen(context);
+      await ref
+          .read(accountRepositoryProvider)
+          .add(
+            name: name,
+            kind: _kind,
+            colourToken: _colour,
+            openingBalance: parseAmount(_opening.text),
+            askFeeEachTime: _askFee,
+            countInTotals: _countInTotals,
+            makeDefault: _makeDefault,
+          );
     } on Object {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = 'The account could not be saved. Try again.';
+          _problem = 'The account could not be saved. Try again.';
         });
       }
+      return;
     }
+    if (mounted) await _leave();
+  }
+
+  /// Back to Accounts. Opened as the first route (a deep link) there is nothing to pop, so it
+  /// goes to the Accounts page instead of staying open.
+  Future<void> _leave() async {
+    final router = GoRouter.maybeOf(context);
+    if (router != null && !router.canPop()) {
+      router.go(Routes.settingsAccounts);
+      return;
+    }
+    await closeScreen(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return SettingsPage(
-      title: 'New account',
-      children: [
-        SettingsSection(
-          label: 'Account',
+    final c = context.colors;
+    final t = context.type;
+    final enabled = ref.watch(enabledAccountsProvider).value ?? const <Account>[];
+    final firstNow = firstPickAccount(enabled);
+
+    return Scaffold(
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
           children: [
-            Padding(
-              padding: const EdgeInsets.all(AkSpace.s4),
+            AkBackLink('Accounts', onTap: _leave),
+            const SizedBox(height: AkSpace.s1),
+            Semantics(header: true, child: Text('New account', style: t.displayLg)),
+            const SizedBox(height: AkSpace.s2),
+            Text(
+              'An account is anywhere you keep money. Akatabo never connects to it; you just '
+              'pick it when you add.',
+              style: t.bodySm.copyWith(color: c.inkMuted),
+            ),
+            const SizedBox(height: AkSpace.s4),
+            AkTextField(
+              label: 'Name',
+              controller: _name,
+              textInputAction: TextInputAction.done,
+              errorText: _nameError,
+              maxLength: 40,
+              onChanged: (_) {
+                if (_nameError != null) setState(() => _nameError = null);
+              },
+              onSubmitted: (_) => _save(),
+            ),
+            const SizedBox(height: AkSpace.s4),
+            const ExcludeSemantics(child: AkEyebrowLabel('Kind')),
+            const SizedBox(height: AkSpace.s1h),
+            AkSegmented<AccountKind>(
+              semanticLabel: 'Kind',
+              segments: [for (final (k, label) in newAccountKinds) AkSegment(k, label)],
+              selected: _kind,
+              onChanged: (k) => setState(() => _kind = k),
+            ),
+            const SizedBox(height: AkSpace.s4),
+            const ExcludeSemantics(child: AkEyebrowLabel('Colour')),
+            const SizedBox(height: AkSpace.s1h),
+            AccountColourChoices(
+              selected: _colour,
+              onChanged: (token) => setState(() => _pickedColour = token),
+            ),
+            const SizedBox(height: AkSpace.s4),
+            AkTextField(
+              label: 'What is in it today, UGX (optional)',
+              controller: _opening,
+              hint: 'Leave empty to skip',
+              keyboardType: TextInputType.number,
+              inputFormatters: const [ThousandsFormatter()],
+              figures: true,
+            ),
+            const SizedBox(height: AkSpace.s4),
+            AkCard(
+              padding: EdgeInsets.zero,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  AkTextField(
-                    label: 'Name',
-                    controller: _name,
-                    hint: 'For example, Airtel wallet',
-                    textInputAction: TextInputAction.done,
-                    errorText: _error,
-                    onChanged: (_) {
-                      if (_error != null) setState(() => _error = null);
-                    },
-                    onSubmitted: (_) => _save(),
+                  SettingsSwitchRow(
+                    label: 'Ask for the fee each time',
+                    detail: 'Shows the fee box when you pay from here',
+                    value: _askFee,
+                    divider: true,
+                    onChanged: (v) => setState(() => _askFee = v),
                   ),
-                  const SizedBox(height: AkSpace.s4),
-                  Text('Kind', style: context.type.bodyMd),
-                  const SizedBox(height: AkSpace.s2),
-                  AkSegmented<AccountKind>(
-                    semanticLabel: 'Kind of account',
-                    segments: [for (final k in AccountKind.values) AkSegment(k, _kindLabel(k))],
-                    selected: _kind,
-                    onChanged: (k) => setState(() => _kind = k),
+                  SettingsSwitchRow(
+                    label: 'Pick this first when I add',
+                    detail: firstNow == null ? null : 'Now it is ${firstNow.name}',
+                    value: _makeDefault,
+                    divider: true,
+                    onChanged: (v) => setState(() => _makeDefault = v),
+                  ),
+                  SettingsSwitchRow(
+                    label: 'Count it in my totals',
+                    detail: 'Switch off for money you hold for someone else',
+                    value: _countInTotals,
+                    onChanged: (v) => setState(() => _countInTotals = v),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: AkSpace.s6),
+            AkPrimaryButton(label: 'Save account', onPressed: _saving ? null : _save),
+            if (_problem != null) ...[
+              const SizedBox(height: AkSpace.s3),
+              Text(_problem!, style: t.bodySm.copyWith(color: c.moneyOut)),
+            ],
           ],
         ),
-        AkPrimaryButton(label: 'Save account', onPressed: _saving ? null : _save),
-        if (_error != null && _name.text.trim().isNotEmpty) AkEmptyNote(_error!),
-      ],
+      ),
+    );
+  }
+}
+
+/// The six account colours as 44px discs across the row, as drawn. The chosen disc gets an
+/// `ink` ring set off by a gap in the ground colour. A disc whose fill is under 3:1 against
+/// the ground (yellow in the light theme) gets a 1px `ink-muted` edge, so every disc stands
+/// out in both themes. Each disc is named for screen readers.
+class AccountColourChoices extends StatelessWidget {
+  const AccountColourChoices({super.key, required this.selected, required this.onChanged});
+
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  /// Whether [token]'s disc needs an edge to stand 3:1 against the ground.
+  static bool needsEdge(AkColorTokens c, String token) =>
+      contrastRatio(colourForToken(c, token), c.ground) < 3;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Semantics(
+      label: 'Colour',
+      container: true,
+      explicitChildNodes: true,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          for (final token in AccountRepository.accountColourTokens)
+            _Disc(
+              name: accountColourNames[token]!,
+              fill: colourForToken(c, token),
+              edge: needsEdge(c, token) ? c.inkMuted : null,
+              selected: token == selected,
+              onTap: () => onChanged(token),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Disc extends StatelessWidget {
+  const _Disc({
+    required this.name,
+    required this.fill,
+    required this.edge,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String name;
+  final Color fill;
+  final Color? edge;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Semantics(
+      button: true,
+      selected: selected,
+      inMutuallyExclusiveGroup: true,
+      label: name,
+      container: true,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: SizedBox.square(
+        dimension: AkSize.target,
+        child: Material(
+          type: MaterialType.transparency,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected ? c.ink : c.ground.withValues(alpha: 0),
+                  width: AkSize.stroke,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(AkSpace.s0h),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: fill,
+                    border: edge == null ? null : Border.all(color: edge!),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

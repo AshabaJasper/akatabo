@@ -48,6 +48,9 @@ class _AddScreenState extends ConsumerState<AddScreen> {
   String? _toId;
   bool _showMore = false;
   bool _saving = false;
+
+  /// A fee was typed while the fee box was in the form, so it stays there.
+  bool _feeTypedUpFront = false;
   List<String> _problems = const [];
 
   /// The time now, for the "When" label until the person chooses a moment. A timer keeps it
@@ -203,10 +206,25 @@ class _AddScreenState extends ConsumerState<AddScreen> {
     // Rebuild when settings arrive, since the starting kind comes from them.
     ref.watch(storedSettingsProvider);
     final accounts = ref.watch(enabledAccountsProvider).value ?? const <Account>[];
-    final defaultAccount = _defaultAccount(accounts);
+    final defaultAccount = firstPickAccount(accounts);
     final fromId = _fromId ?? defaultAccount?.id;
     final isTransfer = _direction == Direction.transfer;
     final isMoneyIn = _direction == Direction.moneyIn;
+    Account? from;
+    for (final a in accounts) {
+      if (a.id == fromId) from = a;
+    }
+    // "Ask for the fee each time": the fee box sits in the form for an account that asks, and
+    // waits under "More details" for one that does not. A fee already typed in the form stays
+    // there when the account changes, so it never disappears from view.
+    final feeUpFront = (from?.askFeeEachTime ?? true) || _feeTypedUpFront;
+    final feeField = AkTextField(
+      label: isTransfer ? 'Fee to move it' : 'Fee, if any',
+      controller: _fee,
+      keyboardType: TextInputType.number,
+      inputFormatters: const [ThousandsFormatter()],
+      onChanged: feeUpFront ? (v) => _feeTypedUpFront = v.isNotEmpty : null,
+    );
     final categoriesAsync = isMoneyIn
         ? ref.watch(incomeCategoriesProvider)
         : ref.watch(spendingCategoriesProvider);
@@ -320,15 +338,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                 onChanged: (id) => setState(() => _toId = id),
               ),
             ],
-            if (!isMoneyIn) ...[
-              const SizedBox(height: AkSpace.s5),
-              AkTextField(
-                label: isTransfer ? 'Fee to move it' : 'Fee, if any',
-                controller: _fee,
-                keyboardType: TextInputType.number,
-                inputFormatters: const [ThousandsFormatter()],
-              ),
-            ],
+            if (!isMoneyIn && feeUpFront) ...[const SizedBox(height: AkSpace.s5), feeField],
             const SizedBox(height: AkSpace.s4),
             AkTextLink(
               _showMore ? 'Fewer details' : 'More details',
@@ -336,6 +346,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
             ),
             if (_showMore) ...[
               const SizedBox(height: AkSpace.s4),
+              if (!isMoneyIn && !feeUpFront) ...[feeField, const SizedBox(height: AkSpace.s4)],
               if (!isMoneyIn) ...[
                 AkTextField(
                   label: 'Tax, if any',
@@ -384,13 +395,6 @@ class _AddScreenState extends ConsumerState<AddScreen> {
         ),
       ),
     );
-  }
-
-  Account? _defaultAccount(List<Account> accounts) {
-    for (final a in accounts) {
-      if (a.isDefault) return a;
-    }
-    return accounts.isEmpty ? null : accounts.first;
   }
 
   Account? _otherAccount(List<Account> accounts, String? not) {

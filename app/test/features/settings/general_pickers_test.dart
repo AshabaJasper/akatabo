@@ -1,13 +1,17 @@
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
+import 'package:akatabo/data/seed/default_data.dart';
 import 'package:akatabo/data/settings/setting_keys.dart';
+import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/settings/general_settings_screen.dart';
 import 'package:akatabo/widgets/ak_pickers.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+
+import '../../support/fixtures.dart';
 
 Future<AppDatabase> _pumpGeneral(
   WidgetTester tester, {
@@ -25,6 +29,11 @@ Future<AppDatabase> _pumpGeneral(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         storedSettingsProvider.overrideWith((ref) => Stream.value(settings)),
+        // General names the account Add opens on; a live drift stream would not settle here.
+        enabledAccountsProvider.overrideWith(
+          (ref) =>
+              Stream.value([accountRow(id: DefaultIds.mtn, name: 'MTN MoMo', isDefault: true)]),
+        ),
       ],
       child: MaterialApp(
         theme: buildAkTheme(Brightness.light, const AkAppearance()),

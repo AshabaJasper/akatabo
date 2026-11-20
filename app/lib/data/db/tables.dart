@@ -8,7 +8,10 @@ enum Direction { moneyOut, moneyIn, transfer }
 
 enum CategoryKind { spending, income }
 
-enum AccountKind { cash, mtn, airtel, bank, other }
+/// `mtn` and `airtel` are the two default mobile money accounts. An account the person adds
+/// as "Mobile" on New account is `mobile`, since the form does not ask for the network.
+/// Stored by name, so adding a value needs no schema change.
+enum AccountKind { cash, mtn, airtel, bank, other, mobile }
 
 enum RegularSource { detected, manual }
 

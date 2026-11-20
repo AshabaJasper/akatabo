@@ -397,32 +397,90 @@ class AccountRepository {
             ..orderBy([(a) => OrderingTerm.asc(a.sortOrder)]))
           .watch();
 
-  /// Adds an account at the end of the list. An empty name is refused.
-  Future<void> add({required String name, required AccountKind kind}) async {
+  /// Adds an account at the end of the list, with everything New account asks, and returns
+  /// its id. All of it is saved or none of it.
+  ///
+  /// The name is trimmed; an empty one is refused. [colourToken] must be one of
+  /// [accountColourTokens] (left out, the kind's own colour). [openingBalance] is what is in
+  /// the account today and cannot be below zero. [makeDefault] makes it the account Add
+  /// opens on, taking that from whichever account had it, so only one ever does.
+  Future<String> add({
+    required String name,
+    required AccountKind kind,
+    String? colourToken,
+    int openingBalance = 0,
+    bool askFeeEachTime = false,
+    bool countInTotals = true,
+    bool makeDefault = false,
+  }) => _db.transaction(() async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) throw ArgumentError.value(name, 'name', 'must not be empty');
+    final colour = colourToken ?? colourForKind(kind);
+    if (!accountColourTokens.contains(colour)) {
+      throw ArgumentError.value(colourToken, 'colourToken', 'must be an account colour');
+    }
+    if (openingBalance < 0) {
+      throw ArgumentError.value(openingBalance, 'openingBalance', 'must not be below zero');
+    }
     final now = clock.now();
-    final count = (await _db.select(_db.accounts).get()).length;
+    final id = _uuid.v4();
+    // One past the highest, so the new account is last even after others were removed.
+    final last = _db.accounts.sortOrder.max();
+    final top = await (_db.selectOnly(_db.accounts)..addColumns([last])).getSingle();
     await _db
         .into(_db.accounts)
         .insert(
           AccountsCompanion.insert(
-            id: _uuid.v4(),
+            id: id,
             name: trimmed,
             kind: kind,
-            colourToken: _colourFor(kind),
-            sortOrder: Value(count),
+            colourToken: colour,
+            openingBalance: Value(openingBalance),
+            askFeeEachTime: Value(askFeeEachTime),
+            countInTotals: Value(countInTotals),
+            sortOrder: Value((top.read(last) ?? -1) + 1),
             createdAt: now,
             updatedAt: now,
           ),
         );
+    if (makeDefault) await _moveDefaultTo(id, now);
+    return id;
+  });
+
+  /// Makes [id] the account Add opens on. Only one account is the default, so the one that
+  /// was loses it. An unknown id is refused with a [StateError] and nothing changes.
+  Future<void> setDefault(String id) => _db.transaction(() async {
+    final row = await (_db.select(_db.accounts)..where((a) => a.id.equals(id))).getSingleOrNull();
+    if (row == null) throw StateError('No account $id');
+    await _moveDefaultTo(id, clock.now());
+  });
+
+  Future<void> _moveDefaultTo(String id, DateTime now) async {
+    await (_db.update(_db.accounts)..where((a) => a.isDefault & a.id.equals(id).not())).write(
+      AccountsCompanion(isDefault: const Value(false), updatedAt: Value(now)),
+    );
+    await (_db.update(_db.accounts)..where((a) => a.id.equals(id))).write(
+      AccountsCompanion(isDefault: const Value(true), updatedAt: Value(now)),
+    );
   }
 
-  /// The colour an account of this kind is drawn in. "Other" has no colour of its own yet,
-  /// so it borrows the bank colour.
-  static String _colourFor(AccountKind kind) => switch (kind) {
+  /// The six colours New account offers, in the drawn order: the four account colours, then
+  /// purple and teal from the category colours.
+  static const accountColourTokens = [
+    'acct-mtn',
+    'acct-airtel',
+    'acct-bank',
+    'acct-cash',
+    'cat-purple',
+    'cat-teal',
+  ];
+
+  /// The colour an account of this kind starts with. A mobile money account the person adds
+  /// starts yellow, like MTN MoMo; "Other" has no colour of its own yet, so it borrows the
+  /// bank colour.
+  static String colourForKind(AccountKind kind) => switch (kind) {
     AccountKind.cash => 'acct-cash',
-    AccountKind.mtn => 'acct-mtn',
+    AccountKind.mtn || AccountKind.mobile => 'acct-mtn',
     AccountKind.airtel => 'acct-airtel',
     AccountKind.bank || AccountKind.other => 'acct-bank',
   };

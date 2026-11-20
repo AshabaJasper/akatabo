@@ -65,7 +65,7 @@ final _now = DateTime(2026, 11, 19, 9, 14);
 
 final _accounts = [
   accountRow(id: DefaultIds.mtn, name: 'MTN MoMo', isDefault: true),
-  accountRow(id: DefaultIds.cash, name: 'Cash', colourToken: 'acct-cash'),
+  accountRow(id: DefaultIds.cash, name: 'Cash', colourToken: 'acct-cash', askFeeEachTime: false),
 ];
 
 final _spending = [
@@ -262,6 +262,62 @@ void main() {
       moneyOutOf(txRow(amount: repo.drafts.single.amount, fee: repo.drafts.single.fee)),
       46000,
     );
+  });
+
+  group('"Ask for the fee each time"', () {
+    // MTN MoMo asks for the fee; Cash does not (see _accounts).
+    Finder feeUpFront() => find.text('FEE, IF ANY');
+
+    testWidgets('an account that asks shows the fee box in the form', (tester) async {
+      await _pumpAdd(tester);
+      expect(feeUpFront(), findsOneWidget);
+    });
+
+    testWidgets('one that does not keeps it under More details, and a fee there is saved', (
+      tester,
+    ) async {
+      final repo = await _pumpAdd(tester, height: 1400);
+      await tester.tap(find.text('Cash'));
+      await tester.pump();
+      expect(feeUpFront(), findsNothing);
+
+      await tester.tap(find.text('More details'));
+      await tester.pump();
+      expect(feeUpFront(), findsOneWidget);
+      final fee = find.descendant(
+        of: find.ancestor(of: feeUpFront(), matching: find.byType(Column)).first,
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(fee, '500');
+      await _enterAmount(tester, '20000');
+      await tester.tap(find.bySemanticsLabel('Food and shopping'));
+      await tester.pump();
+      await tester.tap(find.text('Save transaction'));
+      await tester.pumpAndSettle();
+      expect(repo.drafts.single.accountId, DefaultIds.cash);
+      expect(repo.drafts.single.fee, 500);
+    });
+
+    testWidgets('a fee typed in the form stays in view when the account changes', (tester) async {
+      await _pumpAdd(tester);
+      await tester.enterText(find.byType(TextField).at(2), '1000');
+      await tester.tap(find.text('Cash'));
+      await tester.pump();
+      expect(feeUpFront(), findsOneWidget);
+      expect(find.text('1,000'), findsOneWidget);
+    });
+
+    testWidgets('a move from an account that does not ask keeps its fee under More details', (
+      tester,
+    ) async {
+      await _pumpAdd(tester);
+      await tester.tap(find.text('Move money'));
+      await tester.pumpAndSettle();
+      expect(find.text('FEE TO MOVE IT'), findsOneWidget, reason: 'from MTN MoMo');
+      await tester.tap(find.text('Cash').first);
+      await tester.pump();
+      expect(find.text('FEE TO MOVE IT'), findsNothing, reason: 'from Cash');
+    });
   });
 
   testWidgets('money in offers income categories and no fee', (tester) async {

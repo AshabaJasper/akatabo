@@ -29,3 +29,13 @@ final allAccountsProvider = StreamProvider<List<Account>>(
 final enabledAccountsProvider = StreamProvider<List<Account>>(
   (ref) => ref.watch(accountRepositoryProvider).watchEnabled(),
 );
+
+/// The account Add opens on, from the accounts it offers: the one marked "Pick this first
+/// when I add", or the first account when that one is switched off or none is marked.
+/// General and New account name the same account, so all three always agree.
+Account? firstPickAccount(List<Account> enabled) {
+  for (final a in enabled) {
+    if (a.isDefault) return a;
+  }
+  return enabled.isEmpty ? null : enabled.first;
+}

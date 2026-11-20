@@ -2,12 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/theme/ak_theme.dart';
-import '../../data/db/tables.dart';
+import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/settings/setting_keys.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_pickers.dart';
+import '../add/add_providers.dart';
 import 'settings_page.dart';
 
 /// Money and dates, and how a new entry starts. Each change is saved at once.
@@ -30,6 +31,15 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     }
   }
 
+  Future<void> _setDefault(String accountId) async {
+    setState(() => _problem = null);
+    try {
+      await ref.read(accountRepositoryProvider).setDefault(accountId);
+    } on Object {
+      if (mounted) setState(() => _problem = 'That could not be saved. Try again.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(storedSettingsProvider);
@@ -45,6 +55,9 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     final monthStart = SettingKeys.monthStartsOn.decode(s[SettingKeys.monthStartsOn.name]);
     final weekStart = SettingKeys.weekStartsOn.decode(s[SettingKeys.weekStartsOn.name]);
     final direction = SettingKeys.newEntryDirection.decode(s[SettingKeys.newEntryDirection.name]);
+    // The accounts Add offers, and the one it opens on, worked out as Add does.
+    final accounts = ref.watch(enabledAccountsProvider).value ?? const <Account>[];
+    final firstPick = firstPickAccount(accounts);
 
     return SettingsPage(
       title: 'General',
@@ -111,7 +124,10 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
         SettingsSection(
           label: 'Numbers and entry',
           children: [
-            Padding(
+            Container(
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: context.colors.line)),
+              ),
               padding: const EdgeInsets.symmetric(
                 horizontal: settingsRowSide,
                 vertical: AkSpace.s4,
@@ -134,6 +150,25 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                   ),
                 ],
               ),
+            ),
+            SettingsValueRow(
+              title: 'Picked first when you add',
+              value: firstPick?.name ?? 'No account yet',
+              onTap: accounts.isEmpty
+                  ? null
+                  : () async {
+                      final picked = await showAkChoiceSheet<String>(
+                        context,
+                        title: 'Picked first when you add',
+                        selected: firstPick?.id,
+                        options: [for (final a in accounts) (a.id, a.name)],
+                      );
+                      // Saved unless it is already the marked default. Picking the account
+                      // shown only as a fallback (the default is switched off) marks it, so
+                      // Add does not jump back when the old default is switched on again.
+                      final alreadyMarked = picked == firstPick?.id && firstPick!.isDefault;
+                      if (picked != null && !alreadyMarked) await _setDefault(picked);
+                    },
             ),
           ],
         ),
