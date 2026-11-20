@@ -8,6 +8,7 @@ import '../../services/backup/backup_files.dart';
 import '../../services/backup/backup_service.dart';
 import '../../services/backup/backup_settings.dart';
 import '../../services/backup/weekly_backup.dart';
+import '../../services/security/lock_controller.dart';
 import 'backup_password.dart';
 
 /// "19 Nov 2026", or "Never" before the first backup.
@@ -22,13 +23,19 @@ class BackupActions {
   BackupActions(this._ref);
   final WidgetRef _ref;
 
+  /// Runs a system file or folder dialog without the app lock treating it as "away".
+  Future<T> _whilePicking<T>(Future<T> Function() dialog) =>
+      _ref.read(lockControllerProvider.notifier).keepUnlockedWhile(dialog);
+
   static const failed =
       'The backup could not be saved. Nothing changed on this phone. Try again, or pick '
       'another place to save it.';
 
   Future<String?> _passwordIfProtected(BuildContext context, {String? purpose}) async {
     final protect = await _ref.read(settingsRepositoryProvider).read(BackupKeys.protect);
-    if (!protect || !context.mounted) return '';
+    if (!protect) return '';
+    // Protection is on: a screen that closed meanwhile backs out, never saves unprotected.
+    if (!context.mounted) return null;
     return askNewBackupPassword(context, purpose: purpose);
   }
 
@@ -41,9 +48,9 @@ class BackupActions {
     final service = _ref.read(backupServiceProvider);
     try {
       final bytes = await service.createFile(password: password.isEmpty ? null : password);
-      final saved = await _ref
-          .read(backupFilesProvider)
-          .save(bytes, BackupService.fileNameFor(clock.now()));
+      final saved = await _whilePicking(
+        () => _ref.read(backupFilesProvider).save(bytes, BackupService.fileNameFor(clock.now())),
+      );
       if (!saved) return 'Not saved. The backup file was not kept anywhere.';
       await service.recordSaved();
       return password.isEmpty
@@ -64,7 +71,7 @@ class BackupActions {
   }) async {
     final BackupFolder? folder;
     try {
-      folder = await _ref.read(backupFilesProvider).pickFolder();
+      folder = await _whilePicking(() => _ref.read(backupFilesProvider).pickFolder());
     } catch (error, stack) {
       _report(error, stack);
       return (false, failed);
@@ -82,9 +89,12 @@ class BackupActions {
     final service = _ref.read(backupServiceProvider);
     try {
       final bytes = await service.createFile(password: password.isEmpty ? null : password);
-      await _ref
-          .read(backupFilesProvider)
-          .saveInto(folder, bytes, BackupService.fileNameFor(clock.now()));
+      final into = folder;
+      await _whilePicking(
+        () => _ref
+            .read(backupFilesProvider)
+            .saveInto(into, bytes, BackupService.fileNameFor(clock.now())),
+      );
       await service.recordSaved();
       _ref.read(weeklyFolderProvider.notifier).set(folder);
       return (true, 'Backed up to your folder. The next one is due in a week.');

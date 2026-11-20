@@ -11,6 +11,7 @@ import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../services/export/export_destination.dart';
 import '../../services/export/export_report.dart';
+import '../../services/security/lock_controller.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_pickers.dart';
 import '../../widgets/ak_surfaces.dart';
@@ -125,14 +126,19 @@ class _ExportSectionState extends ConsumerState<ExportSection> {
       final fonts = _format == ExportFormat.pdf ? await ref.read(pdfFontsProvider.future) : null;
       final bytes = await ref.read(exportBytesBuilderProvider)(report, _format, fonts);
       final destination = ref.read(exportDestinationProvider);
-      final done = send == _Send.save
-          ? await destination.save(bytes: bytes, fileName: name, mimeType: _format.mimeType)
-          : await destination.share(
-              bytes: bytes,
-              fileName: name,
-              mimeType: _format.mimeType,
-              origin: origin,
-            );
+      // The system save dialog and share sheet hide the app; that is not "away" for the lock.
+      final done = await ref
+          .read(lockControllerProvider.notifier)
+          .keepUnlockedWhile(
+            () => send == _Send.save
+                ? destination.save(bytes: bytes, fileName: name, mimeType: _format.mimeType)
+                : destination.share(
+                    bytes: bytes,
+                    fileName: name,
+                    mimeType: _format.mimeType,
+                    origin: origin,
+                  ),
+          );
       // The share sheet is its own answer; a save gets a line, since its dialog just closes.
       if (done && send == _Send.save) {
         messenger?.showSnackBar(SnackBar(content: Text('Saved $name.')));

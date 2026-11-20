@@ -120,6 +120,23 @@ class RestorePlanner {
     return v is int ? v : 0;
   }
 
+  /// A row never changed since it was made: created and updated at the same moment. On
+  /// a phone this is a default row seeded on the first day (or after "Delete everything"),
+  /// stamped later than any backup, so the plain "newer wins" rule would keep the blank
+  /// default over the person's edited copy (a balance, a budget, a new name).
+  static bool _untouched(String table, Map<String, Object?> row) =>
+      table != 'forecastSnapshots' &&
+      row['createdAt'] is int &&
+      row['createdAt'] == row['updatedAt'];
+
+  /// Whether the backup's copy of a row replaces this phone's: it is newer, or the phone's
+  /// copy was never edited and the backup's was.
+  static bool _backupWins(String table, Map<String, Object?> row, Map<String, Object?> here) {
+    final a = stampOf(table, row);
+    final b = stampOf(table, here);
+    return a > b || (a != b && _untouched(table, here) && !_untouched(table, row));
+  }
+
   bool _local(String table, Map<String, Object?> row) =>
       table == 'settings' && _keepOnPhone('${row['key']}');
 
@@ -142,7 +159,7 @@ class RestorePlanner {
         for (final MapEntry(:key, value: row) in theirs.entries)
           if (mode == RestoreMode.replaceAll ||
               !mine.containsKey(key) ||
-              stampOf(table, row) > stampOf(table, mine[key]!))
+              _backupWins(table, row, mine[key]!))
             row,
       ];
       deletes[table] = [
@@ -174,10 +191,11 @@ class RestorePlanner {
     for (final MapEntry(:key, value: row) in theirs.entries) {
       final here = mine[key];
       if (here == null) continue;
-      final a = stampOf(tx, row);
-      final b = stampOf(tx, here);
-      if (a > b) toUpdate++;
-      if (b > a) phoneNewer++;
+      if (_backupWins(tx, row, here)) {
+        toUpdate++;
+      } else if (stampOf(tx, here) > stampOf(tx, row)) {
+        phoneNewer++;
+      }
     }
     final phoneOnlyRows = [
       for (final MapEntry(:key, :value) in mine.entries)

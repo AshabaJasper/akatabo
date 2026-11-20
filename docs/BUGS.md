@@ -147,3 +147,84 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 2 x severity 2 = 4
 - **Suggested fix:** only ever set `_feeTypedUpFront = true` in `onChanged`; clear it when the account changes and the box is empty, inside that `setState`.
 - **Found:** 20 November 2026, Phase 5 New account review
+
+### [bug-review] PDF report: an emoji in a description prints as a box
+
+- **Where:** `app/lib/services/export/pdf_report.dart` (fonts)
+- **What happens:** the PDF embeds static Geist, which has no emoji, so an emoji in a description or note prints as an empty box.
+- **How to trigger:** add an entry described "Lunch 🍲", export a PDF report.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** strip or replace characters Geist cannot draw before writing the PDF, or add a fallback font.
+- **Found:** 20 November 2026, Phase 6 export builder
+
+### [bug-review] Export: a hidden category's budget is still listed in the totals
+
+- **Where:** `app/lib/services/export/export_report.dart` (category totals)
+- **What happens:** a category hidden on Categories still appears with its budget in the exported category totals.
+- **How to trigger:** set a budget on a category, hide it, export with "Category totals and budgets" ticked.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** leave hidden categories out unless they have entries in the period.
+- **Found:** 20 November 2026, Phase 6 export builder
+
+### [bug-review] Excel: a cell over 32,767 characters makes the file fail to open
+
+- **Where:** `app/lib/services/export/xlsx_writer.dart`
+- **What happens:** Excel refuses cells longer than 32,767 characters; a very long note would make the whole file report as damaged.
+- **How to trigger:** paste a very long text into a note, export Excel with Notes ticked.
+- **Score:** frequency 1 x severity 4 = 4
+- **Suggested fix:** cut cell text at 32,767 characters with an ellipsis.
+- **Found:** 20 November 2026, Phase 6 export builder
+
+### [bug-review] Lock screen can say "0 more tries" before a wait
+
+- **Where:** `app/lib/features/lock/lock_screen.dart` (wrong-PIN message)
+- **What happens:** on the last free try the message can read "0 more tries before a wait" instead of saying the next wrong try starts a wait.
+- **How to trigger:** with the lock on, enter a wrong PIN four times.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** word the last free try as "A wrong PIN now means a 30-second wait".
+- **Found:** 20 November 2026, Phase 6 lock builder
+
+### [bug-review] Fingerprint or face availability is checked once per run
+
+- **Where:** `app/lib/services/security/biometrics.dart` (`biometricsAvailableProvider`)
+- **What happens:** if the person adds or removes a fingerprint in phone settings while Akatabo is open, "Unlock with" is not shown or hidden until the app restarts.
+- **How to trigger:** open Privacy and data, add a fingerprint in Android settings, return.
+- **Score:** frequency 1 x severity 2 = 2
+- **Suggested fix:** invalidate the provider when the app comes back to the foreground.
+- **Found:** 20 November 2026, Phase 6 lock builder
+
+### [bug-review] A protected weekly backup asks for the folder again after a restart
+
+- **Where:** `app/lib/services/backup/weekly_backup.dart`, `app/lib/features/data/backup_weekly_prompt.dart`
+- **What happens:** when the phone does not keep access to the chosen folder across restarts, each weekly backup asks for the folder as well as the password.
+- **How to trigger:** turn on weekly backups with a password, restart the phone, open Akatabo a week later.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** keep a persisted folder permission (Android `takePersistableUriPermission`) where the dialog plugin allows it.
+- **Found:** 20 November 2026, Phase 6 backup builder
+
+### [bug-review] A double tap on "Save a backup file now" can open two dialogs
+
+- **Where:** `app/lib/features/data/backup_actions.dart`, `backup_section.dart`, `data_section.dart`
+- **What happens:** the button is disabled only once `onWorking` runs, after the password dialog closes; two quick taps before that open two dialogs.
+- **How to trigger:** with "Protect with a password" on, tap Save a backup file now twice quickly.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** set the busy flag before the first await.
+- **Found:** 20 November 2026, Phase 6 backup builder
+
+### [bug-review] A double tap on the restore button can start the restore twice
+
+- **Where:** `app/lib/features/data/restore_screen.dart` (`_restore`)
+- **What happens:** for "Add what is missing" there is no dialog before `_busy` is set, so a very fast second tap can run a second restore; the merge is by id, so the second run adds nothing, but it shows two results.
+- **How to trigger:** tap the restore button twice very quickly.
+- **Score:** frequency 1 x severity 3 = 3
+- **Suggested fix:** return at once from `_restore` while `_busy` is set.
+- **Found:** 20 November 2026, Phase 6 backup builder
+
+### [bug-review] Backup settings write errors are unhandled and leave the backup buttons stuck
+
+- **Where:** `app/lib/features/data/backup_actions.dart` (`setWeekly`, `setProtect`); called from `backup_section.dart` and `data_section.dart`
+- **What happens:** the settings writes in `setWeekly` and `setProtect` have no try/catch and their callers are not awaited, so a failed write is an unhandled async error. If it fails after `onWorking` set `_working`, "Save a backup file now" stays on "Saving the backup…" until the screen is left.
+- **How to trigger:** make the settings write fail (full disk, locked database), then switch on "Back up by itself every week" and pick a folder.
+- **Score:** frequency 1 x severity 4 = 4
+- **Suggested fix:** catch the writes, report them and return `BackupActions.failed`; in `_run`, reset `_working` in a `finally`.
+- **Found:** 20 November 2026, Phase 6 checker

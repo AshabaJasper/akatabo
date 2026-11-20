@@ -9,6 +9,7 @@ import '../../services/backup/backup_codec.dart';
 import '../../services/backup/backup_files.dart';
 import '../../services/backup/backup_service.dart';
 import '../../services/backup/restore_planner.dart';
+import '../../services/security/lock_controller.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_surfaces.dart';
 import 'backup_actions.dart';
@@ -84,7 +85,9 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
   Future<void> _choose() async {
     final PickedFile? file;
     try {
-      file = await ref.read(backupFilesProvider).pick();
+      file = await ref
+          .read(lockControllerProvider.notifier)
+          .keepUnlockedWhile(() => ref.read(backupFilesProvider).pick());
     } on BackupException catch (e) {
       if (mounted) _problem(e);
       return;

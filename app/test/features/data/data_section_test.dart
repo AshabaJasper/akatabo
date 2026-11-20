@@ -1,10 +1,13 @@
 import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
+import 'package:akatabo/features/data/backup_actions.dart';
 import 'package:akatabo/features/data/data_section.dart';
 import 'package:akatabo/features/settings/settings_page.dart';
 import 'package:akatabo/services/backup/backup_settings.dart';
+import 'package:akatabo/services/security/lock_controller.dart';
 import 'package:akatabo/services/security/privacy_settings.dart';
 import 'package:akatabo/widgets/ak_controls.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -127,6 +130,74 @@ void main() {
       expect(files.saved, hasLength(1));
       expect(await _entries(tester, db), 1);
     });
+  });
+
+  testWidgets('the save dialog hiding the app does not lock it, even "Right away"', (tester) async {
+    final secure = (await tester.runAsync(() => valuesWithPin('2580')))!;
+    await tester.runAsync(() => SettingsRepository(db).write(BackupKeys.protect, false));
+    await pumpData(
+      tester,
+      _page,
+      db: db,
+      files: files,
+      secure: secure,
+      settings: {
+        PrivacyKeys.lockOn.name: PrivacyKeys.lockOn.encode(true),
+        PrivacyKeys.lockAfter.name: PrivacyKeys.lockAfter.encode(LockAfter.rightAway),
+      },
+    );
+    final container = ProviderScope.containerOf(tester.element(find.byType(DataSection)));
+    final lock = container.read(lockControllerProvider.notifier);
+    await tester.runAsync(() => lock.unlockWithPin('2580'));
+    expect(container.read(lockControllerProvider), LockStatus.unlocked);
+    files.whileSaving = () {
+      lock.wentAway();
+      lock.cameBack();
+    };
+
+    await tester.tap(find.text('Save a backup file now'));
+    await settle(tester);
+
+    expect(files.saved, hasLength(1));
+    expect(container.read(lockControllerProvider), LockStatus.unlocked);
+  });
+
+  testWidgets('leaving the screen while protection is read saves nothing unprotected', (
+    tester,
+  ) async {
+    await tester.runAsync(() => SettingsRepository(db).write(BackupKeys.protect, true));
+    late WidgetRef ref;
+    late BuildContext gone;
+    final show = ValueNotifier(true);
+    await pumpData(
+      tester,
+      Consumer(
+        builder: (_, r, _) {
+          ref = r;
+          return ValueListenableBuilder<bool>(
+            valueListenable: show,
+            builder: (_, on, _) => on
+                ? Builder(
+                    builder: (c) {
+                      gone = c;
+                      return const SizedBox();
+                    },
+                  )
+                : const SizedBox.shrink(),
+          );
+        },
+      ),
+      db: db,
+      files: files,
+    );
+    // The screen that asked closes before the password could be asked for.
+    show.value = false;
+    await tester.pump();
+    expect(gone.mounted, isFalse);
+
+    final message = await tester.runAsync(() => BackupActions(ref).saveNow(gone));
+    expect(message, isNull);
+    expect(files.saved, isEmpty);
   });
 
   for (final b in Brightness.values) {

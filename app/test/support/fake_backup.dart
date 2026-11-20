@@ -21,8 +21,12 @@ class FakeBackupFiles implements BackupFiles {
   int picks = 0;
   int folderPicks = 0;
 
+  /// Runs while the save dialog is "open", such as the app going out of sight.
+  void Function()? whileSaving;
+
   @override
   Future<bool> save(Uint8List bytes, String name) async {
+    whileSaving?.call();
     if (saveAnswer) saved.add((name: name, bytes: bytes));
     return saveAnswer;
   }

@@ -253,3 +253,23 @@ Four builders worked in separate git worktrees (Smart help and Reminders, the pi
 | 5 | A cleared fee box moves away on a later rebuild | 2 x 2 = 4 | Filed in `docs/BUGS.md` |
 | 6 | A fee hidden by "Fewer details" is still saved | 2 x 2 = 4 | Filed |
 | 7 | The "Not counted" note could name an account not listed | 1 x 1 = 1 | Fixed with bug 1: the note names only listed accounts |
+
+## Phase 6: Keeping data safe (20 November 2026)
+
+- **Works:** PIN lock (4 digits, PBKDF2, growing waits) with fingerprint or face, Lock after, Hide amounts and Blank in the app switcher; Change PIN; Forgot PIN and Delete everything both wipe the phone and remove the PIN. Export to CSV, Excel and PDF for this month, this year, all or a custom range. Backup file with an optional password (Argon2id), weekly backup to a chosen folder, restore with a preview, "Add what is missing" or "Replace everything". About shows the version and the open-source licences, including both fonts' OFL texts.
+- **Tested:** 798 tests pass (exit code 0) and `flutter analyze` reports no issues. New tests cover the backup round trip with and without a password, wrong password, damaged and newer files, merge counts, restore all-or-nothing, phone-only settings kept, a new phone taking the backup's edited defaults, the PIN wait schedule and boot-clock timing, the lock overlay, hidden amounts, CSV formula escaping, the Excel and PDF writers, the segmented control widths, Delete everything removing the PIN, dialogs not locking the app, the password step never falling back to an unprotected file, and About. The four checker fixes were each confirmed by breaking them on purpose. Export, Privacy and data, lock and restore goldens checked by eye.
+- **Not tested:** nothing on a device or the emulator (no fingerprint prompt, file dialog or share sheet run for real); the Excel file was not reopened with a Python reader; key-derivation timing not measured on a phone; iOS not built. **Launch blockers:** "Privacy policy" and "Send feedback" on About need the owner's policy and contact. **Design checks:** PIN screens, restore steps 1 and 3, the password entry and every Phase 6 dialog are not drawn.
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | Export hung when the save dialog was cancelled | 80 | Fixed by the export builder; tested |
+| 2 | Restoring onto a new phone kept the blank defaults over the backup's balances and budgets | 6 x 8 = 48 | Fixed: untouched phone defaults give way; tested |
+| 3 | Export text contrast in dark | 32 | Fixed by the export builder; tested |
+| 4 | Insights figures shown with Hide amounts on; PIN hashing froze the screen | 20 each | Fixed by the lock builder; tested |
+| 5 | Weekly backup prompt (15), date moved back or forward around the PIN wait (14, 14) | 14 to 15 | Fixed by the builders; tested |
+| 6 | Backup file size limit, iPad share origin, Face ID text, focus | 10 each | Fixed by the builders; tested |
+| 7 | System file dialogs locked the app with "Right away" | 3 x 3 = 9 | Fixed: dialogs kept unlocked; tested |
+| 8 | Back button, iOS blank, picker error, protected-backup password step fail-open | 7 to 9 | Fixed; the password step by the lead, tested |
+| 9 | Reshow, label, zip bomb, key cost | 5 to 6 | Fixed by the builders; tested |
+| 10 | Emoji in the PDF; hidden category budget exported; Excel cell over 32,767; "0 more tries"; protected weekly backup asks for the folder; double tap on Save now; settings write errors | 4 each | Filed in `docs/BUGS.md` |
+| 11 | Double-tap restore (3); biometrics checked once per run (2) | 2 to 3 | Filed |

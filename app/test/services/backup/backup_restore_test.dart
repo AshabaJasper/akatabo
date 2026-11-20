@@ -90,6 +90,53 @@ void main() {
       expect(after[older.id]!.amount, older.amount, reason: 'the backup changed it later');
     });
 
+    test('a new phone takes the backup\'s edited defaults over its own blank ones', () async {
+      // Edited on the old phone in October; the new phone's defaults were seeded now, so
+      // they carry a later stamp but were never touched.
+      await withClock(Clock.fixed(DateTime(2026, 10, 2)), () async {
+        await AccountRepository(source).setBalanceToday(DefaultIds.cash, 250000);
+        await CategoryRepository(source)
+            .setBudget(DefaultIds.food, monthlyBudget: 300000, carriesOver: false, warnAt: 80);
+      });
+      final bytes = await testBackupService(source).createFile();
+
+      final service = testBackupService(target);
+      final opened = await service.open(bytes);
+      expect(opened.preview.addMissingChangesSomething, isTrue);
+      await service.restore(opened, RestoreMode.addMissing);
+
+      final cash = await (target.select(
+        target.accounts,
+      )..where((a) => a.id.equals(DefaultIds.cash))).getSingle();
+      expect(cash.openingBalance, 250000);
+      expect(cash.balanceAt, isNotNull);
+      final food = await (target.select(
+        target.categories,
+      )..where((c) => c.id.equals(DefaultIds.food))).getSingle();
+      expect(food.monthlyBudget, 300000);
+    });
+
+    test('a default this phone edited after the backup is kept', () async {
+      await withClock(
+        Clock.fixed(DateTime(2026, 10, 2)),
+        () => AccountRepository(source).setBalanceToday(DefaultIds.cash, 250000),
+      );
+      final bytes = await testBackupService(source).createFile();
+      // Open (and seed) the new phone now, so its defaults are made before they are edited.
+      await target.select(target.accounts).get();
+      await withClock(
+        Clock.fixed(DateTime(2027, 1, 5)),
+        () => AccountRepository(target).setBalanceToday(DefaultIds.cash, 40000),
+      );
+
+      final service = testBackupService(target);
+      await service.restore(await service.open(bytes), RestoreMode.addMissing);
+      final cash = await (target.select(
+        target.accounts,
+      )..where((a) => a.id.equals(DefaultIds.cash))).getSingle();
+      expect(cash.openingBalance, 40000);
+    });
+
     test('a second restore of the same file adds nothing', () async {
       final bytes = await testBackupService(source).createFile();
       final service = testBackupService(target);
