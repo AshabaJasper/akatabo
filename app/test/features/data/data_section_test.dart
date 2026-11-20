@@ -1,0 +1,131 @@
+import 'package:akatabo/data/db/app_database.dart';
+import 'package:akatabo/data/repositories/repositories.dart';
+import 'package:akatabo/features/data/data_section.dart';
+import 'package:akatabo/features/settings/settings_page.dart';
+import 'package:akatabo/services/backup/backup_settings.dart';
+import 'package:akatabo/widgets/ak_controls.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../../support/backup_seed.dart';
+import '../../support/fake_backup.dart';
+import 'data_widgets_support.dart';
+
+const _page = SettingsPage(title: 'Privacy and data', children: [DataSection()]);
+
+Future<int> _entries(WidgetTester tester, AppDatabase db) async =>
+    (await tester.runAsync(() => db.select(db.transactions).get()))!.length;
+
+void main() {
+  late AppDatabase db;
+  late FakeBackupFiles files;
+
+  setUp(() {
+    db = memoryDb();
+    files = FakeBackupFiles();
+  });
+  tearDown(() => db.close());
+
+  testWidgets('shows the drawn rows, with the last backup day or Never', (tester) async {
+    await pumpData(tester, _page, db: db, files: files);
+    for (final text in [
+      'DATA AND BACKUP',
+      'Export and back up',
+      'CSV, Excel, PDF, backup file',
+      'Export a monthly report',
+      'PDF',
+      'Save a backup file now',
+      'Last: Never',
+      'Back up every week',
+      'To a folder you choose on this phone',
+      'Restore from a backup file',
+      'Delete everything on this phone',
+    ]) {
+      expect(find.text(text), findsOneWidget, reason: text);
+    }
+  });
+
+  testWidgets('shows the last backup day and the weekly switch from settings', (tester) async {
+    await pumpData(
+      tester,
+      _page,
+      db: db,
+      files: files,
+      settings: {
+        BackupKeys.lastAt.name: '${DateTime(2026, 11, 12, 20).millisecondsSinceEpoch}',
+        BackupKeys.weekly.name: '1',
+      },
+    );
+    expect(find.text('Last: 12 Nov 2026'), findsOneWidget);
+    expect(tester.widget<AkSwitch>(switchLabelled('Back up every week')).value, isTrue);
+  });
+
+  group('Delete everything on this phone', () {
+    testWidgets('asks first, says it cannot be undone, and Cancel keeps everything', (
+      tester,
+    ) async {
+      await tester.runAsync(() => addEntry(db, DateTime(2026, 11, 18)));
+      await pumpData(tester, _page, db: db, files: files);
+      await tester.tap(find.text('Delete everything on this phone'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delete everything on this phone?'), findsOneWidget);
+      expect(find.textContaining('This cannot be undone.'), findsOneWidget);
+      expect(find.textContaining('Save a backup file first'), findsOneWidget);
+      expect(find.text('Save a backup first'), findsOneWidget);
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(await _entries(tester, db), 1);
+    });
+
+    testWidgets('Delete everything wipes the phone back to its first day', (tester) async {
+      await tester.runAsync(() async {
+        await addEntry(db, DateTime(2026, 11, 18));
+        await SettingsRepository(db).write(BackupKeys.lastAt, 5);
+      });
+      await pumpData(tester, _page, db: db, files: files);
+      await tester.tap(find.text('Delete everything on this phone'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete everything'));
+      await settle(tester);
+
+      expect(await _entries(tester, db), 0);
+      final accounts = await tester.runAsync(() => db.select(db.accounts).get());
+      expect(accounts, isNotEmpty, reason: 'the starting accounts are back');
+      expect(find.text('Everything on this phone was deleted.'), findsOneWidget);
+    });
+
+    testWidgets('"Save a backup first" saves a file and deletes nothing', (tester) async {
+      await tester.runAsync(() async {
+        await addEntry(db, DateTime(2026, 11, 18));
+        await SettingsRepository(db).write(BackupKeys.protect, false);
+      });
+      await pumpData(tester, _page, db: db, files: files);
+      await tester.tap(find.text('Delete everything on this phone'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save a backup first'));
+      await settle(tester);
+
+      expect(files.saved, hasLength(1));
+      expect(await _entries(tester, db), 1);
+    });
+  });
+
+  for (final b in Brightness.values) {
+    testWidgets('golden, ${b.name}', (tester) async {
+      await pumpData(
+        tester,
+        _page,
+        db: db,
+        files: files,
+        brightness: b,
+        settings: {BackupKeys.lastAt.name: '${DateTime(2026, 11, 12, 20).millisecondsSinceEpoch}'},
+      );
+      await expectLater(
+        find.byType(SettingsPage),
+        matchesGoldenFile('goldens/data_section_${b.name}.png'),
+      );
+    });
+  }
+}
