@@ -109,6 +109,10 @@ UnusualLevel _levelOf(Map<String, String> settings) =>
 /// "This was me". Watched only while that filter is on.
 final unusualIdsProvider = Provider.autoDispose<Set<String>>((ref) {
   final settings = ref.watch(storedSettingsProvider).value ?? const {};
+  // Switched off in Smart help: nothing is pointed out, here or on the entry.
+  if (!SettingKeys.pointOutUnusual.decode(settings[SettingKeys.pointOutUnusual.name])) {
+    return const {};
+  }
   final params = ref.watch(unusualParamsProvider).value;
   final all = ref.watch(allTransactionsProvider).value;
   if (params == null || all == null) return const {};

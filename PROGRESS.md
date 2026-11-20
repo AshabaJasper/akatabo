@@ -273,3 +273,21 @@ Four builders worked in separate git worktrees (Smart help and Reminders, the pi
 | 9 | Reshow, label, zip bomb, key cost | 5 to 6 | Fixed by the builders; tested |
 | 10 | Emoji in the PDF; hidden category budget exported; Excel cell over 32,767; "0 more tries"; protected weekly backup asks for the folder; double tap on Save now; settings write errors | 4 each | Filed in `docs/BUGS.md` |
 | 11 | Double-tap restore (3); biometrics checked once per run (2) | 2 to 3 | Filed |
+
+## Phase 7: The four models (20 November 2026)
+
+- **Works:** category suggestion on Add (a pill with "% sure", shown at 70% or more once the person has 5 entries of their own; the suggested tile is preselected and a different pick is saved as a correction); unusual payments on One transaction with "This was me" saved on the entry, and the "Only unusual" filter; "Looks regular" on Regular payments with Add and Dismiss; the month-end range on Home and Forecast ("Likely 150k to 200k, most likely 175k"), widened by the person's own past forecast errors, with the first forecast each day saved. Every model is pure Dart from a JSON file in `assets/smart/`, with a Python reference in `ml/`; each follows its Smart help switch.
+- **Tested:** 906 Flutter tests and 59 pytest pass (exit code 0) and `flutter analyze` reports no issues. Dart reproduces Python exactly in every parity test (largest difference 4.4e-16). New tests cover a correction changing the next suggestion, the pill, the unusual card and filter, "This was me" being saved without touching `updatedAt`, the switch turning the filter off, "Looks regular", the range on Home and Forecast, the fixed random numbers, and the month turn. Each builder and each checker fix was confirmed by breaking it on purpose. All results are SYNTHETIC (see `ml/README.md`): the category model alone barely beats simple baselines on unseen merchants (26.3% against 25.2%) and becomes useful through the person's corrections (88.2% after 10); unusual at Balanced 0.50 precision and 0.43 recall; regular payments 6 of 6 series; the range covers 74.6% against an 80% target.
+- **Not tested:** nothing on a device or the emulator; no real data, so no real-world accuracy; no dark golden for the pill. **Design checks:** the pill row height, the unusual card, "Looks regular" and the range sentence are not drawn; the Home card's wording repeats the point figure.
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | On the 1st, the forecast could be worked out from last month's rows and saved as the day's snapshot | 5 x 4 = 20 | Fixed: current month only, waits for reloads; tested |
+| 2 | The category grid jumped as the pill came and went | 6 x 2 = 12 | Fixed by the builder; tested |
+| 3 | "Only unusual" always showed nothing (read a flag nothing writes) | found by the lead | Fixed: uses the detector; tested |
+| 4 | Home forecast card read twice by screen readers, with dots read out | 3 x 2 = 6 | Fixed by the builder; tested |
+| 5 | "Only unusual" ignored the Smart help switch | 2 x 3 = 6 | Fixed; tested |
+| 6 | "This was me" made an old category look newest to the suggester | 2 x 3 = 6 | Fixed: `updatedAt` untouched; tested |
+| 7 | Looks regular: double Add saved twice (6); a bill added under another name offered again (6) | 6 each | Fixed by the builder; tested |
+| 8 | Failed snapshot read silent; Only unusual slow on long histories; stale amount in the suggestion | 3 to 4 | Filed in `docs/BUGS.md` |
+| 9 | Model load failure silent; failed Looks regular save swallowed; xorshift on the web; .5 rounding; payee scan | 2 to 3 | Filed |

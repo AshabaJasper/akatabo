@@ -6,6 +6,7 @@ import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/time/clock_provider.dart';
 import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
+import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/data/seed/default_data.dart';
 import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
@@ -113,6 +114,22 @@ void main() {
   testWidgets('"Only unusual" finds the flagged entry and not the ordinary ones', (tester) async {
     final container = await _pump(tester);
     expect(container.read(unusualIdsProvider), {'big'});
+  });
+
+  testWidgets('"Only unusual" finds nothing while Smart help has it switched off', (tester) async {
+    final container = await _pump(tester, settings: {'smart.pointOutUnusual': '0'});
+    expect(container.read(unusualIdsProvider), isEmpty);
+  });
+
+  test('"This was me" leaves when the entry was last changed alone', () async {
+    final db = memoryDb();
+    addTearDown(db.close);
+    final row = _rows.first;
+    await db.into(db.transactions).insert(row);
+    await TransactionRepository(db).dismissUnusual(row.id);
+    final saved = await (db.select(db.transactions)..where((t) => t.id.equals(row.id))).getSingle();
+    expect(saved.flagDismissed, isTrue);
+    expect(saved.updatedAt, row.updatedAt, reason: 'suggestions read it as the category choice');
   });
 
   testWidgets('switched off in Smart help, no card', (tester) async {

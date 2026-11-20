@@ -102,10 +102,13 @@ class TransactionRepository {
 
   /// "This was me" on an unusual entry: it is not pointed out again, and the answer is
   /// kept so the share of flags the person waves away can be measured.
-  Future<void> dismissUnusual(String id) =>
-      (_db.update(_db.transactions)..where((t) => t.id.equals(id))).write(
-        TransactionsCompanion(flagDismissed: const Value(true), updatedAt: Value(clock.now())),
-      );
+  ///
+  /// `updatedAt` is left alone: category suggestion reads it as when the category was last
+  /// chosen, and answering a flag is not choosing a category. (A restore that merges this
+  /// entry may therefore bring the flag back; the person can answer it again.)
+  Future<void> dismissUnusual(String id) => (_db.update(
+    _db.transactions,
+  )..where((t) => t.id.equals(id))).write(const TransactionsCompanion(flagDismissed: Value(true)));
 
   Future<Transaction?> byId(String id) =>
       (_db.select(_db.transactions)..where((t) => t.id.equals(id))).getSingleOrNull();

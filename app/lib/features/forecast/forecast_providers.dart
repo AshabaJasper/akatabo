@@ -59,13 +59,13 @@ final forecastSnapshotErrorsProvider = Provider.autoDispose<List<double>?>((ref)
   final snapsAsync = ref.watch(forecastPastSnapshotsProvider);
   if (snapsAsync.hasError) return const [];
   final snaps = snapsAsync.value;
-  if (snaps == null) return null;
+  if (snaps == null || snapsAsync.isLoading) return null;
   if (snaps.isEmpty) return const [];
 
   final rowsAsync = ref.watch(forecastPastRowsProvider);
   if (rowsAsync.hasError) return const [];
   final rows = rowsAsync.value;
-  if (rows == null) return null;
+  if (rows == null || rowsAsync.isLoading) return null;
 
   final current = ref.watch(currentMonthProvider);
   final today = dateOnly(ref.watch(appNowProvider));
@@ -129,9 +129,17 @@ final monthForecastProvider = Provider.autoDispose<MonthForecastView>((ref) {
   final monthAsync = ref.watch(monthRowsProvider);
   final windowAsync = ref.watch(forecastWindowRowsProvider);
   final regularAsync = ref.watch(activeRegularProvider);
-  final monthRows = monthAsync.value ?? const <Transaction>[];
+  // Only this month's entries: when the month turns, the stream still holds last month's
+  // rows until it reloads, and a forecast from them would be about double.
+  final monthRows = [
+    for (final t in monthAsync.value ?? const <Transaction>[])
+      if (month.containsDay(t.localDay)) t,
+  ];
   final daysWithEntries = {for (final t in monthRows) t.localDay}.length;
-  final ready = monthAsync.hasValue && windowAsync.hasValue && regularAsync.hasValue;
+  // A reloading input still holds its old value: wait for the new one, so the first
+  // forecast saved for the day is never worked out from the wrong rows.
+  bool fresh(AsyncValue<Object?> a) => a.hasValue && !a.isLoading;
+  final ready = fresh(monthAsync) && fresh(windowAsync) && fresh(regularAsync);
   if (!ready) return MonthForecastView(ready: false, daysWithEntries: daysWithEntries);
 
   final forecast = forecastFor(

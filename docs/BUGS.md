@@ -228,3 +228,75 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 1 x severity 4 = 4
 - **Suggested fix:** catch the writes, report them and return `BackupActions.failed`; in `_run`, reset `_working` in a `finally`.
 - **Found:** 20 November 2026, Phase 6 checker
+
+### [bug-review] A smart model file that fails to load hides its feature silently
+
+- **Where:** `app/lib/features/add/category_suggestion_providers.dart`, `app/lib/features/transactions/unusual_providers.dart`, `app/lib/features/regular/regular_providers.dart` (the asset loaders; the forecast range keeps its constants in code)
+- **What happens:** if a bundled JSON in `assets/smart/` cannot be read, the pill, the unusual card or "Looks regular" stay hidden, and nothing is reported.
+- **How to trigger:** ship a build with a damaged or missing artefact.
+- **Score:** frequency 1 x severity 3 = 3
+- **Suggested fix:** report the load error through `FlutterError.reportError`, and add a test that every artefact in `assets/smart/` parses.
+- **Found:** 20 November 2026, Phase 7 builders
+
+### [bug-review] The category suggestion keeps a stale amount until the words change
+
+- **Where:** `app/lib/features/add/category_suggestion_providers.dart`
+- **What happens:** the suggestion is worked out from the words and the amount at the time; changing only the amount does not update it.
+- **How to trigger:** type "Shell fuel", then change the amount from 5,000 to 60,000.
+- **Score:** frequency 3 x severity 1 = 3
+- **Suggested fix:** include the amount bucket in what the provider watches.
+- **Found:** 20 November 2026, Phase 7 category builder
+
+### [bug-review] The similar-payee scan grows with every payee, on each keystroke
+
+- **Where:** `app/lib/smart/category/personal_layer.dart`
+- **What happens:** each keystroke compares the words with every distinct payee the person has; with thousands of payees typing could lag.
+- **How to trigger:** a few years of entries with many distinct descriptions.
+- **Score:** frequency 1 x severity 2 = 2
+- **Suggested fix:** index payees by token, or debounce the suggestion.
+- **Found:** 20 November 2026, Phase 7 category builder
+
+### [bug-review] Forecast point and range can round a .5 differently
+
+- **Where:** `app/lib/domain/forecast.dart` (point) and `app/lib/smart/forecast/forecast_range.dart` (range)
+- **What happens:** the point shown comes from `domain` and the range from `smart`; on a value ending in exactly .5 the two can differ by one shilling.
+- **How to trigger:** rare; a daily rate that makes the point land on .5.
+- **Score:** frequency 1 x severity 2 = 2
+- **Suggested fix:** take the point from one place, or share one rounding helper.
+- **Found:** 20 November 2026, Phase 7 forecast builder
+
+### [bug-review] The xorshift bootstrap would break on the web
+
+- **Where:** `app/lib/smart/forecast/forecast_range.dart`
+- **What happens:** on the web Dart integers are JavaScript numbers, so the 32-bit xorshift gives different numbers. Android and iOS are fine; Akatabo has no web build.
+- **How to trigger:** a web build.
+- **Score:** frequency 1 x severity 3 = 3
+- **Suggested fix:** mask with `& 0xFFFFFFFF` after every shift, or note that the app is mobile only.
+- **Found:** 20 November 2026, Phase 7 forecast builder
+
+### [bug-review] A failed read of past forecasts silently drops the range adjustment
+
+- **Where:** `app/lib/data/repositories/forecast_snapshot_repository.dart`, `app/lib/features/forecast/forecast_providers.dart`
+- **What happens:** if the snapshots cannot be read, the range is shown without the widening from past errors and nothing is reported.
+- **How to trigger:** a database read error on the snapshots table.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** report the error; the range without the adjustment is still a fair fallback.
+- **Found:** 20 November 2026, Phase 7 forecast builder
+
+### [bug-review] Looks regular: a failed Add or Dismiss save is swallowed and the card stays hidden
+
+- **Where:** `app/lib/features/regular/looks_regular_section.dart` (`_save`)
+- **What happens:** the card is hidden before `addDetected` runs, and the returned Future is dropped. If the insert fails, nothing is saved, nothing is said, and the card stays hidden until the screen is reopened.
+- **How to trigger:** make `addDetected` throw (database locked or full), then tap Add on a "Looks regular" card.
+- **Score:** frequency 1 x severity 3 = 3
+- **Suggested fix:** await the save in a try/catch, report the error, show the card again and say "Could not save. Try again."
+- **Found:** 20 November 2026, Phase 7 checker
+
+### [bug-review] "Only unusual" rescans the whole history for every entry on the UI thread
+
+- **Where:** `app/lib/features/transactions/unusual_providers.dart` (`unusualIdsProvider`), `app/lib/smart/unusual/unusual_detector.dart`
+- **What happens:** each money-out entry is scored against every earlier entry, including an edit-distance check per payee name, again on every database change while the filter is on. With a few thousand entries the list stalls visibly.
+- **How to trigger:** about two years of daily entries, turn on "Only ones marked unusual", add an entry.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** keep running per-category and per-payee state as the loop goes, or cache results by id and score only new entries.
+- **Found:** 20 November 2026, Phase 7 checker
