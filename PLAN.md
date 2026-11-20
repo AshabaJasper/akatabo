@@ -380,3 +380,22 @@ Routine decisions made while building, newest last. Each one marked **design che
 - **Release build shrinks code and resources with R8** and is obfuscated, with symbols kept in `build/symbols`.
 - **Accessibility tree check on the emulator** (what TalkBack reads; a live TalkBack listen-through is still to do) found one unnamed field (the Add amount, read as "0"); text fields that carry a label now merge it onto the edit box.
 - **Home's first-day step 2, "Check your categories", now opens Categories,** like the other two steps; it was text only.
+
+### Polish round (20 to 21 November 2026)
+
+After the owner tried the app on a Pixel 8 Pro. Owner decisions: a new private GitHub repo, App lock on its own page, build everything drawn.
+
+- **The plus in the Add disc is 28px** (`size-icon-add`); the disc stays 48px.
+- **Settings hub built to `Settings.html`**, three grouped cards; App lock joined the third card as its own row, and Privacy and security took the phone icon.
+- **Own date dialog, no stock picker.** The stock date picker drew `Icons.*` glyphs from the MaterialIcons font, which the app does not bundle (`uses-material-design: false`), so it showed boxes with crosses. `AkDateDialog` is built on `AkMonthGrid`, the grid Choose dates already had, now shared in `lib/widgets/ak_month_grid.dart`.
+- **The time picker opens for typing (`TimePickerEntryMode.inputOnly`), not on the dial** as the plan first said. Typing draws no icon, is faster on a phone keyboard, reads better with TalkBack, and the tests can type a time.
+- **PIN keypad:** the space left over is split above the title and between the message and the keypad (2 : 3), instead of one gap pushing the keypad down; keys grow with the screen up to 84px (`size-pin-key`), never below 44.
+- **Add keeps the kind and the amount in view.** They sit in a header above the scrolling form, with a hairline once the form scrolls. Below 520px of room (`size-pinned-form-min`, which counts the keyboard) or above text scale 1.3 the amount scrolls with the form. A `GlobalKey` carries the amount field across the move, so it keeps focus and the keyboard.
+- **Move money always shows "Fee to move it"**, whatever the account's "Ask for the fee each time".
+- **Motion timing is Dart constants (`AkMotion`: 160ms, ease-out cubic), not tokens.** `tokens.json` has no motion group and durations are not something a designer changes per theme; one file keeps them in one place, and `AkMotion.of` returns zero when the phone asks for less motion. `AkSegmented` slides its thumb with it; `AkSwitch` uses it.
+- **Calendar says "3 months"**, like Insights.
+- **Empty first day fills the screen:** the drawn dashed chart note (`size-icon-lg`, 28px trend icon), the drawn "Used Akatabo before?" restore row, a row to add a regular payment and the three lines from `Welcome.html`. The last two are not drawn (design check).
+- **Empty Budgets lists the spending categories**, each opening Set a budget, instead of sending people through Settings > Categories. The `from=budgets` back label went with it.
+- **Every empty note that something can fill has one action** (`DESIGN_SYSTEM.md` rule).
+- **App lock page** (`/settings/lock`, undrawn around SetPrivacy.html's rows): the PIN row always shows. With the lock off it reads "Set a PIN" and runs the same flow as the switch, so a PIN never exists with the lock off; a PIN left behind by a failed clear is replaced, never asked for. The rows wait for the PIN check, so a stored PIN cannot be replaced unasked while it loads.
+- **Back links name where the person came from** on Restore (Home), App lock (Privacy and data) and New regular payment (Home).

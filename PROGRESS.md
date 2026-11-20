@@ -303,3 +303,18 @@ Four builders worked in separate git worktrees (Smart help and Reminders, the pi
 - **Works:** the Settings tab is built to `Settings.html`: three grouped cards, a 36px tile per page (icon in `brandText`, which reads in dark), a chevron, and "Akatabo <version>. Free, with no account and no adverts." Empty Budgets offers "Choose a category" (Categories' back link then names Budgets); empty Insights and Categories offer "Add a transaction".
 - **Tested:** `flutter analyze` clean; `flutter test` 1,057 passing (new: hub cards, tiles and chevrons, dark icon colour, version footer, Budgets action and its back link). Settings seen on the Pixel 8 Pro in dark. Bug review found 2 (dark icon contrast 18, wrong back label 10); both fixed with tests.
 - **Not tested:** the empty-state links on the device; Settings in light on the device; Transactions, Regular payments and Fees empty states still have no action.
+
+## Polish round (21 November 2026)
+
+- **Works:** an own date dialog on the shared month grid (no font-icon boxes), the time typed in; the PIN keypad balanced on tall phones with keys up to 84px; Add keeps the kind and amount pinned while the form scrolls, and keeps focus as the keyboard moves the amount; Move money always asks for the fee; segmented controls slide their thumb (still under reduced motion); Calendar says "3 months". Home's first day, empty Budgets and five empty notes now offer the next step. App lock has its own page from the Settings hub.
+- **Tested:** `flutter analyze` clean; `flutter test` 1,069 passing (new: no font icon in either dialog, faded future days, sticky amount, focus kept across the keyboard, fee on Move money, first-day rows and back links, Budgets category list and route, App lock's Set a PIN, a leftover PIN, the loading guard). Goldens regenerated on purpose and named in each commit. Two bug reviews: 7 fixed with tests (focus lost when the keyboard moved the amount 40, three wrong back labels, the PIN loading race 7, a leftover PIN 6, the week start in the regular payment date 6); 3 filed.
+- **Not tested:** any of this on the Pixel 8 Pro or the emulator yet, light or dark; the journey test was not rerun. Stage 4 of the round (the drawn pieces still missing) is not started: see `docs/HANDOFF.md`.
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | The keyboard moving the amount rebuilt the field, losing and grabbing focus | 8 x 5 = 40 | Fixed with a `GlobalKey`; tested |
+| 2 | Back links said Settings or Coming up when opened from Privacy and data or Home | 10 and 8 | Fixed; tested |
+| 3 | While the PIN check loaded, App lock offered Set a PIN (replacing a stored PIN unasked) and showed Off | 7 and 6 | Fixed: rows wait; tested |
+| 4 | A PIN left behind with the lock off showed Change PIN and asked for it | 6 | Fixed: Set a PIN replaces it; tested |
+| 5 | The regular payment date ignored "Week starts on" | 6 | Fixed |
+| 6 | Header hairline on when not scrolled; no year jump in the date dialog; segmented thumb right to left | 3 to 4 | Filed in `docs/BUGS.md` |

@@ -71,7 +71,8 @@ Replace `assets/icon/*.png` with the final artwork and run the second command.
 | `lib/domain/`, `lib/smart/` | Every calculation and the four on-device models. No Flutter imports. |
 | `lib/data/` | drift database, repositories, typed settings, default data |
 | `lib/features/` | One folder per screen or group of screens |
-| `lib/widgets/` | Shared controls, charts and messages |
+| `lib/widgets/` | Shared controls, charts and messages, the month grid and the date and time dialogs (`ak_month_grid.dart`, `ak_pickers.dart`) |
+| `lib/core/theme/` | Generated tokens (`tokens.g.dart`), the theme, motion timing (`ak_motion.dart`) and still page transitions |
 | `lib/services/` | Backup and restore, export, notifications, PIN and biometrics |
 | `assets/smart/` | Model files exported from `../ml/` |
 | `drift_schemas/` | Database schema snapshots for migrations |

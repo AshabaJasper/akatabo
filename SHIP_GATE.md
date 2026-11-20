@@ -2,7 +2,7 @@
 
 **Type: Mobile app (Core + M).** Track W (website) and Track A (web app) are NOT APPLICABLE: there is no website, no sign-in and no server.
 
-Checklist from `~/.claude/ship-gate.md`. Status is PASS, MISSING (not done yet), BLOCKED (needs something from the owner or a Mac) or NOT APPLICABLE (with the reason). Evidence names a file, test or observed result. Last updated 20 November 2026, end of phase 8.
+Checklist from `~/.claude/ship-gate.md`. Status is PASS, MISSING (not done yet), BLOCKED (needs something from the owner or a Mac) or NOT APPLICABLE (with the reason). Evidence names a file, test or observed result. Last updated 21 November 2026, polish round.
 
 **Verdict: not ready to publish.** The app works end to end on the Android 16 emulator, but the launch blockers below need the owner.
 
@@ -38,7 +38,7 @@ Checklist from `~/.claude/ship-gate.md`. Status is PASS, MISSING (not done yet),
 | 4 | Touch targets | PASS | 44 x 44 on every control of 32 screens in both themes (`screen_sweep_test.dart`), above WCAG 2.5.8. Primary controls (tabs, Add, Save) also meet Android's 48 dp; picker swatches are 44 as drawn |
 | 5 | Labels for icons and controls | PASS | `labeledTapTargetGuideline` on every screen. The emulator TalkBack pass found the Add amount field announced only as "0"; fixed with `MergeSemantics`, tested in `test/a11y/field_names_test.dart` |
 | 6 | Forms: visible labels, errors tied to fields | MISSING | New account, Edit a category, budget and backup password put errors on the field. Add shows its problems in one list above Save, not on each field (`docs/BUGS.md`) |
-| 7 | Reduced motion, text scaling | PASS | Page transitions stand still when the phone asks for less motion (`lib/core/theme/still_transitions.dart`, `test/core/still_transitions_test.dart`); `AkSwitch` too. Text scale 2.0 on every screen as in C1.6 |
+| 7 | Reduced motion, text scaling | PASS | Page transitions stand still when the phone asks for less motion (`lib/core/theme/still_transitions.dart`, `test/core/still_transitions_test.dart`); `AkSwitch` and the sliding thumb of `AkSegmented` too (`AkMotion.of`). Text scale 2.0 on every screen as in C1.6 |
 | 8 | Screen reader pass | MISSING (partly done) | Done: the release APK's accessibility tree (what TalkBack reads) on the Android 16 emulator for Onboarding, Welcome, Home, Add, Settings and Budgets. Every control named except the Add amount field, now fixed and tested in `test/a11y/field_names_test.dart`; the current tab is marked selected. Not done: listening to TalkBack while swiping through each screen (spoken words, focus order), and re-checking the fix on the device. iOS VoiceOver BLOCKED (no Mac) |
 
 ### C3. Security (MASVS for mobile)
@@ -74,7 +74,7 @@ Checklist from `~/.claude/ship-gate.md`. Status is PASS, MISSING (not done yet),
 |---|---|---|---|
 | 1 | Loading, errors, retry | PASS | Phase 8 audit of every screen. Screens whose data cannot load now say so instead of a blank box or a false "UGX 0" (Home, Insights, All transactions, Categories, One category, Fees and tax, Forecast, Regular payments, One transaction, Privacy). `test/features/failure_states_test.dart` |
 | 2 | Form errors | MISSING | See C2.6 |
-| 3 | Empty states | PASS | Every list, chart and total has a sentence; Home's first day lists three steps, each now tappable. Budgets' empty state has no button yet (`docs/BUGS.md`) |
+| 3 | Empty states | PASS | Every list, chart and total has a sentence and, where something can fill it, one action: "Add a transaction" (Insights, Categories, One category, Fees and tax, Forecast) or "Add a regular payment". Home's first day has three tappable steps, the drawn dashed chart note, a restore row, a regular payment row and what the app does (`test/features/home/first_day_steps_test.dart`). Empty Budgets lists each spending category, opening Set a budget (`test/features/budgets/budgets_test.dart`). Updated 21 November 2026 |
 | 4 | Messages after actions | PASS | Failed saves, deletes and removals now report and keep the item (`lib/widgets/ak_message.dart`, `saveOrSay`); backup, export, restore and delete everything confirm what happened |
 | 5 | Offline | NOT APPLICABLE | The app never uses the network |
 

@@ -340,14 +340,6 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Suggested fix:** put the amount problem in the amount field's `errorText` and the category problem under the category grid; keep the list for problems that belong to no one field.
 - **Found:** 20 November 2026, Phase 8 states audit
 
-### [states-audit] Budgets' empty state has no button
-
-- **Where:** `app/lib/features/budgets/budgets_screen.dart`
-- **What happens:** "No budgets yet. Set one for a category…" gives no way to start from there; the person must find Set a budget through a category.
-- **Score:** frequency 2 x severity 2 = 4
-- **Suggested fix:** add "Set a budget", opening a category choice and then Set a budget.
-- **Found:** 20 November 2026, Phase 8 TalkBack tree check
-
 ### [bug-review] update_tokens.py drops size tokens added directly to tokens.json
 
 - **Where:** `tools/design/update_tokens.py` (the `data["size"]` rebuild, with the `SIZE_TOKENS` list)
@@ -383,3 +375,10 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 1 x severity 3 = 3
 - **Suggested fix:** use `PositionedDirectional(start: …)` and clamp the free room at 0.
 - **Found:** 21 November 2026, bug review of the polish round
+
+## Fixed
+
+### [states-audit] Budgets' empty state has no button
+
+- **Found:** 20 November 2026, Phase 8 TalkBack tree check. Score 2 x 2 = 4.
+- **Fixed:** 21 November 2026. Empty Budgets lists each spending category with "Set a budget", opening that category's Set a budget screen (`test/features/budgets/budgets_test.dart`).
