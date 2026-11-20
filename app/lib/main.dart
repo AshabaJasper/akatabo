@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -6,6 +8,7 @@ import 'app/bootstrap.dart';
 import 'data/providers.dart';
 import 'data/seed/demo_seed.dart';
 import 'data/settings/setting_keys.dart';
+import 'services/notifications/reminder_scheduler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,4 +42,5 @@ Future<void> main() async {
       child: AkataboApp(onboardingDone: onboardingDone),
     ),
   );
+  unawaited(rescheduleRemindersAtStart(container));
 }

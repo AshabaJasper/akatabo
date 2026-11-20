@@ -27,6 +27,7 @@ import '../features/settings/income_categories_screen.dart';
 import '../features/settings/income_category_new_screen.dart';
 import '../features/settings/new_account_screen.dart';
 import '../features/settings/settings_screen.dart';
+import '../features/settings/smart_settings_screen.dart';
 import '../features/transactions/transaction_detail_screen.dart';
 import '../features/transactions/transactions_screen.dart';
 import 'routes.dart';
@@ -134,6 +135,12 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       GoRoute(
         path: Routes.settingsIncomeCategoryNew,
         builder: (_, _) => const IncomeCategoryNewScreen(),
+      ),
+      GoRoute(
+        path: Routes.settingsSmart,
+        builder: (_, state) => SmartSettingsScreen(
+          openAtReminders: state.uri.queryParameters['section'] == 'reminders',
+        ),
       ),
       GoRoute(path: Routes.filters, builder: (_, _) => const FiltersScreen()),
       GoRoute(path: Routes.chooseDates, builder: (_, _) => const ChooseDatesScreen()),
