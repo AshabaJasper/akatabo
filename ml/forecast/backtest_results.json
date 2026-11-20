@@ -1,0 +1,67 @@
+{
+  "synthetic": true,
+  "persons": 16,
+  "months": 222,
+  "all": {
+    "forecasts": 5157,
+    "mape_point": 0.09743076411901432,
+    "mape_run_rate": 0.17603618900064172,
+    "mape_last_month": 0.22239602762141944,
+    "coverage_bootstrap": 0.7011828582509211,
+    "coverage_bootstrap_snapshots": 0.7459763428349816,
+    "coverage_phase3": 0.6088811324413419,
+    "width_bootstrap": 0.25459203697240357,
+    "width_bootstrap_snapshots": 0.28537074195831486,
+    "width_phase3": 0.20252766301005548,
+    "forecasts_with_snapshots": 4789,
+    "coverage_with_snapshots_only_bootstrap": 0.7168511171434537,
+    "coverage_with_snapshots_only_adjusted": 0.7650866569221132
+  },
+  "by_day": {
+    "days 8-14": {
+      "forecasts": 1511,
+      "mape_point": 0.1371421284978585,
+      "mape_run_rate": 0.3215700804972291,
+      "mape_last_month": 0.2228014172246056,
+      "coverage_bootstrap": 0.6776968894771674,
+      "coverage_bootstrap_snapshots": 0.7220383851753805,
+      "coverage_phase3": 0.5552614162806089,
+      "width_bootstrap": 0.35102738470396416,
+      "width_bootstrap_snapshots": 0.39058300230563064,
+      "width_phase3": 0.276991348263947,
+      "forecasts_with_snapshots": 1399,
+      "coverage_with_snapshots_only_bootstrap": 0.7005003573981415,
+      "coverage_with_snapshots_only_adjusted": 0.7483917083631165
+    },
+    "days 15-21": {
+      "forecasts": 1554,
+      "mape_point": 0.10765949939190586,
+      "mape_run_rate": 0.170068488553018,
+      "mape_last_month": 0.22306222702409925,
+      "coverage_bootstrap": 0.6981981981981982,
+      "coverage_bootstrap_snapshots": 0.747104247104247,
+      "coverage_phase3": 0.5926640926640927,
+      "width_bootstrap": 0.28328405319840255,
+      "width_bootstrap_snapshots": 0.32305835902019553,
+      "width_phase3": 0.22358779429556258,
+      "forecasts_with_snapshots": 1442,
+      "coverage_with_snapshots_only_bootstrap": 0.7198335644937587,
+      "coverage_with_snapshots_only_adjusted": 0.7725381414701803
+    },
+    "days 22-end": {
+      "forecasts": 2092,
+      "mape_point": 0.06115001546198418,
+      "mape_run_rate": 0.07535363471969704,
+      "mape_last_month": 0.22160835192248127,
+      "coverage_bootstrap": 0.7203632887189293,
+      "coverage_bootstrap_snapshots": 0.7624282982791587,
+      "coverage_phase3": 0.6596558317399618,
+      "width_bootstrap": 0.16362587844583074,
+      "width_bootstrap_snapshots": 0.1813830353144541,
+      "width_phase3": 0.1331002861284551,
+      "forecasts_with_snapshots": 1948,
+      "coverage_with_snapshots_only_bootstrap": 0.7263860369609856,
+      "coverage_with_snapshots_only_adjusted": 0.7715605749486653
+    }
+  }
+}

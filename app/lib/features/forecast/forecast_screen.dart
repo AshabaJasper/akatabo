@@ -8,16 +8,16 @@ import '../../core/theme/ak_theme.dart';
 import '../../core/time/clock_provider.dart';
 import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
-import '../../data/providers.dart';
 import '../../domain/forecast.dart';
 import '../../domain/insights.dart';
 import '../../domain/spending.dart';
+import '../../smart/forecast/forecast_range.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../../widgets/charts/cumulative_line.dart';
 import '../home/home_providers.dart';
-import '../regular/regular_providers.dart';
 import 'forecast_providers.dart';
+import 'forecast_words.dart';
 
 /// The month-end forecast: where money out is likely to land, how it was worked out, and the
 /// running total with the forecast drawn beyond today. It is shown only once seven days this
@@ -30,24 +30,23 @@ class ForecastScreen extends ConsumerWidget {
     final c = context.colors;
     final t = context.type;
     final today = dateOnly(ref.watch(appNowProvider));
-    final calc = ref.watch(periodCalculatorProvider);
-    final month = calc.month(today);
-    final monthAsync = ref.watch(monthRowsProvider);
-    final windowAsync = ref.watch(forecastWindowRowsProvider);
-    final regularAsync = ref.watch(activeRegularProvider);
-    final ready = monthAsync.hasValue && windowAsync.hasValue && regularAsync.hasValue;
-
-    final monthRows = monthAsync.value ?? const <Transaction>[];
-    final forecast = ready
-        ? forecastFor(
-            month: month,
+    final month = ref.watch(currentMonthProvider);
+    final view = ref.watch(monthForecastProvider);
+    final ready = view.ready;
+    final forecast = view.forecast;
+    final range = view.range;
+    final monthRows = ref.watch(monthRowsProvider).value ?? const <Transaction>[];
+    final daysWithEntries = view.daysWithEntries;
+    if (forecast != null && range != null) {
+      ref
+          .read(forecastSnapshotSaverProvider)
+          .remember(
+            monthStart: month.start,
             today: today,
-            monthRows: monthRows,
-            windowRows: windowAsync.value ?? const [],
-            regular: regularAsync.value ?? const [],
-          )
-        : null;
-    final daysWithEntries = {for (final tx in monthRows) tx.localDay}.length;
+            range: range,
+            spentSoFar: forecast.spentSoFar,
+          );
+    }
     final ended = DateFormat('d MMMM').format(month.lastDate);
 
     return Scaffold(
@@ -73,6 +72,7 @@ class ForecastScreen extends ConsumerWidget {
             else
               _ForecastBody(
                 forecast: forecast,
+                range: range,
                 month: month,
                 today: today,
                 monthRows: monthRows,
@@ -88,6 +88,7 @@ class ForecastScreen extends ConsumerWidget {
 class _ForecastBody extends StatelessWidget {
   const _ForecastBody({
     required this.forecast,
+    required this.range,
     required this.month,
     required this.today,
     required this.monthRows,
@@ -95,6 +96,9 @@ class _ForecastBody extends StatelessWidget {
   });
 
   final Forecast forecast;
+
+  /// The range around the forecast; null when "Forecast the month" is off.
+  final ForecastRange? range;
   final Period month;
   final DateTime today;
   final List<Transaction> monthRows;
@@ -105,6 +109,10 @@ class _ForecastBody extends StatelessWidget {
     final c = context.colors;
     final t = context.type;
     final gap = forecast.point - moneyIn;
+    // The history the rate comes from: the last 90 days, or fewer for someone new.
+    final historyDays = forecast.everydayDaily.isEmpty
+        ? rateWindowDays
+        : forecast.everydayDaily.length;
     final actual = runningTotal(monthRows, month.start, month.lengthInDays, until: today);
 
     // From today's total to the point, one step a day, so the dotted line meets the solid one.
@@ -131,7 +139,7 @@ class _ForecastBody extends StatelessWidget {
         Text(formatUgx(forecast.point), style: t.figureXl.copyWith(color: c.ink)),
         const SizedBox(height: AkSpace.s1),
         Text(
-          'Most likely between ${formatUgx(forecast.low)} and ${formatUgx(forecast.high)}. '
+          '${range == null ? '' : '${rangeInWords(range!, formatUgx)}. '}'
           'That is about ${formatUgx(gap.abs())} ${gap >= 0 ? 'more' : 'less'} than came in.',
           style: t.bodySm.copyWith(color: c.inkMuted),
         ),
@@ -142,7 +150,7 @@ class _ForecastBody extends StatelessWidget {
               '${formatUgx(forecast.point)} by the end of the month.',
           actual: actual,
           forecast: path,
-          forecastBand: (forecast.low.toDouble(), forecast.high.toDouble()),
+          forecastBand: range == null ? null : (range!.low.toDouble(), range!.high.toDouble()),
           colours: colours,
         ),
         const SizedBox(height: AkSpace.s2),
@@ -167,8 +175,9 @@ class _ForecastBody extends StatelessWidget {
         _SumRow(title: 'Regular bills due', amount: forecast.regularDue, sign: '+ '),
         const SizedBox(height: AkSpace.s4),
         Text(
-          'Worked out on this phone from your last $rateWindowDays days. One-off payments such as '
-          'school fees are left out of the daily rate. It updates each time you add.',
+          'Worked out on this phone from your last $historyDays days. One-off payments such as '
+          'school fees are left out of the daily rate. It updates each time you add.'
+          '${range == null ? '' : ' ${rangeEvidence(range!)}'}',
           style: t.caption.copyWith(color: c.inkMuted),
         ),
       ],
