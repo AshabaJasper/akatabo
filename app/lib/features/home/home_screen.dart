@@ -128,12 +128,14 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = context.type;
-    // The header sits under the status bar and is dark green in both themes, so the clock
-    // and icons above it are light whatever the theme says.
+    // The header sits under the status bar and is the deep main colour in both themes, so the
+    // clock and icons above it are light whatever the theme says. `brand-deep` equals `brand`
+    // in light; in dark it is the darker fill MainDark.html draws, which keeps the muted
+    // caption readable for every main colour.
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: c.brand.withValues(alpha: 0)),
+      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: c.brandDeep.withValues(alpha: 0)),
       child: Container(
-        color: c.brand,
+        color: c.brandDeep,
         child: SafeArea(
           bottom: false,
           child: Padding(
