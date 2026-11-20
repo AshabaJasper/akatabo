@@ -58,6 +58,10 @@ flutter:
 
   assets:
     - assets/smart/
+    # Static Geist for the PDF report (the pdf package reads static fonts only), cut from
+    # Geist-Variable.ttf with fonttools 4.68.0; covered by OFL-Geist.txt.
+    - assets/fonts/Geist-Regular.ttf
+    - assets/fonts/Geist-SemiBold.ttf
 
   fonts:
     - family: Bricolage Grotesque
