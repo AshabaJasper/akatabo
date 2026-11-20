@@ -239,7 +239,12 @@ class _Swatch extends StatelessWidget {
           decoration: BoxDecoration(color: c.surface, borderRadius: corner(disc)),
           child: Material(
             color: fill,
-            borderRadius: corner(inner),
+            // A 1px edge: in dark, some fills are under 3:1 against the card (Charcoal 1.76),
+            // and a choice must be seen to be chosen.
+            shape: RoundedRectangleBorder(
+              borderRadius: corner(inner),
+              side: BorderSide(color: c.inkMuted),
+            ),
             clipBehavior: Clip.antiAlias,
             child: InkWell(onTap: selected ? null : onTap),
           ),

@@ -301,6 +301,21 @@ void main() {
       expect(CategoryEditFrom.parse('nowhere'), CategoryEditFrom.settings);
     });
 
+    testWidgets('a hidden category says so in its line, as drawn', (tester) async {
+      await _pump(
+        tester,
+        const CategoriesSettingsScreen(),
+        prepare: (db) async {
+          await _addBudget(db);
+          await CategoryRepository(db).setHidden(DefaultIds.health, hidden: true);
+          await CategoryRepository(db).setHidden(DefaultIds.transport, hidden: true);
+        },
+      );
+      expect(find.text('Hidden, no budget'), findsOneWidget);
+      expect(find.text('Hidden, budget 200,000'), findsOneWidget);
+      expect(find.text('No budget'), findsWidgets, reason: 'shown categories are unchanged');
+    });
+
     testWidgets('a money-in category has no budget row', (tester) async {
       await _pump(tester, const CategoryEditScreen(categoryId: DefaultIds.salary));
       expect(find.text('Monthly budget'), findsNothing);

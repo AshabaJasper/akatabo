@@ -298,14 +298,23 @@ Routine decisions made while building, newest last. Each one marked **design che
 - **Fees and tax cannot be budgeted.** It is a system category whose total comes from fee and tax fields.
 - **Eyebrow section labels stay** on Budgets and Set a budget, as the design system draws them.
 - **The budget bar's pace tick** uses the `size-stroke` token in ink.
-- **Settings hub rows map to phases.** General, Appearance, Accounts and Home screen are built in phase 5. Categories, Smart help, Reminders, Edit a category, New account, Money-in categories, Filters, Choose dates and the pickers are still to build in phase 5. Privacy and security and Data and backup belong to phase 6.
+- **Settings hub rows map to phases.** General, Appearance, Accounts, Home screen, Categories, Smart help, Reminders, Edit a category, New account, Money-in categories, Filters, Choose dates and the pickers are built in phase 5. Privacy and security and Data and backup belong to phase 6.
 - **Home sections are switchable only where they exist.** The header figures, "Where it went" and "Latest" can be switched off. The drawn forecast card and "Budgets at a glance" do not exist on Home yet and get no switch.
 - **Settings values apply at once.** Each switch or segment writes to storage and the screens that read it rebuild from the stored settings stream.
 - **Tests replace the live settings stream** with a fixed one in widget tests (a live drift stream does not settle under the test clock). Saved values are checked in the database, and the providers are tested against a real in-memory database.
 - **Account kind "Other" uses the bank colour** until a colour token for it is added to tokens.json (design check).
 - **Hiding a category** removes it from Add and its lists but keeps past entries. Fees and tax is a system category and cannot be hidden.
 - **Switch rows show their own label.** `AkSwitch` draws only the switch and carries the label for screen readers; `SettingsSwitchRow` draws the visible text beside it.
-- **Edit a category is rename only for now.** Icon, colour and order are not editable yet; the default categories keep the icons and colours from the design. Duplicate names are allowed (filed as a bug to tighten).
+- **Edit a category covers name, icon, colour, budget and delete;** order is changed on Categories by dragging the grip, by the grip's menu, or by screen-reader actions. A name another category already uses (trimmed, ignoring case) is refused, and the check runs inside the save's database transaction.
+- **Fees and tax is not listed in Categories settings.** Its total comes from fee and tax fields, so it has nothing to rename, hide or budget. The drawn "Filled from the fee you enter" row is left out (design check).
+- **Money-in categories have their own screen,** reached by one row on Categories that names them ("Salary, business, gifts"), as drawn.
+- **A hidden category says so in words** under its name ("Hidden, no budget"), not only through its switch.
+- **Each Main colour swatch has a 1px `ink-muted` edge.** In dark, some main colours sit below 3:1 against the card (Charcoal 1.76); the edge keeps every disc visible. The contrast test checks it in both themes.
+- **Budget warning is an on/off switch** that uses each budget's own warn level, set on Set a budget. The drawn Smart help control is "reaches 70% / 80% / 90% / Never"; one level per budget avoids two settings that disagree (design check).
+- **The category chart choice is Pie, Bars or List only,** as drawn, and Insights follows it.
+- **Smart help switches for the phase 7 models are stored only.** The switches save, but the models they control arrive in phase 7.
+- **Reminders are rescheduled each time the app opens and when it goes to the background,** so the weekly summary carries recent figures. The notification small icon is a monochrome vector (`ic_stat_akatabo`), kept from resource shrinking by `res/raw/keep.xml`.
+- **Deferred from the drawn settings, to build later (design check):** Category colours (Colourful, One colour, Greys) on Appearance; "The app opens on" (Home, Add, Insights); Date style and "How amounts are written" (1,284,000 or 1.28M) on General. Each needs every screen that draws a category tile, a date or an amount to read the setting, which is wider than phase 5.
 - **Choose dates is held in memory and not saved.** The chosen range resets to All dates when the app opens. It is reached at `/filters/dates`, from the Dates row on Filters.
 - **Only the choice is held, not its dates.** A preset's days are worked out when read (`chosenPeriodProvider`), so "Last 7 days" moves on at midnight and "This month" follows "Month starts on". Saving a setting never resets the choice.
 - **Choose dates applies on its button.** Presets show their own length ("Show these 7 days"). A custom range counts both ends.

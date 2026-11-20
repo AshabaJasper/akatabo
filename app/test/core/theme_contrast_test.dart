@@ -41,6 +41,9 @@ void main() {
           'switch-on track against surface': (c.switchOn, c.surface, _mark),
           'switch thumb on switch-on': (c.onBrand, c.switchOn, _mark),
           'brand-bright focus ring against surface': (c.brandBright, c.surface, _mark),
+          // Some main colours sit close to the dark card (Charcoal 1.76:1), so each swatch
+          // has a 1px ink-muted edge that always stands out.
+          'Main colour swatch edge against surface': (c.inkMuted, c.surface, _mark),
         };
         final failing = [
           for (final e in pairs.entries)

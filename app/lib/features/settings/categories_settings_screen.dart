@@ -228,11 +228,18 @@ class _CategoryRow extends StatelessWidget {
     final t = context.type;
     final name = category.name;
     final budget = category.monthlyBudget;
-    final subtitle = category.kind == CategoryKind.income
+    final budgetLine = category.kind == CategoryKind.income
         ? null
         : budget == null
         ? 'No budget'
         : 'Budget ${formatAmount(budget)}';
+    // As drawn ("Hidden, nothing spent yet"): a hidden category says so in words, not only
+    // through its switch.
+    final subtitle = category.hidden
+        ? (budgetLine == null
+              ? 'Hidden'
+              : 'Hidden, ${budgetLine[0].toLowerCase()}${budgetLine.substring(1)}')
+        : budgetLine;
     final moves = _moves;
 
     return Semantics(
