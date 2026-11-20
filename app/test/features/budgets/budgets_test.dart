@@ -124,6 +124,7 @@ void main() {
         ),
         findsOneWidget,
       );
+      expect(find.text('Choose a category'), findsOneWidget, reason: 'the next step is offered');
     });
 
     testWidgets('the overall figure and the day allowance match the drawn screen', (tester) async {

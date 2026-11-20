@@ -95,9 +95,11 @@ class BudgetsScreen extends ConsumerWidget {
             else if (!ready)
               const SizedBox(height: AkSize.chart)
             else if (lines.isEmpty && unbudgeted.isEmpty)
-              const AkEmptyNote(
+              AkEmptyNote(
                 'No budgets yet. Set one for a category you want to keep an eye on, and it '
                 'shows here.',
+                actionLabel: 'Choose a category',
+                onAction: () => context.push('${Routes.settingsCategories}?from=budgets'),
               )
             else ...[
               if (lines.isNotEmpty) ...[

@@ -79,7 +79,11 @@ class CategoriesScreen extends ConsumerWidget {
             else if (!ready)
               const SizedBox(height: AkSize.chart)
             else if (total == 0)
-              const AkEmptyNote('Nothing spent this month yet. Entries you add are grouped here.')
+              AkEmptyNote(
+                'Nothing spent this month yet. Entries you add are grouped here.',
+                actionLabel: 'Add a transaction',
+                onAction: () => context.push(Routes.add),
+              )
             else ...[
               if (chart == CategoryChart.pie)
                 _PieHeader(

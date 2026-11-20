@@ -90,10 +90,14 @@ class AkListRow extends StatelessWidget {
     this.divider = false,
     this.minHeight = AkSize.row,
     this.padding = EdgeInsets.zero,
+    this.titleWeight = FontWeight.w500,
   });
 
   /// Space inside the row. The divider still runs the full width under it.
   final EdgeInsetsGeometry padding;
+
+  /// The title's weight: 500 in lists of entries, 600 where the title names a page.
+  final FontWeight titleWeight;
 
   final Widget? leading;
   final String title;
@@ -127,7 +131,7 @@ class AkListRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(title, style: t.body.copyWith(fontWeight: FontWeight.w500)),
+                  Text(title, style: t.body.copyWith(fontWeight: titleWeight)),
                   if (subtitle != null)
                     Text(subtitle!, style: t.caption.copyWith(color: c.inkMuted)),
                 ],

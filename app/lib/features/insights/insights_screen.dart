@@ -109,7 +109,11 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
             else if (!ready)
               const SizedBox(height: AkSize.chart)
             else if (rows.isEmpty)
-              const AkEmptyNote('Nothing spent or received in this period yet.')
+              AkEmptyNote(
+                'Nothing spent or received in this period yet.',
+                actionLabel: 'Add a transaction',
+                onAction: () => context.push(Routes.add),
+              )
             else ...[
               Text(
                 'Spent, ${rangeText(period.start, lastShown)}',

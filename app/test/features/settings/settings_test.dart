@@ -1,3 +1,4 @@
+import 'package:akatabo/core/icons/ak_icon.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
@@ -6,12 +7,14 @@ import 'package:akatabo/data/seed/default_data.dart';
 import 'package:akatabo/data/settings/setting_keys.dart';
 import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
+import 'package:akatabo/features/privacy/about_section.dart';
 import 'package:akatabo/features/settings/appearance_settings_screen.dart';
 import 'package:akatabo/features/settings/categories_settings_screen.dart';
 import 'package:akatabo/features/settings/general_settings_screen.dart';
 import 'package:akatabo/features/settings/home_layout.dart';
 import 'package:akatabo/features/settings/settings_screen.dart';
 import 'package:akatabo/widgets/ak_controls.dart';
+import 'package:akatabo/widgets/ak_surfaces.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -135,6 +138,75 @@ void main() {
         expect(find.text(title), findsOneWidget);
       }
       expect(find.text('Cash, MTN MoMo, Airtel Money, bank'), findsOneWidget);
+    });
+
+    testWidgets('the hub is three cards, each row with a tile and a chevron, and a footer', (
+      tester,
+    ) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(tester, const SettingsScreen(), db);
+      // Three groups: 3 + 4 + 2 pages.
+      expect(find.byType(AkCard), findsNWidgets(3));
+      expect(find.byType(AkIconTile), findsNWidgets(9));
+      expect(find.byType(AkIcon), findsNWidgets(18), reason: 'a tile icon and a chevron per row');
+      // The version cannot be read in a test, so the footer is the plain line.
+      expect(find.text('Free, with no account and no adverts.'), findsOneWidget);
+      // Text sits inside the card, not against its edge.
+      final card = tester.getTopLeft(find.byType(AkCard).first);
+      final title = tester.getTopLeft(find.text('General'));
+      expect(title.dx - card.dx, greaterThan(AkSpace.s3));
+    });
+
+    testWidgets('in dark, tile icons use brand-text, not brand-deep, so they can be seen', (
+      tester,
+    ) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: (_, _) => null,
+          overrides: [appDatabaseProvider.overrideWithValue(db)],
+          child: MaterialApp(
+            theme: buildAkTheme(Brightness.dark, const AkAppearance()),
+            home: const SettingsScreen(),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      final tile = find.byType(AkIconTile).first;
+      final colours = tester.element(tile).colors;
+      expect(colours.brandText, isNot(colours.brandDeep), reason: 'dark tokens differ');
+      final icon = tester.widget<AkIcon>(find.descendant(of: tile, matching: find.byType(AkIcon)));
+      expect(icon.color, colours.brandText);
+    });
+
+    testWidgets('the footer names the version once it is known', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: (_, _) => null,
+          overrides: [
+            appDatabaseProvider.overrideWithValue(db),
+            appVersionProvider.overrideWith((ref) async => '1.0.0 (1)'),
+          ],
+          child: MaterialApp(
+            theme: buildAkTheme(Brightness.light, const AkAppearance()),
+            home: const SettingsScreen(),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Akatabo 1.0.0 (1). Free, with no account and no adverts.'), findsOneWidget);
     });
 
     testWidgets('General shows the defaults until something is chosen', (tester) async {

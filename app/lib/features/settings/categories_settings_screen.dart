@@ -22,10 +22,11 @@ import 'settings_page.dart';
 /// to reorder, switch off to hide it. A hidden category keeps its past entries.
 /// The system Fees and tax category is never listed: its totals come from fee and tax fields.
 class CategoriesSettingsScreen extends ConsumerStatefulWidget {
-  const CategoriesSettingsScreen({super.key, this.fromHome = false});
+  const CategoriesSettingsScreen({super.key, this.backLabel = 'Settings'});
 
-  /// Opened from Home's first-day steps, so the back link names Home.
-  final bool fromHome;
+  /// The screen this was opened from, named in the back link: Settings, or Home's first-day
+  /// steps, or the empty Budgets screen.
+  final String backLabel;
 
   @override
   ConsumerState<CategoriesSettingsScreen> createState() => _CategoriesSettingsScreenState();
@@ -34,7 +35,7 @@ class CategoriesSettingsScreen extends ConsumerStatefulWidget {
 class _CategoriesSettingsScreenState extends ConsumerState<CategoriesSettingsScreen> {
   String? _problem;
 
-  String get _back => widget.fromHome ? 'Home' : 'Settings';
+  String get _back => widget.backLabel;
 
   Future<void> _setHidden(String id, {required bool hidden}) async {
     setState(() => _problem = null);
