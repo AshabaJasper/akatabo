@@ -176,7 +176,7 @@ class _AddDisc extends StatelessWidget {
               child: Center(
                 child: AkIcon(
                   AkIcons.plus,
-                  size: AkSize.iconNav,
+                  size: AkSize.iconAdd,
                   strokeWidth: 2.5,
                   color: c.onBrand,
                 ),

@@ -347,3 +347,12 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 2 x severity 2 = 4
 - **Suggested fix:** add "Set a budget", opening a category choice and then Set a budget.
 - **Found:** 20 November 2026, Phase 8 TalkBack tree check
+
+### [bug-review] update_tokens.py drops size tokens added directly to tokens.json
+
+- **Where:** `tools/design/update_tokens.py` (the `data["size"]` rebuild, with the `SIZE_TOKENS` list)
+- **What happens:** the script replaces the whole `size` group with its own list. `size-icon-add`, `size-chart` and `size-stroke` exist only in `design/tokens.json`, so running the script deletes them. The next `dart run tool/gen_tokens.dart` then removes `AkSize.iconAdd` and the app stops compiling.
+- **How to trigger:** `python -I tools/design/update_tokens.py`, then `dart run tool/gen_tokens.dart` and `flutter analyze`.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** merge `SIZE_TOKENS` into the existing size tokens by name, as spacing and radius already do, or add the three missing tokens to `SIZE_TOKENS`.
+- **Found:** 20 November 2026, bug review of the plus-size change
