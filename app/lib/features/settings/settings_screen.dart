@@ -20,8 +20,8 @@ class SettingsScreen extends StatelessWidget {
       _Entry('Home screen', 'Choose the cards and their order', Routes.settingsHome),
       _Entry('Smart help', 'Suggestions, forecast, unusual payments', Routes.settingsSmart),
       _Entry('Reminders', 'Daily nudge, budget warnings, weekly summary', Routes.settingsReminders),
-      _Entry('Privacy and security', 'App lock, hidden amounts', null),
-      _Entry('Data and backup', 'Export, back up, restore, delete', null),
+      _Entry('Privacy and security', 'App lock, hidden amounts', Routes.settingsPrivacy),
+      _Entry('Data and backup', 'Export, back up, restore, delete', Routes.settingsData),
     ];
     return Scaffold(
       body: SafeArea(

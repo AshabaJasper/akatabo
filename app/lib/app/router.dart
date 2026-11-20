@@ -9,6 +9,8 @@ import '../features/budgets/budgets_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/categories/categories_screen.dart';
 import '../features/categories/category_detail_screen.dart';
+import '../features/data/export_backup_screen.dart';
+import '../features/data/restore_screen.dart';
 import '../features/fees/fees_screen.dart';
 import '../features/filters/choose_dates_screen.dart';
 import '../features/filters/filters_screen.dart';
@@ -17,6 +19,7 @@ import '../features/home/home_screen.dart';
 import '../features/insights/insights_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/onboarding/welcome_screen.dart';
+import '../features/privacy/privacy_data_screen.dart';
 import '../features/regular/regular_new_screen.dart';
 import '../features/regular/regular_payments_screen.dart';
 import '../features/settings/accounts_settings_screen.dart';
@@ -153,6 +156,17 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
           openAtReminders: state.uri.queryParameters['section'] == 'reminders',
         ),
       ),
+      GoRoute(
+        path: Routes.settingsPrivacy,
+        builder: (_, state) =>
+            PrivacyDataScreen(openAtData: state.uri.queryParameters['section'] == 'data'),
+      ),
+      GoRoute(
+        path: Routes.dataExport,
+        builder: (_, state) =>
+            ExportBackupScreen(startOnPdf: state.uri.queryParameters['format'] == 'pdf'),
+      ),
+      GoRoute(path: Routes.dataRestore, builder: (_, _) => const RestoreScreen()),
       GoRoute(path: Routes.filters, builder: (_, _) => const FiltersScreen()),
       GoRoute(path: Routes.chooseDates, builder: (_, _) => const ChooseDatesScreen()),
       GoRoute(

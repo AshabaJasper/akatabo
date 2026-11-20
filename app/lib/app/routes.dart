@@ -26,6 +26,17 @@ abstract final class Routes {
   /// The same page, scrolled to its Reminders section.
   static const settingsReminders = '$settingsSmart?section=reminders';
 
+  /// Privacy and data: app lock, hidden amounts, data and backup, about. One page reached
+  /// from both hub rows; the Data and backup row opens it at that section.
+  static const settingsPrivacy = '/settings/privacy';
+  static const settingsData = '$settingsPrivacy?section=data';
+
+  /// Export and back up, and Restore from a backup. [exportPdf] opens Export on the PDF
+  /// report, for the "Export a monthly report" row.
+  static const dataExport = '/settings/data';
+  static const dataExportPdf = '$dataExport?format=pdf';
+  static const dataRestore = '/settings/data/restore';
+
   /// Filters for All transactions, and Choose dates from inside them.
   static const filters = '/filters';
   static const chooseDates = '/filters/dates';
