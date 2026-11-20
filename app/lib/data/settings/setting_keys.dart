@@ -62,11 +62,23 @@ final class EnumSetting<T extends Enum> extends SettingKey<T> {
 /// "How often it points them out" on Smart help: how readily a payment is called unusual.
 enum UnusualHowOften { rarely, balanced, often }
 
+/// "Category chart" on Appearance: how the Categories screen shows the month's split.
+/// Pie draws the donut beside the reading (as Categories.html), Bars puts a share bar in
+/// each row, List only shows the rows alone.
+enum CategoryChart { pie, bars, listOnly }
+
 /// Every setting. Defaults are what the drawn Settings pages show.
 abstract final class SettingKeys {
   // Appearance
   static const theme = EnumSetting('appearance.theme', ThemeMode.system, ThemeMode.values);
+
+  /// An `AkPalette.id`. An id that is no longer offered reads as green (see `paletteById`).
   static const mainColour = StringSetting('appearance.mainColour', 'green');
+  static const categoryChart = EnumSetting(
+    'appearance.categoryChart',
+    CategoryChart.pie,
+    CategoryChart.values,
+  );
   static const corners = EnumSetting('appearance.corners', AkCorners.rounded, AkCorners.values);
   static const textSize = EnumSetting(
     'appearance.textSize',

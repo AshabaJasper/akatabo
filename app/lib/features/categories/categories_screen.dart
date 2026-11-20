@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../app/appearance.dart';
 import '../../app/close_screen.dart';
 import '../../app/routes.dart';
 import '../../core/format/money.dart';
@@ -15,10 +16,13 @@ import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/seed/default_data.dart';
+import '../../data/settings/setting_keys.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
+import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
+import '../../widgets/charts/category_donut.dart';
 import '../home/home_providers.dart';
 import '../insights/insights_text.dart';
 
@@ -37,6 +41,7 @@ class CategoriesScreen extends ConsumerWidget {
     final rows = ref.watch(monthRowsProvider);
     final before = ref.watch(previousSameDaysRowsProvider);
     final cats = ref.watch(allCategoriesProvider);
+    final chart = ref.watch(categoryChartProvider);
     final ready = rows.hasValue && before.hasValue && cats.hasValue;
 
     final current = moneyOutByCategory(rows.value ?? const <Transaction>[]);
@@ -73,13 +78,27 @@ class CategoriesScreen extends ConsumerWidget {
             else if (total == 0)
               const AkEmptyNote('Nothing spent this month yet. Entries you add are grouped here.')
             else ...[
-              Text(
-                '${rangeText(month.start, today)}, ${formatUgx(total)} out',
-                style: t.bodySm.copyWith(color: c.inkMuted),
-              ),
-              if (reading != null) ...[
-                const SizedBox(height: AkSpace.s1),
-                Text(reading, style: t.bodySm.copyWith(color: c.inkMuted)),
+              if (chart == CategoryChart.pie)
+                _PieHeader(
+                  slices: donutSlices(
+                    c,
+                    [...ordered, if (feesAmount != null) DefaultIds.fees],
+                    current,
+                    names,
+                  ),
+                  total: total,
+                  range: rangeText(month.start, today),
+                  reading: reading ?? '${formatUgx(total)} out.',
+                )
+              else ...[
+                Text(
+                  '${rangeText(month.start, today)}, ${formatUgx(total)} out',
+                  style: t.bodySm.copyWith(color: c.inkMuted),
+                ),
+                if (reading != null) ...[
+                  const SizedBox(height: AkSpace.s1),
+                  Text(reading, style: t.bodySm.copyWith(color: c.inkMuted)),
+                ],
               ],
               const SizedBox(height: AkSpace.s4),
               for (final id in ordered)
@@ -88,6 +107,7 @@ class CategoriesScreen extends ConsumerWidget {
                   amount: current[id]!,
                   share: shareOf(current[id]!, total),
                   change: comparison(current[id]!, previous[id] ?? 0, against),
+                  bar: chart == CategoryChart.bars,
                   onTap: () => context.push(Routes.category(id)),
                 ),
               if (feesAmount != null)
@@ -96,12 +116,87 @@ class CategoriesScreen extends ConsumerWidget {
                   amount: feesAmount,
                   share: shareOf(feesAmount, total),
                   change: comparison(feesAmount, previous[DefaultIds.fees] ?? 0, against),
+                  bar: chart == CategoryChart.bars,
                   onTap: () => context.push(Routes.fees),
                 ),
             ],
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The donut's slices in list order (largest first, Fees and tax last). The donut takes six
+/// slices at most, so from a seventh category on, the smallest are joined into one
+/// `line-strong` slice read as "the rest".
+List<DonutSlice> donutSlices(
+  AkColorTokens c,
+  List<String> ids,
+  Map<String, int> amounts,
+  Map<String, Category> names,
+) {
+  const most = 6;
+  DonutSlice of(String id) => DonutSlice(
+    name: names[id]?.name ?? 'Other',
+    amount: amounts[id]!,
+    colour: colourForToken(c, names[id]?.colourToken ?? 'cat-slate'),
+  );
+  if (ids.length <= most) return [for (final id in ids) of(id)];
+  final byAmount = [...ids]..sort((a, b) => amounts[b]!.compareTo(amounts[a]!));
+  final kept = byAmount.take(most - 1).toSet();
+  final rest = byAmount.skip(most - 1).fold<int>(0, (sum, id) => sum + amounts[id]!);
+  return [
+    for (final id in ids)
+      if (kept.contains(id)) of(id),
+    DonutSlice(name: 'the rest', amount: rest, colour: c.lineStrong),
+  ];
+}
+
+/// What the donut says to a screen reader, as Categories.html words it.
+String donutLabel(List<DonutSlice> slices, int total) =>
+    'Pie chart of money out by category: '
+    '${slices.map((s) => '${s.name.toLowerCase()} ${formatPercent(shareOf(s.amount, total))}').join(', ')}';
+
+/// The drawn top of Categories with Pie chosen: the donut with the total in its centre, and
+/// beside it the dates and the one-sentence reading.
+class _PieHeader extends StatelessWidget {
+  const _PieHeader({
+    required this.slices,
+    required this.total,
+    required this.range,
+    required this.reading,
+  });
+
+  final List<DonutSlice> slices;
+  final int total;
+  final String range;
+  final String reading;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = context.type;
+    return Row(
+      children: [
+        CategoryDonut(
+          slices: slices,
+          centre: formatShort(total),
+          centreCaption: 'money out',
+          semanticLabel: donutLabel(slices, total),
+        ),
+        const SizedBox(width: AkSpace.s4),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AkEyebrowLabel(range),
+              const SizedBox(height: AkSpace.s2),
+              Text(reading, style: t.headlineSm.copyWith(color: c.ink)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -121,6 +216,7 @@ class _CategoryRow extends StatelessWidget {
     required this.amount,
     required this.share,
     required this.change,
+    required this.bar,
     required this.onTap,
   });
 
@@ -128,6 +224,9 @@ class _CategoryRow extends StatelessWidget {
   final int amount;
   final double share;
   final String change;
+
+  /// A share bar under the name, when "Category chart" is Bars.
+  final bool bar;
   final VoidCallback onTap;
 
   @override
@@ -174,8 +273,10 @@ class _CategoryRow extends StatelessWidget {
                         Text(formatAmount(amount), style: t.figure.copyWith(color: c.ink)),
                       ],
                     ),
-                    const SizedBox(height: AkSpace.s1),
-                    ShareBar(fraction: share / 100, colour: colour),
+                    if (bar) ...[
+                      const SizedBox(height: AkSpace.s1),
+                      ShareBar(fraction: share / 100, colour: colour),
+                    ],
                     const SizedBox(height: AkSpace.s1),
                     Text(
                       '${formatPercent(share)} · $change',
