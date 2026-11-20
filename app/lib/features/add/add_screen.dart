@@ -55,6 +55,15 @@ class _AddScreenState extends ConsumerState<AddScreen> {
 
   /// A fee was typed while the fee box was in the form, so it stays there.
   bool _feeTypedUpFront = false;
+
+  /// The form has scrolled under the pinned kind and amount, so a hairline marks the edge.
+  bool _formScrolled = false;
+
+  /// The amount field moves between the pinned header and the list when the keyboard opens
+  /// or closes. The key carries its element across, so the field keeps its focus, cursor and
+  /// keyboard instead of being built afresh and grabbing focus again through `autofocus`.
+  final _amountKey = GlobalKey(debugLabel: 'amount');
+  final _amountFocus = FocusNode(debugLabel: 'amount');
   List<String> _problems = const [];
 
   /// The time now, for the "When" label until the person chooses a moment. A timer keeps it
@@ -113,6 +122,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
   @override
   void dispose() {
     _tick?.cancel();
+    _amountFocus.dispose();
     _amount.dispose();
     _what.dispose();
     _fee.dispose();
@@ -228,9 +238,10 @@ class _AddScreenState extends ConsumerState<AddScreen> {
       if (a.id == fromId) from = a;
     }
     // "Ask for the fee each time": the fee box sits in the form for an account that asks, and
-    // waits under "More details" for one that does not. A fee already typed in the form stays
-    // there when the account changes, so it never disappears from view.
-    final feeUpFront = (from?.askFeeEachTime ?? true) || _feeTypedUpFront;
+    // waits under "More details" for one that does not. Moving money always shows it, since
+    // a fee is the usual cost of moving money. A fee already typed in the form stays there
+    // when the account changes, so it never disappears from view.
+    final feeUpFront = isTransfer || (from?.askFeeEachTime ?? true) || _feeTypedUpFront;
     final feeField = AkTextField(
       label: isTransfer ? 'Fee to move it' : 'Fee, if any',
       controller: _fee,
@@ -259,202 +270,264 @@ class _AddScreenState extends ConsumerState<AddScreen> {
       if (cat.id == suggestion?.categoryId) suggested = cat;
     }
 
+    final directionRow = Row(
+      children: [
+        _CloseButton(onTap: () => closeScreen(context)),
+        const SizedBox(width: AkSpace.s2h),
+        Expanded(
+          child: AkSegmented<Direction>(
+            semanticLabel: 'Kind of transaction',
+            selected: _direction,
+            onChanged: _chooseDirection,
+            // Three choices share the row the design drew for two, so the labels go
+            // without icons; with them, each label broke onto two lines.
+            segments: const [
+              AkSegment(Direction.moneyOut, 'Money out'),
+              AkSegment(Direction.moneyIn, 'Money in'),
+              AkSegment(Direction.transfer, 'Move money'),
+            ],
+          ),
+        ),
+      ],
+    );
+    final amountBlock = Column(
+      key: _amountKey,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const AkEyebrowLabel('Amount, UGX'),
+        const SizedBox(height: AkSpace.s1),
+        // Merged, so the name sits on the edit box TalkBack focuses. Without it the box
+        // was announced only by its hint, "0" (found on the emulator in Phase 8).
+        MergeSemantics(
+          child: Semantics(
+            label: 'Amount in shillings',
+            textField: true,
+            child: TextField(
+              controller: _amount,
+              focusNode: _amountFocus,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              inputFormatters: const [ThousandsFormatter()],
+              style: t.figureXl.copyWith(color: c.ink),
+              cursorColor: c.brand,
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: AkSpace.s2),
+                hintText: '0',
+                hintStyle: t.figureXl.copyWith(color: c.inkMuted),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: c.brand, width: 2),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: c.brand, width: 2),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+    // The kind of entry and the amount stay in view while the rest of the form scrolls under
+    // them. With very large text, or a short screen once the keyboard is up, pinning both
+    // would leave too little room to scroll, so the amount scrolls with the form there.
+    final media = MediaQuery.of(context);
+    final room = media.size.height - media.padding.vertical - media.viewInsets.bottom;
+    final pinAmount = room >= AkSize.pinnedFormMin && media.textScaler.scale(1) <= 1.3;
+
     return Scaffold(
       backgroundColor: c.ground,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s3, AkSpace.s6, AkSpace.s6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                _CloseButton(onTap: () => closeScreen(context)),
-                const SizedBox(width: AkSpace.s2h),
-                Expanded(
-                  child: AkSegmented<Direction>(
-                    semanticLabel: 'Kind of transaction',
-                    selected: _direction,
-                    onChanged: _chooseDirection,
-                    // Three choices share the row the design drew for two, so the labels go
-                    // without icons; with them, each label broke onto two lines.
-                    segments: const [
-                      AkSegment(Direction.moneyOut, 'Money out'),
-                      AkSegment(Direction.moneyIn, 'Money in'),
-                      AkSegment(Direction.transfer, 'Move money'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AkSpace.s5),
-            const AkEyebrowLabel('Amount, UGX'),
-            const SizedBox(height: AkSpace.s1),
-            // Merged, so the name sits on the edit box TalkBack focuses. Without it the box
-            // was announced only by its hint, "0" (found on the emulator in Phase 8).
-            MergeSemantics(
-              child: Semantics(
-                label: 'Amount in shillings',
-                textField: true,
-                child: TextField(
-                  controller: _amount,
-                  autofocus: true,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: const [ThousandsFormatter()],
-                  style: t.figureXl.copyWith(color: c.ink),
-                  cursorColor: c.brand,
-                  decoration: InputDecoration(
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: AkSpace.s2),
-                    hintText: '0',
-                    hintStyle: t.figureXl.copyWith(color: c.inkMuted),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: c.brand, width: 2),
-                    ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: c.brand, width: 2),
-                    ),
-                  ),
+            DecoratedBox(
+              // A hairline appears under the pinned part once the form has scrolled under it.
+              decoration: BoxDecoration(
+                color: c.ground,
+                border: Border(bottom: BorderSide(color: _formScrolled ? c.line : c.ground)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s3, AkSpace.s6, AkSpace.s3),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    directionRow,
+                    if (pinAmount) ...[const SizedBox(height: AkSpace.s4), amountBlock],
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: AkSpace.s5),
-            AkTextField(
-              label: isTransfer ? 'What it was for, if anything' : 'What was it for',
-              controller: _what,
-              textInputAction: TextInputAction.done,
-              hint: isTransfer ? null : 'Groceries, Nakasero market',
-              // The suggestion follows the words as they are typed.
-              onChanged: (_) => setState(() {}),
-            ),
-            if (!isTransfer) ...[
-              const SizedBox(height: AkSpace.s5),
-              // The pill sits at the end of the heading row, as drawn; a long category name
-              // moves it to its own line rather than breaking its words. While suggestions
-              // are on, the row keeps the pill's height, so the grid does not jump as the
-              // pill comes and goes during typing.
-              ConstrainedBox(
-                constraints: BoxConstraints(minHeight: suggester == null ? 0 : AkSize.target),
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: AkSpace.s2,
-                      children: [
-                        const AkEyebrowLabel('Category'),
-                        if (suggestion != null && suggested != null)
-                          SuggestionPill(
-                            categoryName: suggested.name,
-                            probability: suggestion.probability,
-                            selected: categoryId == suggestion.categoryId,
-                            onTap: () => setState(() {
-                              _categoryId = suggestion.categoryId;
-                              _problems = const [];
-                            }),
+            Expanded(
+              child: NotificationListener<ScrollUpdateNotification>(
+                onNotification: (n) {
+                  final scrolled = n.metrics.pixels > 0;
+                  if (scrolled != _formScrolled) setState(() => _formScrolled = scrolled);
+                  return false;
+                },
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AkSpace.s6,
+                    AkSpace.s2,
+                    AkSpace.s6,
+                    AkSpace.s6,
+                  ),
+                  children: [
+                    if (!pinAmount) ...[amountBlock, const SizedBox(height: AkSpace.s5)],
+                    AkTextField(
+                      label: isTransfer ? 'What it was for, if anything' : 'What was it for',
+                      controller: _what,
+                      textInputAction: TextInputAction.done,
+                      hint: isTransfer ? null : 'Groceries, Nakasero market',
+                      // The suggestion follows the words as they are typed.
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    if (!isTransfer) ...[
+                      const SizedBox(height: AkSpace.s5),
+                      // The pill sits at the end of the heading row, as drawn; a long category name
+                      // moves it to its own line rather than breaking its words. While suggestions
+                      // are on, the row keeps the pill's height, so the grid does not jump as the
+                      // pill comes and goes during typing.
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: suggester == null ? 0 : AkSize.target,
+                        ),
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: AkSpace.s2,
+                              children: [
+                                const AkEyebrowLabel('Category'),
+                                if (suggestion != null && suggested != null)
+                                  SuggestionPill(
+                                    categoryName: suggested.name,
+                                    probability: suggestion.probability,
+                                    selected: categoryId == suggestion.categoryId,
+                                    onTap: () => setState(() {
+                                      _categoryId = suggestion.categoryId;
+                                      _problems = const [];
+                                    }),
+                                  ),
+                              ],
+                            ),
                           ),
-                      ],
+                        ),
+                      ),
+                      const SizedBox(height: AkSpace.s2),
+                      categoriesAsync.when(
+                        loading: () => const SizedBox(height: AkSize.catCell),
+                        error: (_, _) => Text(
+                          'Categories could not be loaded. Close this and try again.',
+                          style: t.bodySm.copyWith(color: c.moneyOut),
+                        ),
+                        data: (rows) => LayoutBuilder(
+                          builder: (context, box) => GridView(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: _categoryGrid(context, box.maxWidth),
+                            children: [
+                              for (final cat in rows)
+                                _CategoryTile(
+                                  category: cat,
+                                  selected: cat.id == categoryId,
+                                  onTap: () => setState(() {
+                                    _categoryId = cat.id;
+                                    _problems = const [];
+                                  }),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: AkSpace.s5),
+                    AkEyebrowLabel(isTransfer ? 'From' : (isMoneyIn ? 'Paid into' : 'Paid from')),
+                    const SizedBox(height: AkSpace.s2),
+                    _AccountChoices(
+                      accounts: accounts,
+                      selectedId: fromId,
+                      onChanged: (id) => setState(() => _fromId = id),
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AkSpace.s2),
-              categoriesAsync.when(
-                loading: () => const SizedBox(height: AkSize.catCell),
-                error: (_, _) => Text(
-                  'Categories could not be loaded. Close this and try again.',
-                  style: t.bodySm.copyWith(color: c.moneyOut),
-                ),
-                data: (rows) => LayoutBuilder(
-                  builder: (context, box) => GridView(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: _categoryGrid(context, box.maxWidth),
-                    children: [
-                      for (final cat in rows)
-                        _CategoryTile(
-                          category: cat,
-                          selected: cat.id == categoryId,
-                          onTap: () => setState(() {
-                            _categoryId = cat.id;
-                            _problems = const [];
-                          }),
+                    if (isTransfer) ...[
+                      const SizedBox(height: AkSpace.s5),
+                      const AkEyebrowLabel('To'),
+                      const SizedBox(height: AkSpace.s2),
+                      _AccountChoices(
+                        accounts: accounts,
+                        selectedId: _toId ?? _otherAccount(accounts, fromId)?.id,
+                        onChanged: (id) => setState(() => _toId = id),
+                      ),
+                    ],
+                    if (!isMoneyIn && feeUpFront) ...[const SizedBox(height: AkSpace.s5), feeField],
+                    const SizedBox(height: AkSpace.s4),
+                    AkTextLink(
+                      _showMore ? 'Fewer details' : 'More details',
+                      onTap: () => setState(() => _showMore = !_showMore),
+                    ),
+                    if (_showMore) ...[
+                      const SizedBox(height: AkSpace.s4),
+                      if (!isMoneyIn && !feeUpFront) ...[
+                        feeField,
+                        const SizedBox(height: AkSpace.s4),
+                      ],
+                      if (!isMoneyIn) ...[
+                        AkTextField(
+                          label: 'Tax, if any',
+                          controller: _tax,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: const [ThousandsFormatter()],
+                        ),
+                        const SizedBox(height: AkSpace.s4),
+                      ],
+                      AkTextField(
+                        label: 'Note',
+                        controller: _note,
+                        textInputAction: TextInputAction.done,
+                      ),
+                    ],
+                    const SizedBox(height: AkSpace.s5),
+                    _WhenField(
+                      // Unchosen, the entry is stamped when saved, which is always today.
+                      label: _when == null
+                          ? whenLabel(_shownNow, _shownNow)
+                          : whenLabel(_when!, now),
+                      onTap: _pickWhen,
+                    ),
+                    if (_whenProblem != null) ...[
+                      const SizedBox(height: AkSpace.s1),
+                      Text(_whenProblem!, style: t.bodySm.copyWith(color: c.moneyOut)),
+                    ],
+                    if (_when != null) ...[
+                      const SizedBox(height: AkSpace.s1),
+                      AkTextLink(
+                        'Use the time of saving',
+                        onTap: () => setState(() {
+                          _when = null;
+                          _whenProblem = null;
+                        }),
+                      ),
+                    ],
+                    if (_problems.isNotEmpty) ...[
+                      const SizedBox(height: AkSpace.s4),
+                      for (final p in _problems)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AkSpace.s1),
+                          child: Text(p, style: t.bodySm.copyWith(color: c.moneyOut)),
                         ),
                     ],
-                  ),
+                    const SizedBox(height: AkSpace.s5),
+                    AkPrimaryButton(
+                      label: _saving ? 'Saving' : 'Save transaction',
+                      onPressed: _saving ? null : () => _save(defaultAccount, accounts, suggestion),
+                    ),
+                  ],
                 ),
               ),
-            ],
-            const SizedBox(height: AkSpace.s5),
-            AkEyebrowLabel(isTransfer ? 'From' : (isMoneyIn ? 'Paid into' : 'Paid from')),
-            const SizedBox(height: AkSpace.s2),
-            _AccountChoices(
-              accounts: accounts,
-              selectedId: fromId,
-              onChanged: (id) => setState(() => _fromId = id),
-            ),
-            if (isTransfer) ...[
-              const SizedBox(height: AkSpace.s5),
-              const AkEyebrowLabel('To'),
-              const SizedBox(height: AkSpace.s2),
-              _AccountChoices(
-                accounts: accounts,
-                selectedId: _toId ?? _otherAccount(accounts, fromId)?.id,
-                onChanged: (id) => setState(() => _toId = id),
-              ),
-            ],
-            if (!isMoneyIn && feeUpFront) ...[const SizedBox(height: AkSpace.s5), feeField],
-            const SizedBox(height: AkSpace.s4),
-            AkTextLink(
-              _showMore ? 'Fewer details' : 'More details',
-              onTap: () => setState(() => _showMore = !_showMore),
-            ),
-            if (_showMore) ...[
-              const SizedBox(height: AkSpace.s4),
-              if (!isMoneyIn && !feeUpFront) ...[feeField, const SizedBox(height: AkSpace.s4)],
-              if (!isMoneyIn) ...[
-                AkTextField(
-                  label: 'Tax, if any',
-                  controller: _tax,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: const [ThousandsFormatter()],
-                ),
-                const SizedBox(height: AkSpace.s4),
-              ],
-              AkTextField(label: 'Note', controller: _note, textInputAction: TextInputAction.done),
-            ],
-            const SizedBox(height: AkSpace.s5),
-            _WhenField(
-              // Unchosen, the entry is stamped when saved, which is always today.
-              label: _when == null ? whenLabel(_shownNow, _shownNow) : whenLabel(_when!, now),
-              onTap: _pickWhen,
-            ),
-            if (_whenProblem != null) ...[
-              const SizedBox(height: AkSpace.s1),
-              Text(_whenProblem!, style: t.bodySm.copyWith(color: c.moneyOut)),
-            ],
-            if (_when != null) ...[
-              const SizedBox(height: AkSpace.s1),
-              AkTextLink(
-                'Use the time of saving',
-                onTap: () => setState(() {
-                  _when = null;
-                  _whenProblem = null;
-                }),
-              ),
-            ],
-            if (_problems.isNotEmpty) ...[
-              const SizedBox(height: AkSpace.s4),
-              for (final p in _problems)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: AkSpace.s1),
-                  child: Text(p, style: t.bodySm.copyWith(color: c.moneyOut)),
-                ),
-            ],
-            const SizedBox(height: AkSpace.s5),
-            AkPrimaryButton(
-              label: _saving ? 'Saving' : 'Save transaction',
-              onPressed: _saving ? null : () => _save(defaultAccount, accounts, suggestion),
             ),
           ],
         ),

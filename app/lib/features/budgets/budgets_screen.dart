@@ -95,11 +95,11 @@ class BudgetsScreen extends ConsumerWidget {
             else if (!ready)
               const SizedBox(height: AkSize.chart)
             else if (lines.isEmpty && unbudgeted.isEmpty)
-              AkEmptyNote(
-                'No budgets yet. Set one for a category you want to keep an eye on, and it '
-                'shows here.',
-                actionLabel: 'Choose a category',
-                onAction: () => context.push('${Routes.settingsCategories}?from=budgets'),
+              _NoBudgetsYet(
+                categories: [
+                  for (final cat in cats)
+                    if (!cat.isSystem && !cat.hidden && cat.kind == CategoryKind.spending) cat,
+                ],
               )
             else ...[
               if (lines.isNotEmpty) ...[
@@ -418,6 +418,73 @@ class BudgetBar extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// No budget and no spending yet: the sentence, then every spending category with a way
+/// straight into its Set a budget screen, so the tab is never a lone line on an empty page.
+class _NoBudgetsYet extends StatelessWidget {
+  const _NoBudgetsYet({required this.categories});
+
+  final List<Category> categories;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = context.type;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'No budgets yet. Set one for a category you want to keep an eye on, and it shows '
+          'here.',
+          style: t.bodySm.copyWith(color: c.inkMuted),
+        ),
+        if (categories.isNotEmpty) ...[
+          const SizedBox(height: AkSpace.s4),
+          AkCard(
+            padding: const EdgeInsets.symmetric(horizontal: AkSpace.s4),
+            child: Column(
+              children: [
+                for (final (i, cat) in categories.indexed)
+                  Semantics(
+                    button: true,
+                    container: true,
+                    excludeSemantics: true,
+                    label: 'Set a budget for ${cat.name}',
+                    onTap: () => context.push(Routes.budget(cat.id)),
+                    child: AkListRow(
+                      divider: i < categories.length - 1,
+                      leading: AkIconTile(
+                        icon: AkIcons.fromKey(cat.iconKey),
+                        background: colourForToken(c, cat.colourToken),
+                        foreground: categoryIconColour(c, cat.colourToken),
+                        size: AkSize.tileSm,
+                      ),
+                      title: cat.name,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Set a budget',
+                            style: t.bodySm.copyWith(
+                              color: c.brandText,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: AkSpace.s1),
+                          AkIcon(AkIcons.chevron, color: c.inkMuted, size: AkSize.iconSm),
+                        ],
+                      ),
+                      onTap: () => context.push(Routes.budget(cat.id)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

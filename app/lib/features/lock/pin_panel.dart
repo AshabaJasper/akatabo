@@ -108,6 +108,10 @@ class _PinPanelState extends State<PinPanel> {
                           Align(alignment: AlignmentDirectional.centerStart, child: widget.header)
                         else
                           const SizedBox(height: AkSize.target),
+                        // The spare height is shared: some above the title, more between the
+                        // message and the keypad, so on a tall phone the title sits in the
+                        // upper half and the keypad rises off the bottom edge.
+                        const Spacer(flex: 2),
                         ExcludeSemantics(
                           child: Text('Akatabo', style: t.titleLg.copyWith(color: c.onBrand)),
                         ),
@@ -133,7 +137,7 @@ class _PinPanelState extends State<PinPanel> {
                             ),
                           ),
                         ),
-                        const Spacer(),
+                        const Spacer(flex: 3),
                         const SizedBox(height: AkSpace.s6),
                         _Keypad(
                           enabled: _keysOn,
@@ -145,6 +149,7 @@ class _PinPanelState extends State<PinPanel> {
                         ),
                         const SizedBox(height: AkSpace.s3),
                         widget.footer ?? const SizedBox(height: AkSize.target),
+                        const Spacer(),
                       ],
                     ),
                   ),
@@ -215,9 +220,11 @@ class _Keypad extends StatelessWidget {
   Widget build(BuildContext context) {
     {
       {
-        // 72px keys as on Add's grid cells; narrower phones shrink them so three fit.
+        // Keys grow with the phone up to `size-pin-key`; narrower phones shrink them so three
+        // fit, never below the 44px target. Rows open up a little once keys are large.
         const gap = AkSpace.s6;
-        final key = ((width - 2 * gap) / 3).clamp(AkSize.target, AkSize.catCell);
+        final key = ((width - 2 * gap) / 3).clamp(AkSize.target, AkSize.pinKey);
+        final rowGap = key >= AkSize.catCell ? AkSpace.s5 : AkSpace.s4;
         Widget row(List<Widget> keys) => Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -237,7 +244,7 @@ class _Keypad extends StatelessWidget {
               ['7', '8', '9'],
             ]) ...[
               row([for (final d in r) digit(d)]),
-              const SizedBox(height: AkSpace.s4),
+              SizedBox(height: rowGap),
             ],
             row([
               if (onBiometric != null)

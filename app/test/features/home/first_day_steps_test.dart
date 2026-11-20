@@ -2,7 +2,6 @@
 // names Home in its back link, since that is where the person came from.
 import 'package:akatabo/app/app.dart';
 import 'package:akatabo/app/router.dart';
-import 'package:akatabo/app/routes.dart';
 import 'package:akatabo/core/time/clock_provider.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,42 +59,79 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets(
-    'empty Budgets\' "Choose a category" opens Categories, whose back link names Budgets',
-    (tester) async {
-      final semantics = tester.ensureSemantics();
-      tester.view
-        ..physicalSize = const Size(390, 844)
-        ..devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      final db = memoryDb();
-      final router = buildRouter(initialLocation: Routes.budgets);
-      addTearDown(router.dispose);
-      await tester.pumpWidget(
-        ProviderScope(
-          retry: (_, _) => null,
-          overrides: [
-            appDatabaseProvider.overrideWithValue(db),
-            appNowProvider.overrideWithValue(testNow),
-            ...securityOverrides(values: MapSecureValues()),
-          ],
-          child: AkataboApp(router: router, onboardingDone: true),
-        ),
-      );
-      await _settle(tester);
+  testWidgets('"Used Akatabo before?" opens Restore, whose back link names Home', (tester) async {
+    final semantics = tester.ensureSemantics();
+    tester.view
+      ..physicalSize = const Size(390, 844)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final db = memoryDb();
+    final router = buildRouter();
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          appNowProvider.overrideWithValue(testNow),
+          ...securityOverrides(values: MapSecureValues()),
+        ],
+        child: AkataboApp(router: router, onboardingDone: true),
+      ),
+    );
+    await _settle(tester);
 
-      await tester.tap(find.text('Choose a category'));
-      await _settle(tester);
-      expect(find.bySemanticsLabel('Back to Budgets'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Used Akatabo before?'), 200);
+    await tester.tap(find.text('Used Akatabo before?'));
+    await _settle(tester);
+    expect(find.bySemanticsLabel('Back to Home'), findsOneWidget);
+    expect(
+      find.text('Pick a backup file you saved from Akatabo. Its name ends in .akatabo.'),
+      findsOneWidget,
+      reason: 'Restore is open',
+    );
 
-      await tester.tap(find.bySemanticsLabel('Back to Budgets'));
-      await _settle(tester);
-      expect(find.text('Choose a category'), findsOneWidget, reason: 'back on Budgets');
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 1));
+    addTearDown(db.close);
+    semantics.dispose();
+  });
 
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump(const Duration(seconds: 1));
-      addTearDown(db.close);
-      semantics.dispose();
-    },
-  );
+  testWidgets('the first day fills the screen: chart note, restore, regular, what it does', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(390, 844)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final db = memoryDb();
+    final router = buildRouter();
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          appNowProvider.overrideWithValue(testNow),
+          ...securityOverrides(values: MapSecureValues()),
+        ],
+        child: AkataboApp(router: router, onboardingDone: true),
+      ),
+    );
+    await _settle(tester);
+    for (final text in [
+      'Charts and the forecast appear after a few days',
+      'Used Akatabo before?',
+      'Pay something every month?',
+      'What Akatabo does',
+      'Everything stays on this phone. No account, no adverts, no permissions.',
+    ]) {
+      await tester.scrollUntilVisible(find.text(text), 200);
+      expect(find.text(text), findsOneWidget);
+    }
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 1));
+    addTearDown(db.close);
+  });
 }

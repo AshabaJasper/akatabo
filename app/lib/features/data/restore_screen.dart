@@ -56,10 +56,18 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
     super.dispose();
   }
 
-  bool get _fromPrivacy {
-    if (widget.fromPrivacy != null) return widget.fromPrivacy!;
-    if (GoRouter.maybeOf(context) == null) return false;
-    return GoRouterState.of(context).uri.queryParameters['from'] == 'privacy';
+  /// The screen the back link names: Privacy and data, Home's first day, or the drawn
+  /// "Export and back up".
+  String get _backLabel {
+    if (widget.fromPrivacy != null) {
+      return widget.fromPrivacy! ? 'Privacy and data' : 'Export and back up';
+    }
+    if (GoRouter.maybeOf(context) == null) return 'Export and back up';
+    return switch (GoRouterState.of(context).uri.queryParameters['from']) {
+      'privacy' => 'Privacy and data',
+      'home' => 'Home',
+      _ => 'Export and back up',
+    };
   }
 
   int get _step => _done != null ? 2 : (_file == null ? 0 : 1);
@@ -215,10 +223,7 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
                     AkSpace.s4,
                   ),
                   children: [
-                    AkBackLink(
-                      _fromPrivacy ? 'Privacy and data' : 'Export and back up',
-                      onTap: restoring ? () {} : () => closeScreen(context),
-                    ),
+                    AkBackLink(_backLabel, onTap: restoring ? () {} : () => closeScreen(context)),
                     const SizedBox(height: AkSpace.s1),
                     Semantics(header: true, child: Text('Restore', style: context.type.displayLg)),
                     const SizedBox(height: AkSpace.s3h),

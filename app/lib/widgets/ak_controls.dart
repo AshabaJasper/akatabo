@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../core/icons/ak_icon.dart';
+import '../core/theme/ak_motion.dart';
 import '../core/theme/ak_theme.dart';
 
 /// One choice in an [AkSegmented].
@@ -46,12 +47,46 @@ class AkSegmented<T> extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, box) {
             final flex = _flexes(context, box.maxWidth);
-            return Row(
+            // Each segment's width and left edge, worked out once so the sliding thumb and
+            // the labels above it line up exactly.
+            final n = segments.length;
+            final room = box.maxWidth - AkSpace.s1 * (n - 1);
+            final sum = flex.fold<int>(0, (a, f) => a + f);
+            final widths = [for (final f in flex) room * f / sum];
+            final lefts = <double>[];
+            var x = 0.0;
+            for (final w in widths) {
+              lefts.add(x);
+              x += w + AkSpace.s1;
+            }
+            final at = segments.indexWhere((s) => s.value == selected);
+            return Stack(
               children: [
-                for (var i = 0; i < segments.length; i++) ...[
-                  if (i > 0) const SizedBox(width: AkSpace.s1),
-                  Expanded(flex: flex[i], child: _segment(context, segments[i])),
-                ],
+                if (at >= 0)
+                  // The chosen segment's raised pill slides to the new choice instead of
+                  // jumping; it stays put when the phone asks for less motion.
+                  AnimatedPositioned(
+                    duration: AkMotion.of(context),
+                    curve: AkMotion.settle,
+                    left: lefts[at],
+                    width: widths[at],
+                    top: 0,
+                    bottom: 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: c.surfaceRaised,
+                        borderRadius: BorderRadius.circular(m.md),
+                      ),
+                    ),
+                  ),
+                Row(
+                  children: [
+                    for (var i = 0; i < n; i++) ...[
+                      if (i > 0) const SizedBox(width: AkSpace.s1),
+                      SizedBox(width: widths[i], child: _segment(context, segments[i])),
+                    ],
+                  ],
+                ),
               ],
             );
           },
@@ -107,7 +142,8 @@ class AkSegmented<T> extends StatelessWidget {
       selected: on,
       inMutuallyExclusiveGroup: true,
       child: Material(
-        color: on ? c.surfaceRaised : c.surfaceSunk.withValues(alpha: 0),
+        // Clear: the raised pill behind is the sliding thumb.
+        type: MaterialType.transparency,
         borderRadius: BorderRadius.circular(context.metrics.md),
         child: InkWell(
           borderRadius: BorderRadius.circular(context.metrics.md),
@@ -124,11 +160,13 @@ class AkSegmented<T> extends StatelessWidget {
                     const SizedBox(width: AkSpace.s2),
                   ],
                   Flexible(
-                    child: Text(
-                      s.label,
-                      textAlign: TextAlign.center,
+                    // The label's colour and weight ease over with the thumb.
+                    child: AnimatedDefaultTextStyle(
+                      duration: AkMotion.of(context),
+                      curve: AkMotion.settle,
                       style: (on ? t.bodyStrong : t.body.copyWith(fontWeight: FontWeight.w500))
                           .copyWith(color: colour),
+                      child: Text(s.label, textAlign: TextAlign.center),
                     ),
                   ),
                 ],
@@ -176,7 +214,7 @@ class AkSwitch extends StatelessWidget {
           height: AkSize.target,
           child: Center(
             child: AnimatedContainer(
-              duration: reduce ? Duration.zero : const Duration(milliseconds: 160),
+              duration: reduce ? Duration.zero : AkMotion.fast,
               curve: Curves.easeOut,
               width: AkSize.switchW,
               height: AkSize.switchH,
@@ -186,7 +224,7 @@ class AkSwitch extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AkSize.switchH / 2),
               ),
               child: AnimatedAlign(
-                duration: reduce ? Duration.zero : const Duration(milliseconds: 160),
+                duration: reduce ? Duration.zero : AkMotion.fast,
                 curve: Curves.easeOut,
                 alignment: value ? Alignment.centerRight : Alignment.centerLeft,
                 child: Container(

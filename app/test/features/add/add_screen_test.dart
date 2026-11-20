@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:akatabo/app/appearance.dart';
+import 'package:akatabo/core/icons/ak_icon.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/time/clock_provider.dart';
 import 'package:akatabo/data/db/app_database.dart';
@@ -12,6 +13,8 @@ import 'package:akatabo/domain/spending.dart';
 import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/add/add_screen.dart';
 import 'package:akatabo/services/notifications/budget_warning.dart';
+import 'package:akatabo/widgets/ak_month_grid.dart';
+import 'package:akatabo/widgets/ak_pickers.dart';
 import 'package:clock/clock.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
@@ -307,7 +310,7 @@ void main() {
       expect(find.text('1,000'), findsOneWidget);
     });
 
-    testWidgets('a move from an account that does not ask keeps its fee under More details', (
+    testWidgets('moving money always shows its fee, even from an account that does not ask', (
       tester,
     ) async {
       await _pumpAdd(tester);
@@ -316,7 +319,40 @@ void main() {
       expect(find.text('FEE TO MOVE IT'), findsOneWidget, reason: 'from MTN MoMo');
       await tester.tap(find.text('Cash').first);
       await tester.pump();
-      expect(find.text('FEE TO MOVE IT'), findsNothing, reason: 'from Cash');
+      expect(find.text('FEE TO MOVE IT'), findsOneWidget, reason: 'from Cash too');
+    });
+
+    testWidgets('the keyboard moving the amount keeps the same focused field', (tester) async {
+      await _pumpAdd(tester);
+      final field = find.descendant(
+        of: find.bySemanticsLabel('Amount in shillings'),
+        matching: find.byType(EditableText),
+      );
+      final before = tester.state<EditableTextState>(field);
+      expect(before.widget.focusNode.hasFocus, isTrue, reason: 'Add opens on the amount');
+
+      // A keyboard this tall leaves too little room, so the amount moves into the list.
+      tester.view.viewInsets = const FakeViewPadding(bottom: 400);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+      expect(tester.state<EditableTextState>(field), same(before));
+      expect(before.widget.focusNode.hasFocus, isTrue);
+
+      // Closing the keyboard leaves focus where it is put, not pulled back by autofocus.
+      before.widget.focusNode.unfocus();
+      tester.view.resetViewInsets();
+      await tester.pumpAndSettle();
+      expect(tester.state<EditableTextState>(field), same(before));
+      expect(before.widget.focusNode.hasFocus, isFalse);
+    });
+
+    testWidgets('the kind and the amount stay in view while the form scrolls', (tester) async {
+      await _pumpAdd(tester);
+      final amountTop = tester.getTopLeft(find.bySemanticsLabel('Amount in shillings')).dy;
+      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(find.bySemanticsLabel('Amount in shillings')).dy, amountTop);
+      expect(find.text('Money out'), findsOneWidget);
     });
   });
 
@@ -417,14 +453,40 @@ void main() {
         await tester.tap(whenField());
         await tester.pumpAndSettle();
       });
-      final dialog = tester.widget<DatePickerDialog>(find.byType(DatePickerDialog));
-      expect(dialog.firstDate, DateTime(2025));
-      expect(dialog.lastDate, DateTime(2026, 11, 19));
-      expect(dialog.currentDate, DateTime(2026, 11, 19));
-      final theme = Theme.of(tester.element(find.byType(DatePickerDialog))).datePickerTheme;
+      final dialog = tester.widget<AkDateDialog>(find.byType(AkDateDialog));
+      expect(dialog.first, DateTime(2025));
+      expect(dialog.last, DateTime(2026, 11, 19));
+      expect(dialog.today, DateTime(2026, 11, 19));
       final colours = Theme.of(tester.element(find.byType(AddScreen))).extension<AkColors>()!;
-      expect(theme.backgroundColor, colours.tokens.surface);
-      expect(theme.dayBackgroundColor?.resolve({WidgetState.selected}), colours.tokens.brand);
+      final box = tester.widget<Dialog>(
+        find.descendant(of: find.byType(AkDateDialog), matching: find.byType(Dialog)),
+      );
+      expect(box.backgroundColor, colours.tokens.surface);
+    });
+
+    testWidgets('neither dialog draws a font icon, which showed as empty boxes', (tester) async {
+      await _pumpAdd(tester, height: tall);
+      await withClock(Clock.fixed(_now), () async {
+        await tester.tap(whenField());
+        await tester.pumpAndSettle();
+        expect(find.byType(Icon), findsNothing, reason: 'the date dialog');
+        expect(find.byType(AkIcon), findsWidgets, reason: 'its arrows are vector icons');
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+        expect(find.byType(TimePickerDialog), findsOneWidget);
+        expect(find.byType(Icon), findsNothing, reason: 'the time dialog');
+      });
+    });
+
+    testWidgets('days after today are faded and cannot be chosen', (tester) async {
+      await _pumpAdd(tester, height: tall);
+      await withClock(Clock.fixed(_now), () async {
+        await tester.tap(whenField());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('25'));
+        await tester.pump();
+      });
+      expect(find.text('Thu 19 Nov'), findsOneWidget, reason: 'the 25th is not chosen');
     });
 
     testWidgets('left open, the unchosen time keeps up with the clock, past midnight too', (
@@ -451,12 +513,13 @@ void main() {
         await tester.pumpAndSettle();
       });
       expect(find.text('Thu 19 Nov'), findsOneWidget);
-      final words = MaterialLocalizations.of(tester.element(find.byType(DatePickerDialog)));
-      expect(words.firstDayOfWeekIndex, 1, reason: 'Monday first');
-      expect(words.formatCompactDate(DateTime(2026, 11, 7)), '07/11/2026');
-      expect(words.parseCompactDate('17/11/2026'), DateTime(2026, 11, 17));
-      expect(words.parseCompactDate('31/02/2026'), isNull);
-      expect(words.parseCompactDate('11/17/2026'), isNull, reason: 'not month first');
+      expect(find.text('November 2026'), findsOneWidget);
+      final grid = tester.widget<AkMonthGrid>(find.byType(AkMonthGrid));
+      expect(grid.weekStartsOn, DateTime.monday, reason: 'Monday first');
+      // November 2026 starts on a Sunday: with Monday first, the 1st sits in the last column.
+      final first = tester.getTopLeft(find.text('1'));
+      final second = tester.getTopLeft(find.text('2'));
+      expect(second.dy, greaterThan(first.dy), reason: 'the 2nd, a Monday, opens the next row');
     });
 
     testWidgets('a chosen day and time are shown and saved, with their own day', (tester) async {
@@ -468,10 +531,8 @@ void main() {
         await tester.tap(find.text('17'));
         await tester.tap(find.text('OK'));
         await tester.pumpAndSettle();
-        // The time dialog opens on the current time; switch to typing and set 14:30.
+        // The time dialog opens on the current time, ready to type; set 14:30.
         expect(find.byType(TimePickerDialog), findsOneWidget);
-        await tester.tap(find.byIcon(Icons.keyboard_outlined));
-        await tester.pumpAndSettle();
         final fields = find.descendant(
           of: find.byType(TimePickerDialog),
           matching: find.byType(TextField),
@@ -496,8 +557,6 @@ void main() {
         await tester.tap(whenField());
         await tester.pumpAndSettle();
         await tester.tap(find.text('OK')); // today, already chosen
-        await tester.pumpAndSettle();
-        await tester.tap(find.byIcon(Icons.keyboard_outlined));
         await tester.pumpAndSettle();
         final fields = find.descendant(
           of: find.byType(TimePickerDialog),

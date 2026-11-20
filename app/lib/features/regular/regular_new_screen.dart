@@ -7,6 +7,7 @@ import '../../app/close_screen.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../core/time/period.dart';
+import '../../data/providers.dart';
 import '../../data/seed/default_data.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_pickers.dart';
@@ -18,7 +19,7 @@ import 'regular_providers.dart';
 const _repeats = [(7, 'Weekly'), (30, 'Monthly'), (365, 'Yearly')];
 
 /// Adds a regular payment the person knows about. Akatabo does not guess it from entries here;
-/// that detection comes later. The form asks for what the forecast needs: a name, an amount,
+/// payments it finds by itself are offered under Looks regular. The form asks for what the forecast needs: a name, an amount,
 /// how often, and the next date.
 class RegularNewScreen extends ConsumerStatefulWidget {
   const RegularNewScreen({super.key});
@@ -44,12 +45,14 @@ class _RegularNewScreenState extends ConsumerState<RegularNewScreen> {
 
   Future<void> _pickDate() async {
     final today = dateOnly(clock.now());
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _next ?? today,
-      firstDate: today,
-      lastDate: addDays(today, 365 * 3),
-      builder: akPickerBuilder,
+    final picked = await showAkDatePicker(
+      context,
+      initial: _next ?? today,
+      first: today,
+      last: addDays(today, 365 * 3),
+      helpText: 'Next payment',
+      // The person's "Week starts on", as Add and Export use it.
+      weekStartsOn: ref.read(periodCalculatorProvider).weekStartsOn,
     );
     if (picked != null) setState(() => _next = picked);
   }

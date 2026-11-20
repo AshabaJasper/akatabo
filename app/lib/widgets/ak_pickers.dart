@@ -1,89 +1,47 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/foundation.dart' show SynchronousFuture;
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../core/icons/ak_icon.dart';
 import '../core/theme/ak_theme.dart';
+import 'ak_month_grid.dart';
 
-/// The pickers behind value rows: a date picker, a time picker, both in a row, and a sheet
+/// The pickers behind value rows: a date dialog, a time dialog, both in a row, and a sheet
 /// that picks one value from a list. None of them is drawn in the design; they are built from
 /// the rules in DESIGN_SYSTEM.md and flagged for a design check.
 ///
-/// Material's own date and time dialogs are used, dressed in the app's tokens so they match
-/// the light and dark themes instead of looking like stock Material, and writing dates the
-/// way the rest of the app does ("Thu 19 Nov", 19/11/2026, the 24-hour clock).
+/// The date dialog is the app's own month grid ([AkMonthGrid]), not Material's: Material's
+/// calendar draws its arrows from the Material icon font, which the app does not bundle (every
+/// icon is an [AkIcon] vector), so its arrows showed as empty boxes. The time dialog is
+/// Material's, in typing mode only, which has no icon at all.
 
-/// Gives a Material date or time dialog the app's colours, corners, date words and 24-hour
-/// clock. Pass it as the `builder` of `showDatePicker` or `showTimePicker` called anywhere
-/// else in the app, so every picker looks the same. Weeks start on Sunday, as drawn; use
-/// [akPickerBuilderFor] to follow the person's "Week starts on".
-Widget akPickerBuilder(BuildContext context, Widget? child) => akPickerBuilderFor()(context, child);
-
-/// [akPickerBuilder] with the calendar's first column set to [weekStartsOn]
-/// ([DateTime.monday] to [DateTime.sunday]).
-TransitionBuilder akPickerBuilderFor({int weekStartsOn = DateTime.sunday}) =>
-    (context, child) => _themed(context, weekStartsOn, child);
-
-Widget _themed(BuildContext context, int weekStartsOn, Widget? child) {
+/// Gives Material's time dialog the app's colours, corners and 24-hour clock. Pass it as the
+/// `builder` of `showTimePicker`.
+Widget akPickerBuilder(BuildContext context, Widget? child) {
   final c = context.colors;
   final t = context.type;
   final m = context.metrics;
   final base = Theme.of(context);
-  final shape = RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(m.lg),
-    side: BorderSide(color: c.line),
-  );
   final buttonStyle = TextButton.styleFrom(
     foregroundColor: c.brandText,
     textStyle: t.button,
     minimumSize: const Size(AkSize.target, AkSize.target),
   );
 
-  WidgetStateProperty<Color?> chosen(Color on, Color off, {Color? disabled}) =>
-      WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.disabled)) return disabled;
-        return states.contains(WidgetState.selected) ? on : off;
-      });
-
   // The time dialog takes plain colours that change with state.
   Color chosenColour(Color on, Color off) =>
       WidgetStateColor.resolveWith((states) => states.contains(WidgetState.selected) ? on : off);
 
-  // Days before the earliest or after the latest date are shown faded but still readable.
-  final faded = c.inkMuted.withValues(alpha: 0.6);
-  final clear = c.surface.withValues(alpha: 0);
-
   return Theme(
     data: base.copyWith(
       textButtonTheme: TextButtonThemeData(style: buttonStyle),
-      datePickerTheme: DatePickerThemeData(
-        backgroundColor: c.surface,
-        surfaceTintColor: c.surface,
-        elevation: 0,
-        shape: shape,
-        headerBackgroundColor: c.surface,
-        headerForegroundColor: c.ink,
-        headerHelpStyle: t.eyebrow.copyWith(color: c.inkMuted),
-        headerHeadlineStyle: t.displaySm.copyWith(color: c.ink),
-        weekdayStyle: t.caption.copyWith(color: c.inkMuted),
-        dayStyle: t.body,
-        dividerColor: c.line,
-        dayForegroundColor: chosen(c.onBrand, c.ink, disabled: faded),
-        dayBackgroundColor: chosen(c.brand, clear),
-        dayOverlayColor: WidgetStatePropertyAll(c.brand.withValues(alpha: 0.08)),
-        todayForegroundColor: chosen(c.onBrand, c.brandText, disabled: faded),
-        todayBackgroundColor: chosen(c.brand, clear),
-        todayBorder: BorderSide(color: c.brand),
-        yearForegroundColor: chosen(c.onBrand, c.ink, disabled: faded),
-        yearBackgroundColor: chosen(c.brand, clear),
-        cancelButtonStyle: buttonStyle,
-        confirmButtonStyle: buttonStyle,
-      ),
       timePickerTheme: TimePickerThemeData(
         backgroundColor: c.surface,
         elevation: 0,
-        shape: shape,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(m.lg),
+          side: BorderSide(color: c.line),
+        ),
         helpTextStyle: t.eyebrow.copyWith(color: c.inkMuted),
         // The part being set (hour or minute) is filled with the brand colour, as a chosen
         // day is; the other sits on the sunken surface.
@@ -94,80 +52,21 @@ Widget _themed(BuildContext context, int weekStartsOn, Widget? child) {
         dialHandColor: c.brand,
         dialTextColor: chosenColour(c.onBrand, c.ink),
         dialTextStyle: t.body,
-        entryModeIconColor: c.inkMuted,
         dayPeriodColor: c.brand,
         dayPeriodTextColor: chosenColour(c.onBrand, c.ink),
         cancelButtonStyle: buttonStyle,
         confirmButtonStyle: buttonStyle,
       ),
     ),
-    child: Localizations.override(
-      context: context,
-      delegates: [_AkPickerWordsDelegate(weekStartsOn)],
-      // The app writes times as 09:14 everywhere, so the dial uses the 24-hour clock too.
-      child: MediaQuery(
-        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-        child: child ?? const SizedBox.shrink(),
-      ),
+    // The app writes times as 09:14 everywhere, so the dialog uses the 24-hour clock too.
+    child: MediaQuery(
+      data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+      child: child ?? const SizedBox.shrink(),
     ),
   );
 }
 
-/// Material's English words with the app's date order: "Thu 19 Nov" in the header,
-/// day/month/year when a date is typed, and the person's first day of the week. The app
-/// has no other localisations (English only), so this replaces the American defaults.
-class _AkPickerWords extends DefaultMaterialLocalizations {
-  const _AkPickerWords(this.weekStartsOn);
-
-  final int weekStartsOn;
-
-  static final _medium = DateFormat('EEE d MMM');
-  static final _full = DateFormat('EEEE d MMMM y');
-  static final _compact = DateFormat('dd/MM/yyyy');
-
-  @override
-  int get firstDayOfWeekIndex => weekStartsOn % 7; // Material counts Sunday as 0.
-
-  @override
-  String formatMediumDate(DateTime date) => _medium.format(date);
-
-  @override
-  String formatFullDate(DateTime date) => _full.format(date);
-
-  @override
-  String formatCompactDate(DateTime date) => _compact.format(date);
-
-  @override
-  String get dateHelpText => 'dd/mm/yyyy';
-
-  @override
-  DateTime? parseCompactDate(String? inputString) {
-    final parts = inputString?.trim().split('/');
-    if (parts == null || parts.length != 3) return null;
-    final d = int.tryParse(parts[0]);
-    final mo = int.tryParse(parts[1]);
-    final y = int.tryParse(parts[2]);
-    if (d == null || mo == null || y == null || parts[2].length != 4) return null;
-    if (mo < 1 || mo > 12 || d < 1 || d > DateUtils.getDaysInMonth(y, mo)) return null;
-    return DateTime(y, mo, d);
-  }
-}
-
-class _AkPickerWordsDelegate extends LocalizationsDelegate<MaterialLocalizations> {
-  const _AkPickerWordsDelegate(this.weekStartsOn);
-
-  final int weekStartsOn;
-
-  @override
-  bool isSupported(Locale locale) => true;
-
-  @override
-  Future<MaterialLocalizations> load(Locale locale) =>
-      SynchronousFuture<MaterialLocalizations>(_AkPickerWords(weekStartsOn));
-
-  @override
-  bool shouldReload(_AkPickerWordsDelegate old) => old.weekStartsOn != weekStartsOn;
-}
+DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
 
 /// Asks for a day between [first] and [last]. Returns the day at midnight, or null.
 Future<DateTime?> showAkDatePicker(
@@ -178,26 +77,132 @@ Future<DateTime?> showAkDatePicker(
   String? helpText,
   int weekStartsOn = DateTime.sunday,
 }) {
-  DateTime day(DateTime d) => DateTime(d.year, d.month, d.day);
-  final from = day(first);
-  final to = day(last);
-  var start = day(initial);
+  final from = _day(first);
+  final to = _day(last);
+  var start = _day(initial);
   if (start.isBefore(from)) start = from;
   if (start.isAfter(to)) start = to;
-  return showDatePicker(
+  return showDialog<DateTime>(
     context: context,
-    initialDate: start,
-    firstDate: from,
-    lastDate: to,
-    // Material reads the device clock for "today"; the app's clock keeps tests and the
-    // ring around today in step with the rest of the app.
-    currentDate: day(clock.now()),
-    helpText: helpText,
-    builder: akPickerBuilderFor(weekStartsOn: weekStartsOn),
+    builder: (_) => AkDateDialog(
+      initial: start,
+      first: from,
+      last: to,
+      // The app's clock, not the device's, so tests and the ring around today agree with
+      // the rest of the app.
+      today: _day(clock.now()),
+      helpText: helpText ?? 'Choose the day',
+      weekStartsOn: weekStartsOn,
+    ),
   );
 }
 
-/// Asks for a time of day on the 24-hour clock. Returns null when cancelled.
+/// The date dialog: the chosen day written out, a month grid, Cancel and OK.
+class AkDateDialog extends StatefulWidget {
+  const AkDateDialog({
+    super.key,
+    required this.initial,
+    required this.first,
+    required this.last,
+    required this.today,
+    required this.helpText,
+    this.weekStartsOn = DateTime.sunday,
+  });
+
+  final DateTime initial;
+  final DateTime first;
+  final DateTime last;
+  final DateTime today;
+  final String helpText;
+  final int weekStartsOn;
+
+  @override
+  State<AkDateDialog> createState() => _AkDateDialogState();
+}
+
+class _AkDateDialogState extends State<AkDateDialog> {
+  static final _headline = DateFormat('EEE d MMM');
+
+  late DateTime _chosen = widget.initial;
+  late DateTime _month = DateTime(widget.initial.year, widget.initial.month);
+
+  bool get _canGoBack => _month.isAfter(DateTime(widget.first.year, widget.first.month));
+  bool get _canGoOn => _month.isBefore(DateTime(widget.last.year, widget.last.month));
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = context.type;
+    final m = context.metrics;
+    final buttonStyle = TextButton.styleFrom(
+      foregroundColor: c.brandText,
+      textStyle: t.button,
+      minimumSize: const Size(AkSize.target, AkSize.target),
+    );
+    return Dialog(
+      backgroundColor: c.surface,
+      surfaceTintColor: c.surface,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: AkSpace.s5, vertical: AkSpace.s6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(m.lg),
+        side: BorderSide(color: c.line),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(AkSpace.s5, AkSpace.s5, AkSpace.s5, AkSpace.s3),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(widget.helpText.toUpperCase(), style: t.eyebrow.copyWith(color: c.inkMuted)),
+            const SizedBox(height: AkSpace.s1),
+            Semantics(
+              liveRegion: true,
+              child: Text(_headline.format(_chosen), style: t.displaySm.copyWith(color: c.ink)),
+            ),
+            const SizedBox(height: AkSpace.s4),
+            AkMonthGrid(
+              month: _month,
+              first: _chosen,
+              last: _chosen,
+              weekStartsOn: widget.weekStartsOn,
+              earliest: widget.first,
+              latest: widget.last,
+              today: widget.today,
+              onPrevious: _canGoBack
+                  ? () => setState(() => _month = DateTime(_month.year, _month.month - 1))
+                  : null,
+              onNext: _canGoOn
+                  ? () => setState(() => _month = DateTime(_month.year, _month.month + 1))
+                  : null,
+              onTapDay: (d) => setState(() => _chosen = d),
+            ),
+            const SizedBox(height: AkSpace.s2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  style: buttonStyle,
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: AkSpace.s2),
+                TextButton(
+                  style: buttonStyle,
+                  onPressed: () => Navigator.of(context).pop(_chosen),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Asks for a time of day on the 24-hour clock, typed as hours and minutes. Returns null when
+/// cancelled.
 Future<TimeOfDay?> showAkTimePicker(
   BuildContext context, {
   required TimeOfDay initial,
@@ -206,6 +211,9 @@ Future<TimeOfDay?> showAkTimePicker(
   context: context,
   initialTime: initial,
   helpText: helpText,
+  // Typing only: no switch to the dial, whose button is a Material font icon, and two number
+  // fields are quicker and clearer for a screen reader than a dial.
+  initialEntryMode: TimePickerEntryMode.inputOnly,
   builder: akPickerBuilder,
 );
 

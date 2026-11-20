@@ -354,5 +354,32 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **What happens:** the script replaces the whole `size` group with its own list. `size-icon-add`, `size-chart` and `size-stroke` exist only in `design/tokens.json`, so running the script deletes them. The next `dart run tool/gen_tokens.dart` then removes `AkSize.iconAdd` and the app stops compiling.
 - **How to trigger:** `python -I tools/design/update_tokens.py`, then `dart run tool/gen_tokens.dart` and `flutter analyze`.
 - **Score:** frequency 2 x severity 2 = 4
-- **Suggested fix:** merge `SIZE_TOKENS` into the existing size tokens by name, as spacing and radius already do, or add the three missing tokens to `SIZE_TOKENS`.
+- **Suggested fix:** merge `SIZE_TOKENS` into the existing size tokens by name, as spacing and radius already do, or add the three missing tokens to `SIZE_TOKENS`. Since 21 November 2026 this also covers `size-pin-key`, `size-pinned-form-min` and `size-icon-lg`.
 - **Found:** 20 November 2026, bug review of the plus-size change
+
+### [bug-review] Add: hairline under the pinned header shows when the form is not scrolled
+
+- **Where:** `app/lib/features/add/add_screen.dart` (the `ScrollUpdateNotification` listener)
+- **What happens:** a long "What was it for" scrolls inside its own field and turns the line on; scrolling down under Money out and then tapping Move money shortens the list back to the top with no scroll event, so the line stays.
+- **How to trigger:** type a description wider than the field, or scroll down then switch to Move money.
+- **Score:** frequency 4 x severity 1 = 4
+- **Suggested fix:** react only when `n.depth == 0`, and also listen for `ScrollMetricsNotification` so the line resets when the content shrinks.
+- **Found:** 21 November 2026, bug review of the polish round
+
+### [bug-review] Date dialog has no way to jump by year
+
+- **Where:** `app/lib/widgets/ak_pickers.dart` (`AkDateDialog`), used by `features/data/export_section.dart`
+- **What happens:** Export lets the first day go back to 2000, but the dialog steps one month per tap.
+- **How to trigger:** in Export, choose a first day two years back.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** make the month label in `AkMonthGrid` open a year list, or show year steps when the range is longer than a year.
+- **Found:** 21 November 2026, bug review of the polish round
+
+### [bug-review] AkSegmented thumb is wrong right-to-left and asserts when very narrow
+
+- **Where:** `app/lib/widgets/ak_controls.dart` (`AkSegmented`)
+- **What happens:** right to left, the thumb sits under the mirrored segment; below 4px per gap the segment widths go negative and a `SizedBox` asserts.
+- **How to trigger:** wrap it in `Directionality(textDirection: TextDirection.rtl)`, or lay three segments out in under 8px.
+- **Score:** frequency 1 x severity 3 = 3
+- **Suggested fix:** use `PositionedDirectional(start: …)` and clamp the free room at 0.
+- **Found:** 21 November 2026, bug review of the polish round

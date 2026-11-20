@@ -14,6 +14,7 @@ import 'package:akatabo/features/home/home_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -111,12 +112,19 @@ List<Transaction> _transportHistory() {
 
 void main() {
   group('Budgets', () {
-    testWidgets('with no budgets and no spending, it says how to start', (tester) async {
+    testWidgets('with no budgets and no spending, it lists each spending category to budget', (
+      tester,
+    ) async {
       await _pump(
         tester,
         const BudgetsScreen(),
         data: _rows(),
-        categories: [categoryRow(id: DefaultIds.food, name: 'Food')],
+        categories: [
+          categoryRow(id: DefaultIds.food, name: 'Food'),
+          categoryRow(id: DefaultIds.transport, name: 'Transport'),
+          categoryRow(id: 'pay', name: 'Salary', kind: CategoryKind.income),
+          categoryRow(id: DefaultIds.fees, name: 'Fees and tax', isSystem: true),
+        ],
       );
       expect(
         find.text(
@@ -124,7 +132,51 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Choose a category'), findsOneWidget, reason: 'the next step is offered');
+      expect(find.text('Set a budget'), findsNWidgets(2), reason: 'Food and Transport');
+      expect(find.bySemanticsLabel('Set a budget for Food'), findsOneWidget);
+      expect(find.text('Salary'), findsNothing, reason: 'income has no budget');
+      expect(find.text('Fees and tax'), findsNothing, reason: 'fees are not budgeted');
+    });
+
+    testWidgets('a category in the empty list opens its own Set a budget screen', (tester) async {
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const BudgetsScreen()),
+          GoRoute(
+            path: '/budgets/:id',
+            builder: (_, s) => Text('Budget for ${s.pathParameters['id']}'),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: (_, _) => null,
+          overrides: [
+            storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+            appearanceProvider.overrideWithValue(const AkAppearance()),
+            appNowProvider.overrideWithValue(_now),
+            periodCalculatorProvider.overrideWithValue(const PeriodCalculator()),
+            allCategoriesProvider.overrideWith(
+              (ref) => Stream.value([categoryRow(id: DefaultIds.food, name: 'Food')]),
+            ),
+            enabledAccountsProvider.overrideWith((ref) => Stream.value(_accounts)),
+            ..._rows(),
+          ],
+          child: MaterialApp.router(
+            theme: buildAkTheme(Brightness.light, const AkAppearance()),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Set a budget'));
+      await tester.pumpAndSettle();
+      expect(find.text('Budget for ${DefaultIds.food}'), findsOneWidget);
     });
 
     testWidgets('the overall figure and the day allowance match the drawn screen', (tester) async {

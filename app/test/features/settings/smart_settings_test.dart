@@ -290,9 +290,7 @@ void main() {
       await tester.tap(find.text('20:00'));
       await tester.pumpAndSettle();
       expect(find.text('Remind me at'), findsOneWidget);
-      // Type the time rather than dragging the dial.
-      await tester.tap(find.byIcon(Icons.keyboard_outlined));
-      await tester.pumpAndSettle();
+      // The time is typed: the dialog opens with an hour field and a minute field.
       final fields = find.byType(TextField);
       await tester.enterText(fields.at(0), '07');
       await tester.enterText(fields.at(1), '30');

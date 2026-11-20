@@ -132,7 +132,6 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
         builder: (_, state) => CategoriesSettingsScreen(
           backLabel: switch (state.uri.queryParameters['from']) {
             'home' => 'Home',
-            'budgets' => 'Budgets',
             _ => 'Settings',
           },
         ),

@@ -17,6 +17,7 @@ import '../../data/settings/setting_keys.dart';
 import '../../domain/forecast.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
+import '../../widgets/ak_dashed_box.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_message.dart';
@@ -533,29 +534,131 @@ class _FirstDay extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: AkSpace.s5),
-                AkCard(
-                  child: Column(
+                // Dashed, as HomeEmpty.html draws it: the charts have not happened yet.
+                AkDashedBox(
+                  color: c.inkMuted,
+                  radius: context.metrics.lg,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AkSpace.s4,
+                      vertical: AkSpace.s5,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Center(
+                          child: AkIcon(AkIcons.trend, color: c.inkMuted, size: AkSize.iconLg),
+                        ),
+                        const SizedBox(height: AkSpace.s2),
+                        Text(
+                          'Charts and the forecast appear after a few days',
+                          textAlign: TextAlign.center,
+                          style: t.bodyStrong.copyWith(color: c.ink),
+                        ),
+                        const SizedBox(height: AkSpace.s1),
+                        Text(
+                          'Akatabo needs about a week of entries before it can show where your month is heading.',
+                          textAlign: TextAlign.center,
+                          style: t.bodySm.copyWith(color: c.inkMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AkSpace.s3),
+                _FirstDayLink(
+                  icon: AkIcons.upload,
+                  title: 'Used Akatabo before?',
+                  detail: 'Restore your backup file',
+                  onTap: () => context.push('${Routes.dataRestore}?from=home'),
+                ),
+                const SizedBox(height: AkSpace.s3),
+                _FirstDayLink(
+                  icon: AkIcons.repeat,
+                  title: 'Pay something every month?',
+                  detail: 'Add rent, fees or bundles once, and they show up as they come due',
+                  onTap: () => context.push(Routes.regularNew),
+                ),
+                const SizedBox(height: AkSpace.s6),
+                Semantics(
+                  header: true,
+                  child: Text('What Akatabo does', style: t.title.copyWith(color: c.ink)),
+                ),
+                const SizedBox(height: AkSpace.s3),
+                // The three promises from Welcome.html, kept in reach after the welcome.
+                for (final (icon, line) in const [
+                  (AkIcons.plus, 'Type an amount and a few words. The category fills itself in.'),
+                  (AkIcons.chip, 'It forecasts your month and warns you before a budget runs out.'),
+                  (
+                    AkIcons.lock,
+                    'Everything stays on this phone. No account, no adverts, no permissions.',
+                  ),
+                ]) ...[
+                  Row(
                     children: [
-                      AkIcon(AkIcons.chart, color: c.inkMuted),
-                      const SizedBox(height: AkSpace.s2),
-                      Text(
-                        'Charts and the forecast appear after a few days',
-                        textAlign: TextAlign.center,
-                        style: t.bodyStrong.copyWith(color: c.ink),
+                      AkIconTile(
+                        icon: icon,
+                        background: c.surfaceSunk,
+                        foreground: c.brandText,
+                        size: AkSize.tileSm,
                       ),
-                      const SizedBox(height: AkSpace.s1),
-                      Text(
-                        'Akatabo needs about a week of entries before it can show where your month is heading.',
-                        textAlign: TextAlign.center,
-                        style: t.bodySm.copyWith(color: c.inkMuted),
+                      const SizedBox(width: AkSpace.s3),
+                      Expanded(
+                        child: Text(line, style: t.bodySm.copyWith(color: c.ink)),
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: AkSpace.s3),
+                ],
+                const SizedBox(height: AkSpace.s5),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A card-sized link on the first day, as HomeEmpty.html draws the restore row.
+class _FirstDayLink extends StatelessWidget {
+  const _FirstDayLink({
+    required this.icon,
+    required this.title,
+    required this.detail,
+    required this.onTap,
+  });
+
+  final AkIcons icon;
+  final String title;
+  final String detail;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Semantics(
+      button: true,
+      container: true,
+      excludeSemantics: true,
+      label: '$title $detail',
+      onTap: onTap,
+      child: AkCard(
+        padding: const EdgeInsets.symmetric(horizontal: AkSpace.s4),
+        onTap: onTap,
+        child: AkListRow(
+          minHeight: AkSize.row + AkSpace.s1,
+          titleWeight: FontWeight.w600,
+          leading: AkIconTile(
+            icon: icon,
+            background: c.surfaceSunk,
+            foreground: c.brandText,
+            size: AkSize.tileSm,
+          ),
+          title: title,
+          subtitle: detail,
+          trailing: AkIcon(AkIcons.chevron, color: c.inkMuted, size: AkSize.iconSm),
+        ),
       ),
     );
   }

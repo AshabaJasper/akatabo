@@ -34,7 +34,8 @@ String _kindLabel(PeriodKind k) => switch (k) {
   PeriodKind.day => 'Day',
   PeriodKind.week => 'Week',
   PeriodKind.month => 'Month',
-  PeriodKind.quarter => 'Quarter',
+  // The same word as Insights uses for the same period.
+  PeriodKind.quarter => '3 months',
   PeriodKind.year => 'Year',
   PeriodKind.custom => 'Dates',
 };

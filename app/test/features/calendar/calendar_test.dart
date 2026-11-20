@@ -163,7 +163,7 @@ void main() {
     expect(find.text('Thursday 19 November'), findsWidgets);
     expect(find.text('Day 19'), findsOneWidget, reason: "the day's entries are listed");
 
-    await tester.tap(find.text('Quarter'));
+    await tester.tap(find.text('3 months'));
     await tester.pumpAndSettle();
     expect(find.text('October to December 2026'), findsOneWidget);
     expect(find.textContaining('The busiest week was'), findsOneWidget);
