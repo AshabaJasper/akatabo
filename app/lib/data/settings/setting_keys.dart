@@ -111,8 +111,9 @@ abstract final class SettingKeys {
   /// Minutes after midnight, local time. 20:00 as drawn.
   static const dailyReminderAt = IntSetting('reminders.dailyAt', 20 * 60, min: 0, max: 24 * 60 - 1);
 
-  /// Percent of a budget used before a warning; 0 means Never. 70, 80 or 90 otherwise.
-  static const budgetWarnAt = IntSetting('reminders.budgetWarnAt', 80, min: 0, max: 90);
+  /// A notification when an entry takes a budget past its own warn level (set on Set a
+  /// budget), and again when it goes over. The level lives on each budget, not here.
+  static const budgetWarn = BoolSetting('reminders.budgetWarn', false);
   static const regularReminder = BoolSetting('reminders.regular', false);
   static const weeklySummary = BoolSetting('reminders.weekly', false);
 

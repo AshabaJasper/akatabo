@@ -6,6 +6,10 @@ import '../../core/theme/ak_theme.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_surfaces.dart';
 
+/// Side padding of every row inside a settings card (value, switch, segment and action
+/// rows), 14 as drawn, so their left edges line up.
+const settingsRowSide = AkSpace.s3h;
+
 /// The frame every Settings page shares: a back link to Settings, the page title, then sections.
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.title, required this.children});
@@ -85,8 +89,7 @@ class SettingsValueRow extends StatelessWidget {
       title: title,
       divider: divider,
       onTap: onTap,
-      // Inside a card, as drawn: 14 at the sides.
-      padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3h),
+      padding: const EdgeInsets.symmetric(horizontal: settingsRowSide),
       trailing: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.5),
         child: Row(
@@ -135,7 +138,7 @@ class SettingsSwitchRow extends StatelessWidget {
               border: Border(bottom: BorderSide(color: context.colors.line)),
             )
           : null,
-      padding: const EdgeInsets.symmetric(horizontal: AkSpace.s4, vertical: AkSpace.s3),
+      padding: const EdgeInsets.symmetric(horizontal: settingsRowSide, vertical: AkSpace.s3),
       child: Row(
         children: [
           Expanded(
@@ -148,28 +151,6 @@ class SettingsSwitchRow extends StatelessWidget {
     );
   }
 }
-
-/// Asks the person to choose one option from a list, and returns the chosen value or null.
-Future<T?> pickSetting<T>(
-  BuildContext context, {
-  required String title,
-  required List<(T, String)> options,
-}) => showDialog<T>(
-  context: context,
-  builder: (ctx) => SimpleDialog(
-    title: Text(title),
-    children: [
-      for (final (value, label) in options)
-        SimpleDialogOption(
-          onPressed: () => Navigator.of(ctx).pop(value),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AkSpace.s2),
-            child: Text(label),
-          ),
-        ),
-    ],
-  ),
-);
 
 /// "1st", "2nd", "3rd", "11th", "21st": the day of the month as it is written.
 String ordinalDay(int n) {

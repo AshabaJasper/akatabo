@@ -13,6 +13,7 @@ import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/repositories.dart';
 import '../../data/settings/setting_keys.dart';
+import '../../services/notifications/budget_warning.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_pickers.dart';
@@ -158,8 +159,11 @@ class _AddScreenState extends ConsumerState<AddScreen> {
       _problems = const [];
     });
     final note = _note.text.trim();
+    // Read before the save: if Add is closed while saving, ref can no longer be used.
+    final warner = ref.read(budgetWarnerProvider);
+    final String savedId;
     try {
-      await ref
+      savedId = await ref
           .read(transactionRepositoryProvider)
           .add(
             TransactionDraft(
@@ -186,6 +190,8 @@ class _AddScreenState extends ConsumerState<AddScreen> {
       }
       return;
     }
+    // Runs on after Add closes; it reports its own failures and never undoes the save.
+    unawaited(warner.afterSave(savedId));
     if (mounted) await closeScreen(context);
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:akatabo/app/appearance.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/time/clock_provider.dart';
@@ -9,6 +11,7 @@ import 'package:akatabo/data/settings/setting_keys.dart';
 import 'package:akatabo/domain/spending.dart';
 import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/add/add_screen.dart';
+import 'package:akatabo/services/notifications/budget_warning.dart';
 import 'package:clock/clock.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
@@ -36,6 +39,26 @@ class RecordingTransactionRepository extends TransactionRepository {
 class FailingTransactionRepository extends RecordingTransactionRepository {
   @override
   Future<String> add(TransactionDraft draft) => Future.error(StateError('disk full'));
+}
+
+/// Saves only when [finish] completes, so a test can close Add mid-save.
+class SlowTransactionRepository extends RecordingTransactionRepository {
+  final finish = Completer<void>();
+
+  @override
+  Future<String> add(TransactionDraft draft) async {
+    await finish.future;
+    return super.add(draft);
+  }
+}
+
+/// Records which saved entries Add hands to the budget warning.
+class RecordingBudgetWarner extends BudgetWarner {
+  RecordingBudgetWarner(super.ref, this.checked);
+  final List<String> checked;
+
+  @override
+  Future<void> afterSave(String transactionId) async => checked.add(transactionId);
 }
 
 final _now = DateTime(2026, 11, 19, 9, 14);
@@ -73,6 +96,7 @@ Future<RecordingTransactionRepository> _pumpAdd(
   Map<String, String> settings = const {},
   double height = 844,
   Clock? clock,
+  List<String>? warned,
 }) async {
   tester.view
     ..physicalSize = Size(390, height)
@@ -90,6 +114,8 @@ Future<RecordingTransactionRepository> _pumpAdd(
         incomeCategoriesProvider.overrideWith((ref) => Stream.value(_income)),
         enabledAccountsProvider.overrideWith((ref) => Stream.value(_accounts)),
         transactionRepositoryProvider.overrideWithValue(repo),
+        if (warned != null)
+          budgetWarnerProvider.overrideWith((ref) => RecordingBudgetWarner(ref, warned)),
       ],
       child: MaterialApp(
         theme: buildAkTheme(brightness, const AkAppearance()),
@@ -149,6 +175,46 @@ void main() {
     expect(draft.accountId, DefaultIds.mtn, reason: 'the default account is preselected');
     expect(draft.fee, 0);
     expect(find.text('Save transaction'), findsNothing, reason: 'Add closed after saving');
+  });
+
+  testWidgets('a saved entry is handed to the budget warning; a failed one is not', (tester) async {
+    final warned = <String>[];
+    await _pumpAdd(tester, warned: warned);
+    await _enterAmount(tester, '45000');
+    await tester.tap(find.bySemanticsLabel('Food and shopping'));
+    await tester.pump();
+    await tester.tap(find.text('Save transaction'));
+    await tester.pumpAndSettle();
+    expect(warned, ['saved-1']);
+
+    final none = <String>[];
+    await _pumpAdd(tester, repository: FailingTransactionRepository(), warned: none);
+    await _enterAmount(tester, '45000');
+    await tester.tap(find.bySemanticsLabel('Food and shopping'));
+    await tester.pump();
+    await tester.tap(find.text('Save transaction'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isA<StateError>());
+    expect(none, isEmpty);
+  });
+
+  testWidgets('closed while saving, Add still hands the entry on without an error', (tester) async {
+    final warned = <String>[];
+    final repo = SlowTransactionRepository();
+    await _pumpAdd(tester, repository: repo, warned: warned);
+    await _enterAmount(tester, '45000');
+    await tester.tap(find.bySemanticsLabel('Food and shopping'));
+    await tester.pump();
+    await tester.tap(find.text('Save transaction'));
+    await tester.pump();
+    // Back, before the save finishes.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('open add'), findsOneWidget);
+    repo.finish.complete();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(warned, ['saved-1']);
   });
 
   testWidgets('the entry is stamped with the moment of saving, not when Add opened', (

@@ -96,7 +96,10 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
             ),
             const SettingsValueRow(title: 'Language', value: 'English', divider: true),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AkSpace.s4, vertical: AkSpace.s3),
+              padding: const EdgeInsets.symmetric(
+                horizontal: settingsRowSide,
+                vertical: AkSpace.s3,
+              ),
               child: Text(
                 'Akatabo counts in Ugandan shillings and is in English only, so these two '
                 'cannot be changed.',
@@ -109,7 +112,10 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
           label: 'Numbers and entry',
           children: [
             Padding(
-              padding: const EdgeInsets.all(AkSpace.s4),
+              padding: const EdgeInsets.symmetric(
+                horizontal: settingsRowSide,
+                vertical: AkSpace.s4,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

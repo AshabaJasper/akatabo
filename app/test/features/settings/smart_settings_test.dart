@@ -4,6 +4,7 @@ import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/data/settings/setting_keys.dart';
+import 'package:akatabo/features/settings/settings_page.dart';
 import 'package:akatabo/features/settings/smart_settings_screen.dart';
 import 'package:akatabo/services/notifications/notifications_service.dart';
 import 'package:akatabo/services/notifications/reminder_plan.dart';
@@ -15,36 +16,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../support/fake_notifications.dart';
 import '../../support/fixtures.dart';
 
-/// Records what the screen asks of the notifications, and answers the permission request.
-class _FakeNotifications implements NotificationsService {
-  _FakeNotifications({this.allow = true, this.allowedNow = true});
-  bool allow;
-  bool allowedNow;
-
-  @override
-  Future<bool> areAllowed() async => allowedNow;
-  int asks = 0;
-  List<PlannedReminder>? scheduled;
-  int replaces = 0;
-
-  @override
-  Future<bool> requestPermission() async {
-    asks++;
-    return allow;
-  }
-
-  @override
-  Future<void> replaceAll(List<PlannedReminder> reminders) async {
-    replaces++;
-    scheduled = reminders;
-  }
-}
+typedef _FakeNotifications = FakeNotifications;
 
 /// The drawn state: every switch on, Balanced, 80%, 20:00, Sunday evening.
 final _drawn = {
   SettingKeys.dailyReminder.name: '1',
+  SettingKeys.budgetWarn.name: '1',
   SettingKeys.regularReminder.name: '1',
   SettingKeys.weeklySummary.name: '1',
 };
@@ -102,6 +82,9 @@ Finder _switch(String label) =>
     find.byWidgetPredicate((w) => w is AkSwitch && w.label == label, description: label);
 
 void main() {
+  // Start-up listens for the app going to the background, which needs a binding.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('Smart help page', () {
     testWidgets('shows the drawn rows and the defaults', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
@@ -126,14 +109,16 @@ void main() {
         'REMINDERS',
         'Remind me to add each day',
         '20:00',
-        'Warn me when a budget reaches',
+        'Warn me when a budget is nearly used',
+        "At each budget's own warn level, and again if it goes over",
         'Tell me before a regular payment',
         'Weekly summary',
         'Sunday evening',
+        laterNote,
       ]) {
         expect(find.text(text), findsOneWidget, reason: text);
       }
-      for (final label in ['Rarely', 'Balanced', 'Often', '70%', '80%', '90%', 'Never']) {
+      for (final label in ['Rarely', 'Balanced', 'Often']) {
         expect(find.text(label), findsOneWidget, reason: label);
       }
       // Smart help starts on; reminders start off until permission is given.
@@ -221,25 +206,76 @@ void main() {
       expect(fake.scheduled!.whereType<OnceReminder>(), isEmpty);
     });
 
-    testWidgets('a budget warning level is saved', (tester) async {
+    testWidgets('the budget warning is a reminder switch: it asks first, then saves', (
+      tester,
+    ) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final fake = _FakeNotifications();
+      await _pump(tester, db, fake);
+
+      await tester.tap(_switch('Warn me when a budget is nearly used'));
+      await _settle(tester);
+      expect(fake.asks, 1);
+      expect(await _stored(tester, db, SettingKeys.budgetWarn.name), '1');
+    });
+
+    testWidgets('the budget warning stays off when notifications are refused', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final fake = _FakeNotifications(allow: false);
+      await _pump(tester, db, fake);
+
+      await tester.tap(_switch('Warn me when a budget is nearly used'));
+      await _settle(tester);
+      expect(await _stored(tester, db, SettingKeys.budgetWarn.name), isNull);
+      expect(find.text(notificationsRefusedMessage), findsOneWidget);
+    });
+
+    testWidgets('every row in a card starts 14 from the card edge', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       await _pump(tester, db, _FakeNotifications());
 
-      await tester.tap(find.text('Never'));
-      await _settle(tester);
-      expect(await _stored(tester, db, SettingKeys.budgetWarnAt.name), '0');
+      final left = <String, double>{
+        for (final text in [
+          'Suggest a category', // noted switch row
+          'How often it points them out', // segment row
+          'Forget everything it has learned', // action row
+          'Remind me to add each day', // shared switch row
+          'At', // shared value row
+        ])
+          text: tester.getTopLeft(find.text(text)).dx,
+      };
+      // The page has 24 at the sides; the card's border is drawn inside its edge.
+      for (final e in left.entries) {
+        expect(e.value, AkSpace.s6 + settingsRowSide, reason: e.key);
+      }
     });
 
-    testWidgets('the weekly summary day is chosen from the week', (tester) async {
+    testWidgets('the weekly summary day is chosen from the week, current day ticked', (
+      tester,
+    ) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       final fake = _FakeNotifications();
       await _pump(tester, db, fake);
 
       await tester.tap(find.text('Sunday evening'));
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
       expect(find.text('Send the weekly summary on'), findsOneWidget);
+      // The shared choice sheet, with the stored day selected.
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Sunday evening').last),
+        matchesSemantics(
+          label: 'Sunday evening',
+          isButton: true,
+          isSelected: true,
+          hasSelectedState: true,
+          isInMutuallyExclusiveGroup: true,
+          hasTapAction: true,
+        ),
+      );
       await tester.tap(find.text('Friday evening'));
       await _settle(tester);
       expect(await _stored(tester, db, SettingKeys.weeklySummaryDay.name), '5');
@@ -417,6 +453,7 @@ void main() {
       await rescheduleRemindersAtStart(container);
       expect(fake.replaces, 1);
       expect(fake.scheduled, isEmpty);
+      expect(fake.asks, 0, reason: 'permission is never asked at start');
 
       final due = DateTime.now().add(const Duration(days: 5));
       await RegularPaymentRepository(db).add(
@@ -430,6 +467,54 @@ void main() {
       }
       expect(fake.replaces, 2);
       expect(fake.scheduled!.single.title, 'Rent is due tomorrow');
+    });
+
+    test('going to the background works the weekly figure out again', () async {
+      final binding = TestWidgetsFlutterBinding.ensureInitialized();
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      final db = AppDatabase(NativeDatabase.memory());
+      final fake = _FakeNotifications();
+      final container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          notificationsServiceProvider.overrideWithValue(fake),
+        ],
+      );
+      // The engine reports every step, so the test does too.
+      void stepTo(List<AppLifecycleState> states) =>
+          states.forEach(binding.handleAppLifecycleStateChanged);
+      addTearDown(() async {
+        container.dispose();
+        stepTo(const [
+          AppLifecycleState.hidden,
+          AppLifecycleState.inactive,
+          AppLifecycleState.resumed,
+        ]);
+        await db.close();
+      });
+      await container.read(settingsRepositoryProvider).write(SettingKeys.weeklySummary, true);
+      final now = DateTime(2026, 11, 19, 10);
+
+      await withClock(Clock.fixed(now), () => rescheduleRemindersAtStart(container));
+      expect(fake.scheduled!.whereType<WeeklyReminder>().single.body, contains('UGX 0'));
+
+      // Spent while the app is open, then the app goes to the background.
+      await db
+          .into(db.transactions)
+          .insert(txRow(id: 'a', amount: 30000, at: DateTime(2026, 11, 19, 9)));
+      final before = fake.replaces;
+      await withClock(Clock.fixed(now), () async {
+        stepTo(const [
+          AppLifecycleState.inactive,
+          AppLifecycleState.hidden,
+          AppLifecycleState.paused,
+        ]);
+        for (var i = 0; i < 100 && fake.replaces == before; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+      });
+      expect(fake.replaces, before + 1, reason: 'one sync, not one per lifecycle step');
+      expect(fake.scheduled!.whereType<WeeklyReminder>().single.body, contains('UGX 30,000'));
     });
 
     test('a failed reschedule does not block the next one', () async {
@@ -464,4 +549,7 @@ class _ThrowOnce implements NotificationsService {
     calls++;
     if (calls == 1) throw StateError('plugin failed');
   }
+
+  @override
+  Future<void> showNow(int id, String title, String body) async {}
 }

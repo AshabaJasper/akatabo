@@ -9,11 +9,13 @@ import '../../services/notifications/notifications_service.dart';
 import '../../services/notifications/reminder_scheduler.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_pickers.dart';
 import 'settings_page.dart';
 
 /// Smart help and Reminders on one page, as drawn. Both hub rows open it.
 ///
-/// Smart help switches only store their choice until the models arrive. Reminder switches ask
+/// "Forecast the month" hides the forecast; the other Smart help switches only store their
+/// choice until the models arrive, and a note says so. Reminder switches ask
 /// for notification permission when they are switched on, and every reminder change
 /// reschedules the notifications.
 class SmartSettingsScreen extends ConsumerStatefulWidget {
@@ -35,6 +37,13 @@ const notificationsRefusedMessage =
 const notificationsBlockedMessage =
     "Notifications are off for Akatabo in your phone's settings, so reminders cannot "
     'arrive. Allow them there for Akatabo.';
+
+/// Under the Smart help switches whose models arrive in a later phase. Their choices are
+/// stored now and take effect then.
+const laterNote =
+    'Suggesting a category, pointing out unusual payments and noticing regular payments '
+    'start working when Smart help arrives in a later update. Your choices here are kept '
+    'until then.';
 
 const forgotMessage = 'Smart help has forgotten what it learned. Your entries are unchanged.';
 
@@ -130,56 +139,21 @@ class _SmartSettingsScreenState extends ConsumerState<SmartSettingsScreen> {
   }
 
   Future<void> _pickTime(int minutes) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60),
+    final picked = await showAkTimePicker(
+      context,
+      initial: TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60),
       helpText: 'Remind me at',
-      builder: (ctx, child) {
-        final c = ctx.colors;
-        final radius = BorderRadius.circular(ctx.metrics.lg);
-        return MediaQuery(
-          data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
-          child: Theme(
-            data: Theme.of(ctx).copyWith(
-              timePickerTheme: TimePickerThemeData(
-                backgroundColor: c.surface,
-                shape: RoundedRectangleBorder(
-                  borderRadius: radius,
-                  side: BorderSide(color: c.line),
-                ),
-                hourMinuteShape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ctx.metrics.md),
-                ),
-                hourMinuteColor: WidgetStateColor.resolveWith(
-                  (s) => s.contains(WidgetState.selected) ? c.brandSoft : c.surfaceSunk,
-                ),
-                hourMinuteTextColor: c.ink,
-                dialBackgroundColor: c.surfaceSunk,
-                dialHandColor: c.brand,
-                dialTextColor: WidgetStateColor.resolveWith(
-                  (s) => s.contains(WidgetState.selected) ? c.onBrand : c.ink,
-                ),
-                entryModeIconColor: c.inkMuted,
-                helpTextStyle: ctx.type.eyebrow.copyWith(color: c.inkMuted),
-              ),
-              textButtonTheme: TextButtonThemeData(
-                style: TextButton.styleFrom(foregroundColor: c.brandText),
-              ),
-            ),
-            child: child!,
-          ),
-        );
-      },
     );
     if (picked == null) return;
     await _save(SettingKeys.dailyReminderAt, picked.hour * 60 + picked.minute, reschedule: true);
   }
 
-  Future<void> _pickDay() async {
-    final picked = await pickSetting<int>(
+  Future<void> _pickDay(int current) async {
+    final picked = await showAkChoiceSheet<int>(
       context,
       title: 'Send the weekly summary on',
       options: [for (var d = DateTime.monday; d <= DateTime.sunday; d++) (d, _evening(d))],
+      selected: current,
     );
     if (picked != null) await _save(SettingKeys.weeklySummaryDay, picked, reschedule: true);
   }
@@ -219,8 +193,7 @@ class _SmartSettingsScreenState extends ConsumerState<SmartSettingsScreen> {
     final s = async.requireValue;
     T read<T>(SettingKey<T> key) => key.decode(s[key.name]);
     final at = read(SettingKeys.dailyReminderAt);
-    final storedWarn = read(SettingKeys.budgetWarnAt);
-    final warn = const {0, 70, 80, 90}.contains(storedWarn) ? storedWarn : 80;
+    final day = read(SettingKeys.weeklySummaryDay);
 
     return SettingsPage(
       title: _title,
@@ -271,6 +244,7 @@ class _SmartSettingsScreenState extends ConsumerState<SmartSettingsScreen> {
               value: read(SettingKeys.noticeRegular),
               onChanged: (v) => _save(SettingKeys.noticeRegular, v),
             ),
+            const _NoteRow(laterNote),
             _ActionRow(label: 'Forget everything it has learned', onTap: _confirmForget),
           ],
         ),
@@ -290,19 +264,13 @@ class _SmartSettingsScreenState extends ConsumerState<SmartSettingsScreen> {
               onTap: () => _pickTime(at),
               divider: true,
             ),
-            _SegmentRow(
-              label: 'Warn me when a budget reaches',
-              child: AkSegmented<int>(
-                semanticLabel: 'Warn me when a budget reaches',
-                segments: const [
-                  AkSegment(70, '70%'),
-                  AkSegment(80, '80%'),
-                  AkSegment(90, '90%'),
-                  AkSegment(0, 'Never'),
-                ],
-                selected: warn,
-                onChanged: (v) => _save(SettingKeys.budgetWarnAt, v),
-              ),
+            // One source of truth: each budget keeps its own warn level (Set a budget), and
+            // this switch only says whether a notification is sent when it is reached.
+            _NotedSwitchRow(
+              label: 'Warn me when a budget is nearly used',
+              note: "At each budget's own warn level, and again if it goes over",
+              value: read(SettingKeys.budgetWarn),
+              onChanged: (v) => _switchReminder(SettingKeys.budgetWarn, v),
             ),
             SettingsSwitchRow(
               label: 'Tell me before a regular payment',
@@ -316,16 +284,13 @@ class _SmartSettingsScreenState extends ConsumerState<SmartSettingsScreen> {
               onChanged: (v) => _switchReminder(SettingKeys.weeklySummary, v),
               divider: true,
             ),
-            SettingsValueRow(
-              title: 'Sent on',
-              value: _evening(read(SettingKeys.weeklySummaryDay)),
-              onTap: _pickDay,
-            ),
+            SettingsValueRow(title: 'Sent on', value: _evening(day), onTap: () => _pickDay(day)),
           ],
         ),
         if (_allowed == false &&
             _problem == null &&
             (read(SettingKeys.dailyReminder) ||
+                read(SettingKeys.budgetWarn) ||
                 read(SettingKeys.regularReminder) ||
                 read(SettingKeys.weeklySummary)))
           const AkEmptyNote(notificationsBlockedMessage),
@@ -363,7 +328,7 @@ class _NotedSwitchRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: c.line)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: AkSpace.s4, vertical: AkSpace.s2h),
+      padding: const EdgeInsets.symmetric(horizontal: settingsRowSide, vertical: AkSpace.s2h),
       child: Row(
         children: [
           Expanded(
@@ -397,7 +362,7 @@ class _SegmentRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: context.colors.line)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: AkSpace.s4, vertical: AkSpace.s3),
+      padding: const EdgeInsets.symmetric(horizontal: settingsRowSide, vertical: AkSpace.s3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -406,6 +371,26 @@ class _SegmentRow extends StatelessWidget {
           child,
         ],
       ),
+    );
+  }
+}
+
+/// A plain muted sentence inside a card, with a line under it.
+class _NoteRow extends StatelessWidget {
+  const _NoteRow(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: c.line)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: settingsRowSide, vertical: AkSpace.s3),
+      child: Text(text, style: context.type.bodySm.copyWith(color: c.inkMuted)),
     );
   }
 }
@@ -428,7 +413,7 @@ class _ActionRow extends StatelessWidget {
           child: Container(
             constraints: const BoxConstraints(minHeight: AkSize.row),
             alignment: AlignmentDirectional.centerStart,
-            padding: const EdgeInsets.symmetric(horizontal: AkSpace.s4),
+            padding: const EdgeInsets.symmetric(horizontal: settingsRowSide),
             child: Text(
               label,
               style: context.type.bodyMd.copyWith(
