@@ -1,4 +1,5 @@
 import 'package:akatabo/app/appearance.dart';
+import 'package:akatabo/app/routes.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/time/clock_provider.dart';
 import 'package:akatabo/core/time/period.dart';
@@ -18,9 +19,11 @@ import 'package:akatabo/features/insights/insights_screen.dart';
 import 'package:akatabo/features/regular/regular_new_screen.dart';
 import 'package:akatabo/features/regular/regular_payments_screen.dart';
 import 'package:akatabo/features/regular/regular_providers.dart';
+import 'package:akatabo/features/settings/category_edit_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -165,6 +168,74 @@ void main() {
       );
       expect(find.text('WEEK BY WEEK'), findsOneWidget);
       expect(find.text('WHAT IT WENT ON'), findsOneWidget);
+    });
+
+    testWidgets('Edit opens Edit a category, whose back link names the category', (tester) async {
+      final router = GoRouter(
+        initialLocation: Routes.category(DefaultIds.food),
+        routes: [
+          GoRoute(
+            path: '${Routes.categories}/:id',
+            builder: (_, state) => CategoryDetailScreen(categoryId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: '${Routes.settingsCategories}/:id/edit',
+            builder: (_, state) => CategoryEditScreen(
+              categoryId: state.pathParameters['id']!,
+              from: CategoryEditFrom.parse(state.uri.queryParameters['from']),
+            ),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      tester.view
+        ..physicalSize = const Size(390, 2000)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: (_, _) => null,
+          overrides: [
+            storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+            appNowProvider.overrideWithValue(_now),
+            periodCalculatorProvider.overrideWithValue(const PeriodCalculator()),
+            allCategoriesProvider.overrideWith((ref) => Stream.value(_categories)),
+            ..._data(),
+          ],
+          child: MaterialApp.router(
+            theme: buildAkTheme(Brightness.light, const AkAppearance()),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final handle = tester.ensureSemantics();
+      await tester.tap(find.bySemanticsLabel('Edit'));
+      await tester.pumpAndSettle();
+      expect(find.text('Save category'), findsOneWidget);
+      expect(find.bySemanticsLabel('Back to Food and shopping'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('Fees and tax has no Edit', (tester) async {
+      await _pump(tester, const CategoryDetailScreen(categoryId: DefaultIds.fees), data: _data());
+      expect(find.text('Edit'), findsNothing);
+    });
+
+    testWidgets('a category that is gone says so instead of showing Other', (tester) async {
+      await _pump(tester, const CategoryDetailScreen(categoryId: 'deleted'), data: _data());
+      expect(find.text('This category is no longer here.'), findsOneWidget);
+      expect(find.text('Edit'), findsNothing);
+      expect(find.text('Other'), findsNothing);
+    });
+
+    testWidgets('the Edit link is a 44px target', (tester) async {
+      await _pump(tester, const CategoryDetailScreen(categoryId: DefaultIds.food), data: _data());
+      expect(
+        tester.getSize(find.ancestor(of: find.text('Edit'), matching: find.byType(InkWell))).height,
+        greaterThanOrEqualTo(44),
+      );
     });
   });
 

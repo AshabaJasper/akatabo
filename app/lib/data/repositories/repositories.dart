@@ -338,18 +338,32 @@ class CategoryRepository {
   // --- Added for Money-in categories (phase 5). Kept apart from the methods above, which
   // Edit a category owns, so the two can be merged without conflict. ---
 
-  /// Adds a category at the end of the person's order and returns its id. An empty name is
-  /// refused; the name is trimmed.
+  /// Adds a category at the end of the person's order and returns its id. The name follows
+  /// the same rule as [rename]: trimmed, and refused when empty ([ArgumentError]) or when
+  /// another category has it ([CategoryNameTaken]). A spending category can start with a
+  /// [monthlyBudget]; a money-in category cannot. All of it is saved or none of it.
   Future<String> add({
     required String name,
     required CategoryKind kind,
     required String iconKey,
     required String colourToken,
-  }) async {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty) throw ArgumentError.value(name, 'name', 'must not be empty');
-    final now = clock.now();
+    int? monthlyBudget,
+  }) => _db.transaction(() async {
+    if (iconKey.trim().isEmpty) throw ArgumentError.value(iconKey, 'iconKey', 'must be set');
+    if (!colourToken.startsWith('cat-')) {
+      throw ArgumentError.value(colourToken, 'colourToken', 'must be a cat- colour');
+    }
+    if (monthlyBudget != null && (kind != CategoryKind.spending || monthlyBudget <= 0)) {
+      throw ArgumentError.value(
+        monthlyBudget,
+        'monthlyBudget',
+        'must be above zero, for money out',
+      );
+    }
     final id = _uuid.v4();
+    final trimmed = await _checkedName(id, name);
+    final now = clock.now();
+    // The order is shared by both kinds, so one past the highest is the end of either list.
     final last = _db.categories.sortOrder.max();
     final top = await (_db.selectOnly(_db.categories)..addColumns([last])).getSingle();
     await _db
@@ -366,8 +380,11 @@ class CategoryRepository {
             updatedAt: now,
           ),
         );
+    if (monthlyBudget != null) {
+      await setBudget(id, monthlyBudget: monthlyBudget, carriesOver: false, warnAt: 80);
+    }
     return id;
-  }
+  });
 }
 
 class AccountRepository {

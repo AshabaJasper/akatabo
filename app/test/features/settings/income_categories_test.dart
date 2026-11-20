@@ -8,8 +8,8 @@ import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/data/seed/default_data.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/settings/categories_settings_screen.dart';
+import 'package:akatabo/features/settings/category_edit_screen.dart';
 import 'package:akatabo/features/settings/income_categories_screen.dart';
-import 'package:akatabo/features/settings/income_category_new_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -245,6 +245,15 @@ void main() {
       expect(incomeCategoryWords(const []), 'None yet');
     });
 
+    test('a name written in capitals keeps them in the link row', () {
+      final cats = [
+        categoryRow(id: 'a', name: 'Salary', kind: CategoryKind.income),
+        categoryRow(id: 'b', name: 'MTN payouts', kind: CategoryKind.income),
+        categoryRow(id: 'c', name: 'MoMo agent', kind: CategoryKind.income),
+      ];
+      expect(incomeCategoryWords(cats), 'Salary, MTN, MoMo');
+    });
+
     for (final b in Brightness.values) {
       testWidgets('golden, ${b.name}', (tester) async {
         await _pump(tester, brightness: b);
@@ -279,7 +288,10 @@ void main() {
           ),
           GoRoute(
             path: Routes.settingsIncomeCategoryNew,
-            builder: (_, _) => const IncomeCategoryNewScreen(),
+            builder: (_, _) => const CategoryEditScreen.create(
+              kind: CategoryKind.income,
+              from: CategoryEditFrom.income,
+            ),
           ),
         ],
       );
@@ -305,13 +317,16 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Save category'), findsOneWidget);
       expect(find.text('Money-in categories'), findsOneWidget, reason: 'the back link');
+      expect(find.text('Monthly budget'), findsNothing, reason: 'money in has no budget');
+      expect(find.text('Delete'), findsNothing);
     });
   });
 
   group('New money-in category', () {
     Future<void> pumpNew(WidgetTester tester, AppDatabase db) async {
+      // Tall, so the lazy list builds the Save button below the icon grid.
       tester.view
-        ..physicalSize = const Size(390, 844)
+        ..physicalSize = const Size(390, 2000)
         ..devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
@@ -323,7 +338,10 @@ void main() {
           ],
           child: MaterialApp(
             theme: buildAkTheme(Brightness.light, const AkAppearance()),
-            home: const IncomeCategoryNewScreen(),
+            home: const CategoryEditScreen.create(
+              kind: CategoryKind.income,
+              from: CategoryEditFrom.income,
+            ),
           ),
         ),
       );
@@ -358,21 +376,52 @@ void main() {
       final saved = await named(tester, db, 'Rent from the shop');
       expect(saved, hasLength(1));
       expect(saved.single.kind, CategoryKind.income);
-      expect(saved.single.iconKey, newIncomeIconKey);
-      expect(saved.single.colourToken, newIncomeColourToken);
+      expect(saved.single.iconKey, newCategoryIconKey);
+      expect(saved.single.colourToken, newCategoryColourToken);
+      expect(saved.single.monthlyBudget, isNull);
     });
 
-    testWidgets('Done pressed twice saves one category', (tester) async {
+    testWidgets('the chosen colour and icon are saved', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       await pumpNew(tester, db);
 
       await tester.enterText(find.byType(TextField), 'Rent from the shop');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.tap(find.bySemanticsLabel('Teal'));
+      await tester.tap(find.bySemanticsLabel('House'));
+      await tester.pump();
+      await tester.tap(find.text('Save category'));
+      await settle(tester);
+
+      final saved = await named(tester, db, 'Rent from the shop');
+      expect((saved.single.colourToken, saved.single.iconKey), ('cat-teal', 'house'));
+    });
+
+    testWidgets('Save tapped twice saves one category', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await pumpNew(tester, db);
+
+      await tester.enterText(find.byType(TextField), 'Rent from the shop');
+      await tester.tap(find.text('Save category'));
+      await tester.tap(find.text('Save category'));
       await settle(tester);
 
       expect(await named(tester, db, 'Rent from the shop'), hasLength(1));
+    });
+
+    testWidgets('a name another category has is refused on the name field', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await pumpNew(tester, db);
+
+      await tester.enterText(find.byType(TextField), ' salary ');
+      await tester.tap(find.text('Save category'));
+      await settle(tester);
+
+      expect(find.text('Another category already has this name.'), findsOneWidget);
+      expect(await named(tester, db, 'salary'), isEmpty);
+      expect(find.text('Save category'), findsOneWidget, reason: 'it stays open to fix');
     });
   });
 
@@ -403,8 +452,64 @@ void main() {
       );
 
       expect(
-        () => repo.add(name: '  ', kind: CategoryKind.income, iconKey: 'dots', colourToken: 'x'),
+        () => repo.add(
+          name: '  ',
+          kind: CategoryKind.income,
+          iconKey: 'dots',
+          colourToken: 'cat-slate',
+        ),
         throwsArgumentError,
+      );
+    });
+
+    test('refuses a name another category has, ignoring case and spaces', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final repo = CategoryRepository(db);
+      final before = (await db.select(db.categories).get()).length;
+
+      await expectLater(
+        repo.add(
+          name: ' TRANSPORT ',
+          kind: CategoryKind.spending,
+          iconKey: 'bus',
+          colourToken: 'cat-amber',
+        ),
+        throwsA(isA<CategoryNameTaken>()),
+      );
+      expect(await db.select(db.categories).get(), hasLength(before), reason: 'nothing saved');
+    });
+
+    test('a new spending category goes last in its kind and can start with a budget', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final repo = CategoryRepository(db);
+
+      final id = await repo.add(
+        name: 'Rent',
+        kind: CategoryKind.spending,
+        iconKey: 'house',
+        colourToken: 'cat-brown',
+        monthlyBudget: 300000,
+      );
+      final spending = await repo.watch(CategoryKind.spending).first;
+      expect(spending.last.id, id);
+      expect(
+        (spending.last.monthlyBudget, spending.last.budgetCarriesOver, spending.last.budgetWarnAt),
+        (300000, false, 80),
+      );
+      expect(spending.last.budgetSince, isNotNull, reason: 'the budget clock starts');
+
+      expect(
+        () => repo.add(
+          name: 'Tips',
+          kind: CategoryKind.income,
+          iconKey: 'gift',
+          colourToken: 'cat-pink',
+          monthlyBudget: 1000,
+        ),
+        throwsArgumentError,
+        reason: 'money in has no budget',
       );
     });
   });

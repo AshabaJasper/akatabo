@@ -1,6 +1,8 @@
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../data/db/app_database.dart' show CategoryKind;
+
 import '../features/add/add_screen.dart';
 import '../features/budgets/budget_edit_screen.dart';
 import '../features/budgets/budgets_screen.dart';
@@ -24,7 +26,6 @@ import '../features/settings/category_edit_screen.dart';
 import '../features/settings/general_settings_screen.dart';
 import '../features/settings/home_settings_screen.dart';
 import '../features/settings/income_categories_screen.dart';
-import '../features/settings/income_category_new_screen.dart';
 import '../features/settings/new_account_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/settings/smart_settings_screen.dart';
@@ -125,8 +126,15 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       GoRoute(path: Routes.settingsAccountNew, builder: (_, _) => const NewAccountScreen()),
       GoRoute(path: Routes.settingsCategories, builder: (_, _) => const CategoriesSettingsScreen()),
       GoRoute(
+        path: Routes.settingsCategoryNew,
+        builder: (_, _) => const CategoryEditScreen.create(kind: CategoryKind.spending),
+      ),
+      GoRoute(
         path: '${Routes.settingsCategories}/:id/edit',
-        builder: (_, state) => CategoryEditScreen(categoryId: state.pathParameters['id']!),
+        builder: (_, state) => CategoryEditScreen(
+          categoryId: state.pathParameters['id']!,
+          from: CategoryEditFrom.parse(state.uri.queryParameters['from']),
+        ),
       ),
       GoRoute(
         path: Routes.settingsIncomeCategories,
@@ -134,7 +142,10 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       ),
       GoRoute(
         path: Routes.settingsIncomeCategoryNew,
-        builder: (_, _) => const IncomeCategoryNewScreen(),
+        builder: (_, _) => const CategoryEditScreen.create(
+          kind: CategoryKind.income,
+          from: CategoryEditFrom.income,
+        ),
       ),
       GoRoute(
         path: Routes.settingsSmart,

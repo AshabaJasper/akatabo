@@ -95,6 +95,10 @@ class _CategoriesSettingsScreenState extends ConsumerState<CategoriesSettingsScr
           ),
         ),
         if (_problem != null) AkEmptyNote(_problem!),
+        AkPrimaryButton(
+          label: 'New category',
+          onPressed: () => context.push(Routes.settingsCategoryNew),
+        ),
       ],
     );
   }

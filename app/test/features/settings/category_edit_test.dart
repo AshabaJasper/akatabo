@@ -1,15 +1,18 @@
+import 'package:akatabo/app/routes.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/time/clock_provider.dart';
 import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/data/seed/default_data.dart';
+import 'package:akatabo/features/filters/transaction_filter_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/settings/categories_settings_screen.dart';
 import 'package:akatabo/features/settings/category_edit_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../flutter_test_config.dart';
@@ -203,6 +206,43 @@ void main() {
       expect(find.text('Monthly budget'), findsNothing);
     });
 
+    testWidgets('deleting a category chosen in Filters takes it out of the choice', (tester) async {
+      await _pump(tester, const CategoryEditScreen(categoryId: DefaultIds.transport));
+      final container = ProviderScope.containerOf(tester.element(find.byType(CategoryEditScreen)));
+      container.read(transactionFilterProvider.notifier)
+        ..toggleCategory(DefaultIds.transport)
+        ..toggleCategory(DefaultIds.food);
+
+      await tester.tap(find.text('Delete'));
+      await _settle(tester);
+      await tester.tap(find.widgetWithText(TextButton, 'Delete'));
+      await _settle(tester);
+
+      expect(container.read(transactionFilterProvider).categoryIds, {DefaultIds.food});
+    });
+
+    testWidgets('the back link names the page it was opened from', (tester) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        const CategoryEditScreen(categoryId: DefaultIds.transport, from: CategoryEditFrom.detail),
+      );
+      expect(find.bySemanticsLabel('Back to Transport'), findsOneWidget);
+
+      await _pump(
+        tester,
+        const CategoryEditScreen(categoryId: DefaultIds.salary, from: CategoryEditFrom.income),
+      );
+      expect(find.bySemanticsLabel('Back to Money-in categories'), findsOneWidget);
+      handle.dispose();
+    });
+
+    test('an unknown "from" falls back to Settings > Categories', () {
+      expect(CategoryEditFrom.parse('detail'), CategoryEditFrom.detail);
+      expect(CategoryEditFrom.parse(null), CategoryEditFrom.settings);
+      expect(CategoryEditFrom.parse('nowhere'), CategoryEditFrom.settings);
+    });
+
     testWidgets('a money-in category has no budget row', (tester) async {
       await _pump(tester, const CategoryEditScreen(categoryId: DefaultIds.salary));
       expect(find.text('Monthly budget'), findsNothing);
@@ -224,6 +264,104 @@ void main() {
         );
       });
     }
+  });
+
+  group('New category', () {
+    const screen = CategoryEditScreen.create(kind: CategoryKind.spending);
+
+    testWidgets('it starts empty, has no Delete, and saves a spending category at the end', (
+      tester,
+    ) async {
+      final db = await _pump(tester, screen);
+      expect(find.bySemanticsLabel('Back to Categories'), findsOneWidget);
+      expect(find.text('Delete'), findsNothing);
+      expect(find.text('Monthly budget'), findsOneWidget);
+      expect(tester.widget<TextField>(_editable('Name')).controller!.text, isEmpty);
+
+      await tester.tap(find.text('Save category'));
+      await tester.pump();
+      expect(find.text('Give the category a name.'), findsOneWidget);
+
+      await tester.enterText(_editable('Name'), ' Rent ');
+      await tester.tap(find.bySemanticsLabel('Brown'));
+      await tester.tap(find.bySemanticsLabel('House'));
+      await tester.enterText(_editable('UGX'), '300000');
+      await tester.pump();
+      await tester.tap(find.text('Save category'));
+      await _settle(tester);
+
+      final spending = (await tester.runAsync(
+        () => CategoryRepository(db).watch(CategoryKind.spending).first,
+      ))!;
+      final r = spending.last;
+      expect(
+        (r.name, r.colourToken, r.iconKey, r.monthlyBudget),
+        ('Rent', 'cat-brown', 'house', 300000),
+      );
+    });
+
+    testWidgets('a name another category has is shown on the name field', (tester) async {
+      final db = await _pump(tester, screen);
+      final before = (await tester.runAsync(() => db.select(db.categories).get()))!.length;
+      await tester.enterText(_editable('Name'), 'food and SHOPPING');
+      await tester.tap(find.text('Save category'));
+      await _settle(tester);
+      expect(find.text('Another category already has this name.'), findsOneWidget);
+      expect((await tester.runAsync(() => db.select(db.categories).get()))!, hasLength(before));
+    });
+
+    for (final b in Brightness.values) {
+      testWidgets('new category golden, ${b.name}', (tester) async {
+        await _pump(tester, screen, brightness: b, size: const Size(390, 844));
+        await expectLater(
+          find.byType(CategoryEditScreen),
+          matchesGoldenFile('goldens/category_new_${b.name}.png'),
+        );
+      });
+    }
+
+    testWidgets('"New category" on Categories opens the new mode for money out', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final cats = await tester.runAsync(() => CategoryRepository(db).watchAll().first);
+      tester.view
+        ..physicalSize = const Size(390, 3000)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        initialLocation: Routes.settingsCategories,
+        routes: [
+          GoRoute(
+            path: Routes.settingsCategories,
+            builder: (_, _) => const CategoriesSettingsScreen(),
+          ),
+          GoRoute(path: Routes.settingsCategoryNew, builder: (_, _) => screen),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: (_, _) => null,
+          overrides: [
+            appDatabaseProvider.overrideWithValue(db),
+            storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+            appNowProvider.overrideWithValue(testNow),
+            allCategoriesProvider.overrideWith((ref) => Stream.value(cats!)),
+          ],
+          child: MaterialApp.router(
+            theme: buildAkTheme(Brightness.light, const AkAppearance()),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('New category'));
+      await tester.pumpAndSettle();
+      expect(find.text('Save category'), findsOneWidget);
+      expect(find.text('Monthly budget'), findsOneWidget);
+      expect(find.text('Delete'), findsNothing);
+    });
   });
 
   group('Categories settings', () {
