@@ -41,16 +41,54 @@ class AkSegmented<T> extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AkSpace.s1),
         decoration: BoxDecoration(color: c.surfaceSunk, borderRadius: BorderRadius.circular(m.lg)),
-        child: Row(
-          children: [
-            for (var i = 0; i < segments.length; i++) ...[
-              if (i > 0) const SizedBox(width: AkSpace.s1),
-              Expanded(child: _segment(context, segments[i])),
-            ],
-          ],
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final flex = _flexes(context, box.maxWidth);
+            return Row(
+              children: [
+                for (var i = 0; i < segments.length; i++) ...[
+                  if (i > 0) const SizedBox(width: AkSpace.s1),
+                  Expanded(flex: flex[i], child: _segment(context, segments[i])),
+                ],
+              ],
+            );
+          },
         ),
       ),
     );
+  }
+
+  /// Equal widths, as drawn, while every label fits its share. When one would break onto a
+  /// second line but all of them fit side by side ("This month" beside "All"), each segment
+  /// takes room in proportion to its label, so no label breaks while space is left beside it.
+  List<int> _flexes(BuildContext context, double width) {
+    final n = segments.length;
+    final equal = List<int>.filled(n, 1);
+    if (!width.isFinite) return equal;
+    final t = context.type;
+    final scaler = MediaQuery.textScalerOf(context);
+    final direction = Directionality.of(context);
+    // The chosen style is the widest, so a label fits whichever segment is chosen.
+    final natural = [
+      for (final s in segments)
+        (TextPainter(
+              text: TextSpan(text: s.label, style: t.bodyStrong),
+              textDirection: direction,
+              textScaler: scaler,
+              maxLines: 1,
+            )..layout()).width +
+            AkSpace.s1 * 2 +
+            (s.icon == null ? 0 : AkSize.iconSm + AkSpace.s2) +
+            1, // rounding slack, so a label that just fits is not measured a hair short
+    ];
+    final room = width - AkSpace.s1 * (n - 1);
+    final share = room / n;
+    if (natural.every((w) => w <= share)) return equal;
+    final total = natural.fold<double>(0, (a, w) => a + w);
+    if (total > room) return equal; // nothing fits on one line; keep the drawn even split
+    // The spare room is shared out as evenly as the labels allow.
+    final spare = (room - total) / n;
+    return [for (final w in natural) ((w + spare) * 10).round()];
   }
 
   Widget _segment(BuildContext context, AkSegment<T> s) {
