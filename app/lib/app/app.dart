@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../core/theme/ak_theme.dart';
 import '../core/time/clock_provider.dart';
+import '../features/lock/lock_gate.dart';
 import '../features/onboarding/onboarding_providers.dart';
 import 'appearance.dart';
 import 'router.dart';
@@ -73,7 +74,8 @@ class _AkataboAppState extends ConsumerState<AkataboApp> {
             systemNavigationBarColor: context.colors.surface,
             systemNavigationBarIconBrightness: dark ? Brightness.light : Brightness.dark,
           ),
-          child: child!,
+          // The app lock covers everything the router shows (lib/features/lock).
+          child: LockGate(onWiped: () => _router.go(Routes.settingsData), child: child!),
         );
       },
     );

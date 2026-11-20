@@ -1,6 +1,7 @@
 package com.persmon.akatabo
 
 import android.os.Build
+import android.os.SystemClock
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -12,6 +13,9 @@ import io.flutter.plugin.common.MethodChannel
  * The "akatabo/privacy" channel backs the setting "Blank the screen in the app switcher":
  * on Android 13+ it hides the app's thumbnail in recent apps; below that it falls back to
  * FLAG_SECURE, which also blocks screenshots.
+ *
+ * "elapsedRealtime" gives the time since the phone started, which changing the date and time
+ * cannot move. The waits after wrong PIN tries are timed by it.
  */
 class MainActivity : FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -30,6 +34,7 @@ class MainActivity : FlutterFragmentActivity() {
                         }
                         result.success(null)
                     }
+                    "elapsedRealtime" -> result.success(SystemClock.elapsedRealtime())
                     else -> result.notImplemented()
                 }
             }

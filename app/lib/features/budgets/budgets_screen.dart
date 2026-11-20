@@ -18,6 +18,7 @@ import '../../domain/budget.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../home/home_providers.dart';
 import 'budgets_providers.dart';
@@ -164,7 +165,7 @@ class BudgetLine {
   double get ratio => spent / budget;
 }
 
-class _Summary extends StatelessWidget {
+class _Summary extends ConsumerWidget {
   const _Summary({
     required this.month,
     required this.totals,
@@ -178,9 +179,10 @@ class _Summary extends StatelessWidget {
   final double pace;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final t = context.type;
+    final hidden = ref.watch(amountsHiddenProvider);
     final over = totals.left < 0;
     final name = DateFormat('MMMM').format(month.start);
     final allowance = allowancePerDay(
@@ -190,10 +192,14 @@ class _Summary extends StatelessWidget {
     );
     return Semantics(
       container: true,
-      label:
-          '${over ? 'Over budget overall by ${formatUgx(-totals.left)}' : 'Left to spend in $name, ${formatUgx(totals.left)}'}. '
-          '${daysLeft == 0 ? '${formatAmount(allowance)} left for today' : '${formatAmount(allowance)} a day for $daysLeft days'}. '
-          '${formatAmount(totals.spent)} of ${formatAmount(totals.budget)} spent.',
+      // "Hide amounts": the card says no figure aloud until one is shown.
+      button: hidden ? true : null,
+      onTap: hidden ? () => ref.read(amountsRevealedProvider.notifier).reveal() : null,
+      label: hidden
+          ? '${over ? 'Over budget in $name' : 'Left to spend in $name'}. $hiddenFigureLabel.'
+          : '${over ? 'Over budget overall by ${formatUgx(-totals.left)}' : 'Left to spend in $name, ${formatUgx(totals.left)}'}. '
+                '${daysLeft == 0 ? '${formatAmount(allowance)} left for today' : '${formatAmount(allowance)} a day for $daysLeft days'}. '
+                '${formatAmount(totals.spent)} of ${formatAmount(totals.budget)} spent.',
       child: ExcludeSemantics(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -203,7 +209,7 @@ class _Summary extends StatelessWidget {
               style: t.bodySm.copyWith(color: c.inkMuted),
             ),
             const SizedBox(height: AkSpace.s1),
-            Text(
+            AkHiddenAmount(
               over ? formatUgx(-totals.left) : formatUgx(totals.left),
               style: t.figureXl.copyWith(color: over ? c.moneyOut : c.ink),
             ),
@@ -216,7 +222,7 @@ class _Summary extends StatelessWidget {
                     style: t.bodySm.copyWith(color: c.inkMuted),
                   ),
                 ),
-                Text(formatAmount(allowance), style: t.figure.copyWith(color: c.ink)),
+                AkHiddenAmount(formatAmount(allowance), style: t.figure.copyWith(color: c.ink)),
               ],
             ),
             const SizedBox(height: AkSpace.s4),
@@ -229,7 +235,9 @@ class _Summary extends StatelessWidget {
             ),
             const SizedBox(height: AkSpace.s1),
             Text(
-              '${formatAmount(totals.spent)} of ${formatAmount(totals.budget)} spent',
+              hidden
+                  ? '$hiddenFigure of $hiddenFigure spent'
+                  : '${formatAmount(totals.spent)} of ${formatAmount(totals.budget)} spent',
               style: t.caption.copyWith(color: c.inkMuted),
             ),
           ],

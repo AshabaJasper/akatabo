@@ -20,6 +20,7 @@ import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../../widgets/charts/cumulative_line.dart';
 import '../home/home_providers.dart';
@@ -112,7 +113,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                 style: t.bodySm.copyWith(color: c.inkMuted),
               ),
               const SizedBox(height: AkSpace.s1),
-              Text(formatUgx(totals.moneyOut), style: t.figureXl.copyWith(color: c.ink)),
+              AkHiddenAmount(formatUgx(totals.moneyOut), style: t.figureXl.copyWith(color: c.ink)),
               const SizedBox(height: AkSpace.s4),
               CumulativeLineChart(
                 summary: _chartSummary(totals.moneyOut, percent, against),
@@ -169,7 +170,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
   }
 
   String _chartSummary(int spent, int? percent, String against) =>
-      'Running total of money out, ${formatUgx(spent)} so far. '
+      'Running total of money out'
+      '${ref.watch(amountsHiddenProvider) ? '' : ', ${formatUgx(spent)} so far'}. '
       '${comparisonReading(percent, against)}';
 }
 
@@ -198,20 +200,22 @@ class _Legend extends StatelessWidget {
 }
 
 /// Money in and money out as two bars, with the net in the heading.
-class _CashFlow extends StatelessWidget {
+class _CashFlow extends ConsumerWidget {
   const _CashFlow({required this.totals});
 
   final PeriodTotals totals;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final t = context.type;
+    final hidden = ref.watch(amountsHiddenProvider);
     final largest = [totals.moneyIn, totals.moneyOut].reduce((a, b) => a > b ? a : b);
     final net = totals.net;
     return AkCard(
-      semanticLabel:
-          'Cash flow: in ${formatUgx(totals.moneyIn)}, out ${formatUgx(totals.moneyOut)}',
+      semanticLabel: hidden
+          ? 'Cash flow: amounts hidden'
+          : 'Cash flow: in ${formatUgx(totals.moneyIn)}, out ${formatUgx(totals.moneyOut)}',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -221,15 +225,27 @@ class _CashFlow extends StatelessWidget {
                 child: Text('Cash flow', style: t.bodyStrong.copyWith(color: c.ink)),
               ),
               Text(
-                '${formatSigned(net.abs(), moneyIn: net >= 0)} so far',
+                '${hidden ? hiddenFigure : formatSigned(net.abs(), moneyIn: net >= 0)} so far',
                 style: t.bodySm.copyWith(color: c.inkMuted),
               ),
             ],
           ),
           const SizedBox(height: AkSpace.s3),
-          _FlowBar(label: 'In', amount: totals.moneyIn, largest: largest, colour: c.moneyIn),
+          _FlowBar(
+            label: 'In',
+            amount: totals.moneyIn,
+            largest: largest,
+            colour: c.moneyIn,
+            hidden: hidden,
+          ),
           const SizedBox(height: AkSpace.s2),
-          _FlowBar(label: 'Out', amount: totals.moneyOut, largest: largest, colour: c.moneyOut),
+          _FlowBar(
+            label: 'Out',
+            amount: totals.moneyOut,
+            largest: largest,
+            colour: c.moneyOut,
+            hidden: hidden,
+          ),
         ],
       ),
     );
@@ -242,12 +258,14 @@ class _FlowBar extends StatelessWidget {
     required this.amount,
     required this.largest,
     required this.colour,
+    required this.hidden,
   });
 
   final String label;
   final int amount;
   final int largest;
   final Color colour;
+  final bool hidden;
 
   @override
   Widget build(BuildContext context) {
@@ -275,13 +293,13 @@ class _FlowBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AkSpace.s3),
-        Text(formatAmount(amount), style: t.figure.copyWith(color: c.ink)),
+        Text(hidden ? hiddenFigure : formatAmount(amount), style: t.figure.copyWith(color: c.ink)),
       ],
     );
   }
 }
 
-class _ChangeRow extends StatelessWidget {
+class _ChangeRow extends ConsumerWidget {
   const _ChangeRow({required this.change, required this.category, required this.onTap});
 
   final CategoryChange change;
@@ -289,14 +307,15 @@ class _ChangeRow extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
+    final hidden = ref.watch(amountsHiddenProvider);
     final colour = colourForToken(c, category?.colourToken ?? 'cat-slate');
     final ink = categoryIconColour(c, category?.colourToken ?? 'cat-slate');
     final up = change.change > 0;
     final detail =
-        '${up ? 'Up' : 'Down'} ${formatPercent(change.percent!.abs().toDouble())}, '
-        '${up ? '+' : '-'} ${formatAmount(change.change.abs())}';
+        '${up ? 'Up' : 'Down'} ${formatPercent(change.percent!.abs().toDouble())}'
+        '${hidden ? '' : ', ${up ? '+' : '-'} ${formatAmount(change.change.abs())}'}';
     return AkListRow(
       leading: AkIconTile(
         icon: AkIcons.fromKey(category?.iconKey ?? 'dots'),

@@ -1,5 +1,6 @@
 import 'package:akatabo/app/appearance.dart';
 import 'package:akatabo/app/routes.dart';
+import 'package:akatabo/core/format/money.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/time/clock_provider.dart';
 import 'package:akatabo/core/time/period.dart';
@@ -21,6 +22,7 @@ import 'package:akatabo/features/regular/regular_new_screen.dart';
 import 'package:akatabo/features/regular/regular_payments_screen.dart';
 import 'package:akatabo/features/regular/regular_providers.dart';
 import 'package:akatabo/features/settings/category_edit_screen.dart';
+import 'package:akatabo/services/security/privacy_settings.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -119,6 +121,25 @@ void main() {
       await _pump(tester, const InsightsScreen(), data: _data(month: _tenDays()));
       expect(find.textContaining('Spent,'), findsOneWidget);
       expect(find.text('Cash flow'), findsOneWidget);
+    });
+
+    testWidgets('Hide amounts dots the spent figure, cash flow and their spoken summaries', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final month = _tenDays();
+      final out = month.fold<int>(0, (a, t) => a + t.amount);
+      await _pump(
+        tester,
+        const InsightsScreen(),
+        data: _data(month: month),
+        settings: {PrivacyKeys.hideAmounts.name: '1'},
+      );
+      expect(find.text(formatUgx(out)), findsNothing);
+      await tester.scrollUntilVisible(find.text('Cash flow'), 200);
+      expect(find.text(formatAmount(out)), findsNothing);
+      expect(find.bySemanticsLabel(RegExp(formatAmount(out))), findsNothing);
+      semantics.dispose();
     });
 
     testWidgets('Forecast is offered while "Forecast the month" is on, the default', (

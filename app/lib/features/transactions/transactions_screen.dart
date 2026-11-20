@@ -14,6 +14,7 @@ import '../../data/db/app_database.dart';
 import '../../domain/spending.dart';
 import '../../domain/transaction_filter.dart';
 import '../../widgets/ak_controls.dart';
+import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/add_providers.dart';
 import '../filters/date_choice_providers.dart';
@@ -271,7 +272,7 @@ class _DayHeader extends StatelessWidget {
           Expanded(
             child: Text(label, style: t.caption.copyWith(color: c.inkMuted)),
           ),
-          Text(
+          AkHiddenAmount(
             formatSigned(net.abs(), moneyIn: net >= 0),
             style: t.caption.copyWith(color: c.inkMuted),
           ),
@@ -282,16 +283,17 @@ class _DayHeader extends StatelessWidget {
 }
 
 /// Money out for each day of the month so far, as bars, with the biggest day named in words.
-class _DailyBars extends StatelessWidget {
+class _DailyBars extends ConsumerWidget {
   const _DailyBars({required this.rows, required this.now});
 
   final List<Transaction> rows;
   final DateTime now;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final t = context.type;
+    final hidden = ref.watch(amountsHiddenProvider);
     final perDay = <int, int>{};
     for (final tx in rows) {
       perDay.update(tx.localDay, (v) => v + moneyOutOf(tx), ifAbsent: () => moneyOutOf(tx));
@@ -304,7 +306,8 @@ class _DailyBars extends StatelessWidget {
     final biggest = values.indexOf(max);
     final summary = max == 0
         ? 'No money out yet this month.'
-        : 'The biggest day was ${biggest + 1} ${DateFormat('MMMM').format(now)}, ${formatUgx(max)}.';
+        : 'The biggest day was ${biggest + 1} ${DateFormat('MMMM').format(now)}'
+              '${hidden ? '' : ', ${formatUgx(max)}'}.';
 
     return Semantics(
       label: 'Money out each day this month. $summary',
