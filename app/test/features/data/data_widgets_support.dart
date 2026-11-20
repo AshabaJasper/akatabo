@@ -10,6 +10,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../support/backup_seed.dart';
 import '../../support/fake_backup.dart';
+import '../../support/fake_security.dart';
 
 /// Pumps [child] with an in-memory database, fixed settings and fake file dialogs.
 Future<void> pumpData(
@@ -20,6 +21,7 @@ Future<void> pumpData(
   Map<String, String> settings = const {},
   Brightness brightness = Brightness.light,
   Size size = const Size(390, 844),
+  MapSecureValues? secure,
 }) async {
   tester.view
     ..physicalSize = size
@@ -33,6 +35,7 @@ Future<void> pumpData(
         storedSettingsProvider.overrideWith((ref) => Stream.value(settings)),
         backupFilesProvider.overrideWithValue(files),
         backupServiceProvider.overrideWithValue(testBackupService(db)),
+        ...securityOverrides(values: secure ?? MapSecureValues()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

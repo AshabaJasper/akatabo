@@ -62,6 +62,9 @@ flutter:
     # Geist-Variable.ttf with fonttools 4.68.0; covered by OFL-Geist.txt.
     - assets/fonts/Geist-Regular.ttf
     - assets/fonts/Geist-SemiBold.ttf
+    # Shown on About > Open-source licences.
+    - assets/fonts/OFL-BricolageGrotesque.txt
+    - assets/fonts/OFL-Geist.txt
 
   fonts:
     - family: Bricolage Grotesque

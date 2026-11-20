@@ -1,11 +1,44 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../settings/settings_page.dart';
 
-/// About on Privacy and data: version, privacy policy, open-source licences, send feedback.
-class AboutSection extends StatelessWidget {
+/// The version and build of this copy of Akatabo, as "1.0.0 (1)".
+final appVersionProvider = FutureProvider<String>((ref) async {
+  final info = await PackageInfo.fromPlatform();
+  return info.buildNumber.isEmpty ? info.version : '${info.version} (${info.buildNumber})';
+});
+
+/// About on Privacy and data (SetPrivacy.html): Version and Open-source licences.
+///
+/// The drawn "Privacy policy" and "Send feedback" rows are left out until the owner
+/// supplies the policy and a contact (launch blockers in SHIP_GATE.md): a row that opens
+/// nothing would be worse than no row.
+class AboutSection extends ConsumerWidget {
   const AboutSection({super.key});
 
   @override
-  Widget build(BuildContext context) => const SettingsSection(label: 'About', children: []);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final version = switch (ref.watch(appVersionProvider)) {
+      AsyncData(:final value) => value,
+      AsyncError() => 'Not known',
+      _ => '',
+    };
+    return SettingsSection(
+      label: 'About',
+      children: [
+        SettingsValueRow(title: 'Version', value: version, divider: true),
+        SettingsValueRow(
+          title: 'Open-source licences',
+          value: '',
+          onTap: () => showLicensePage(
+            context: context,
+            applicationName: 'Akatabo',
+            applicationVersion: version.isEmpty ? null : version,
+          ),
+        ),
+      ],
+    );
+  }
 }

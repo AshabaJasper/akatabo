@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'app/app.dart';
 import 'app/bootstrap.dart';
+import 'app/font_licences.dart';
 import 'data/providers.dart';
 import 'data/seed/demo_seed.dart';
 import 'data/settings/setting_keys.dart';
@@ -13,6 +14,7 @@ import 'services/notifications/reminder_scheduler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  registerFontLicences();
   final container = await createAppContainer();
 
   // Demo entries only when built with --dart-define=AKATABO_DEMO=true, and only into an

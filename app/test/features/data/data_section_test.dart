@@ -3,12 +3,14 @@ import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/features/data/data_section.dart';
 import 'package:akatabo/features/settings/settings_page.dart';
 import 'package:akatabo/services/backup/backup_settings.dart';
+import 'package:akatabo/services/security/privacy_settings.dart';
 import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../support/backup_seed.dart';
 import '../../support/fake_backup.dart';
+import '../../support/fake_security.dart';
 import 'data_widgets_support.dart';
 
 const _page = SettingsPage(title: 'Privacy and data', children: [DataSection()]);
@@ -94,6 +96,21 @@ void main() {
       final accounts = await tester.runAsync(() => db.select(db.accounts).get());
       expect(accounts, isNotEmpty, reason: 'the starting accounts are back');
       expect(find.text('Everything on this phone was deleted.'), findsOneWidget);
+    });
+
+    testWidgets('Delete everything also removes the PIN and the lock setting', (tester) async {
+      final secure = (await tester.runAsync(() => valuesWithPin('2580')))!;
+      await tester.runAsync(() => SettingsRepository(db).write(PrivacyKeys.lockOn, true));
+      expect(secure.values, isNotEmpty);
+      await pumpData(tester, _page, db: db, files: files, secure: secure);
+      await tester.tap(find.text('Delete everything on this phone'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete everything'));
+      await settle(tester);
+
+      expect(secure.values, isEmpty, reason: 'no PIN is left in secure storage');
+      final lockOn = await tester.runAsync(() => SettingsRepository(db).read(PrivacyKeys.lockOn));
+      expect(lockOn, isFalse);
     });
 
     testWidgets('"Save a backup first" saves a file and deletes nothing', (tester) async {

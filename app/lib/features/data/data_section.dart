@@ -6,7 +6,7 @@ import '../../app/routes.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../data/providers.dart';
 import '../../services/backup/backup_settings.dart';
-import '../../services/data_reset.dart';
+import '../../services/security/lock_controller.dart';
 import '../settings/settings_page.dart';
 import 'backup_actions.dart';
 
@@ -77,7 +77,8 @@ class _DataSectionState extends ConsumerState<DataSection> {
         setState(() => _working = true);
         String message;
         try {
-          await deleteEverything(ref.read(appDatabaseProvider));
+          // The same step as "Forgot your PIN?": the PIN goes with everything else.
+          await ref.read(lockControllerProvider.notifier).forgetEverything();
           message = 'Everything on this phone was deleted.';
         } catch (error, stack) {
           FlutterError.reportError(
