@@ -16,6 +16,7 @@ import '../../domain/forecast.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
+import 'looks_regular_section.dart';
 import 'regular_providers.dart';
 
 /// Regular payments still due this month, and the ones coming later. Each one counts for every
@@ -71,6 +72,8 @@ class RegularPaymentsScreen extends ConsumerWidget {
             const SizedBox(height: AkSpace.s2),
             if (!async.hasValue)
               const SizedBox(height: AkSize.chart)
+            else if (payments.isEmpty && ref.watch(looksRegularProvider).isNotEmpty)
+              const AkEmptyNote('None saved yet. Smart help found the ones below.')
             else if (payments.isEmpty)
               const AkEmptyNote(
                 'Nothing repeating yet. Add a bill you pay every week or month, and it '
@@ -81,7 +84,7 @@ class RegularPaymentsScreen extends ConsumerWidget {
               const SizedBox(height: AkSpace.s1),
               Text(
                 '${dueThisMonth.length} ${dueThisMonth.length == 1 ? 'payment' : 'payments'} '
-                'this month. You added these by hand.',
+                'this month.${payments.every((p) => p.source == RegularSource.manual) ? ' You added these by hand.' : ''}',
                 style: t.bodySm.copyWith(color: c.inkMuted),
               ),
               const SizedBox(height: AkSpace.s4),
@@ -99,6 +102,7 @@ class RegularPaymentsScreen extends ConsumerWidget {
                   amount: e.key.typicalAmount,
                 ),
             ],
+            const LooksRegularSection(),
             const SizedBox(height: AkSpace.s4),
             AkOutlineButton(
               label: 'Add a regular payment yourself',

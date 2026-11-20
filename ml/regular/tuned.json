@@ -1,0 +1,32 @@
+{
+  "synthetic": true,
+  "tuning_seeds": [
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110
+  ],
+  "params": {
+    "minOccurrences": 3,
+    "minIntervalDays": 5.0,
+    "maxIntervalDays": 400.0,
+    "cvMax": 0.25,
+    "amountBand": 0.1,
+    "amountShareMin": 0.8,
+    "staleIntervals": 2.5,
+    "maxMissedShare": 0.3
+  },
+  "tuning_metrics": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "settings_tied_at_best": 27,
+    "settings_tried": 35
+  }
+}

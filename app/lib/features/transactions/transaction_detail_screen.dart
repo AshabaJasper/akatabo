@@ -17,6 +17,8 @@ import '../add/add_providers.dart';
 import '../home/home_providers.dart';
 import 'transaction_row.dart';
 import 'transactions_providers.dart';
+import 'unusual_card.dart';
+import 'unusual_providers.dart';
 
 /// One entry: what it was, where and when, what it cost in total, and a delete that asks
 /// first. Editing comes with the Add screen's edit mode in a later step.
@@ -71,6 +73,7 @@ class TransactionDetailScreen extends ConsumerWidget {
         : (isTransfer ? 'Moved money' : (category?.name ?? 'No category'));
     final sign = isTransfer ? '' : (isMoneyIn ? '+ ' : '- ');
     final amountLine = '${sign}UGX ${formatAmount(tx.amount)}';
+    final unusual = ref.watch(unusualNoteProvider(tx.id));
     final when = DateFormat('d MMMM yyyy').format(tx.occurredAt);
     final whenLine =
         '${_capital(dayLabel(tx.occurredAt, now))}, $when, ${clockLabel(tx.occurredAt)}';
@@ -107,6 +110,14 @@ class TransactionDetailScreen extends ConsumerWidget {
             const SizedBox(height: AkSpace.s1),
             Text(whenLine, style: t.bodySm.copyWith(color: c.inkMuted)),
             const SizedBox(height: AkSpace.s5),
+            if (unusual != null) ...[
+              UnusualCard(
+                note: unusual,
+                categoryName: category?.name ?? 'this category',
+                onThisWasMe: () => ref.read(unusualDismissedProvider.notifier).dismiss(tx.id),
+              ),
+              const SizedBox(height: AkSpace.s4),
+            ],
             AkCard(
               padding: EdgeInsets.zero,
               child: Column(

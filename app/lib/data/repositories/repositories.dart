@@ -581,6 +581,48 @@ class RegularPaymentRepository {
     return id;
   }
 
+  /// Every payment, dismissed ones too: Smart help skips a payee already on this list.
+  Stream<List<RegularPayment>> watchAll() => _db.select(_db.regularPayments).watch();
+
+  /// Saves a series Smart help noticed in the entries. With [dismissed] it is stored as
+  /// removed, so the same payee is not offered again.
+  Future<String> addDetected({
+    required String label,
+    required String payeeKey,
+    required int typicalAmount,
+    required int amountLow,
+    required int amountHigh,
+    required int intervalDays,
+    required int nextDueOn,
+    required int timesSeen,
+    String? categoryId,
+    bool dismissed = false,
+  }) async {
+    final now = clock.now();
+    final id = _uuid.v4();
+    await _db
+        .into(_db.regularPayments)
+        .insert(
+          RegularPaymentsCompanion.insert(
+            id: id,
+            createdAt: now,
+            updatedAt: now,
+            label: label.trim(),
+            categoryId: Value(categoryId),
+            payeeKey: Value(payeeKey),
+            typicalAmount: typicalAmount,
+            amountLow: amountLow,
+            amountHigh: amountHigh,
+            intervalDays: intervalDays,
+            nextDueOn: nextDueOn,
+            timesSeen: Value(timesSeen),
+            source: RegularSource.detected,
+            dismissed: Value(dismissed),
+          ),
+        );
+    return id;
+  }
+
   /// Takes a payment off the list. It is kept, so the same payee is not detected again.
   Future<void> dismiss(String id) =>
       (_db.update(_db.regularPayments)..where((r) => r.id.equals(id))).write(
