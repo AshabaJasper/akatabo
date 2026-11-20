@@ -95,7 +95,7 @@ def export() -> int:
             indent=2,
         )
         + "\n",
-        encoding="utf-8",
+        encoding="utf-8", newline="\n",
     )
     cases = [
         {
@@ -108,7 +108,7 @@ def export() -> int:
     ]
     VECTORS_OUT.parent.mkdir(parents=True, exist_ok=True)
     VECTORS_OUT.write_text(
-        json.dumps({"synthetic": True, "params": p.to_json(), "cases": cases}) + "\n", encoding="utf-8"
+        json.dumps({"synthetic": True, "params": p.to_json(), "cases": cases}) + "\n", encoding="utf-8", newline="\n"
     )
     return len(cases)
 

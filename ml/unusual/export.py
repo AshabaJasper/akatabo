@@ -116,10 +116,10 @@ def export() -> tuple[int, int]:
         "synthetic_tuning": "Thresholds tuned on synthetic seeds 101-110 only; see ml/unusual/RESULTS.md.",
         **p.to_json(),
     }
-    PARAMS_OUT.write_text(json.dumps(artefact, indent=2) + "\n", encoding="utf-8")
+    PARAMS_OUT.write_text(json.dumps(artefact, indent=2) + "\n", encoding="utf-8", newline="\n")
     v = vectors(p)
     VECTORS_OUT.parent.mkdir(parents=True, exist_ok=True)
-    VECTORS_OUT.write_text(json.dumps(v) + "\n", encoding="utf-8")
+    VECTORS_OUT.write_text(json.dumps(v) + "\n", encoding="utf-8", newline="\n")
     return len(v["sequence"]["targets"]), len(v["cases"])
 
 

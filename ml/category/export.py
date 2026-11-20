@@ -146,9 +146,9 @@ def main() -> None:
     vec, clf = train_final()
     d = model_dict(vec, clf)
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-    MODEL_PATH.write_text(json.dumps(d, separators=(",", ":")), encoding="utf-8")
+    MODEL_PATH.write_text(json.dumps(d, separators=(",", ":")), encoding="utf-8", newline="\n")
     FIXTURE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    FIXTURE_PATH.write_text(json.dumps(fixtures(ExportedModel(d)), indent=1, ensure_ascii=False), encoding="utf-8")
+    FIXTURE_PATH.write_text(json.dumps(fixtures(ExportedModel(d)), indent=1, ensure_ascii=False), encoding="utf-8", newline="\n")
     print(f"wrote {MODEL_PATH.relative_to(ROOT)} ({MODEL_PATH.stat().st_size // 1024} KB)")
     print(f"wrote {FIXTURE_PATH.relative_to(ROOT)}")
 

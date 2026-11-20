@@ -131,8 +131,8 @@ def vectors() -> dict:
 def main() -> None:
     PARAMS.parent.mkdir(parents=True, exist_ok=True)
     VECTORS.parent.mkdir(parents=True, exist_ok=True)
-    PARAMS.write_text(json.dumps(params(), indent=2) + "\n", encoding="utf-8")
-    VECTORS.write_text(json.dumps(vectors(), indent=2) + "\n", encoding="utf-8")
+    PARAMS.write_text(json.dumps(params(), indent=2) + "\n", encoding="utf-8", newline="\n")
+    VECTORS.write_text(json.dumps(vectors(), indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"wrote {PARAMS.relative_to(ROOT)} and {VECTORS.relative_to(ROOT)}")
 
 
