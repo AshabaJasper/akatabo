@@ -14,12 +14,15 @@ import '../../data/providers.dart';
 import '../../data/repositories/repositories.dart';
 import '../../data/settings/setting_keys.dart';
 import '../../services/notifications/budget_warning.dart';
+import '../../smart/category/category_suggester.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_pickers.dart';
 import '../../widgets/ak_surfaces.dart';
 import 'add_providers.dart';
 import 'amount_text.dart';
+import 'category_suggestion_providers.dart';
+import 'suggestion_pill.dart';
 import 'when_text.dart';
 
 /// Add a transaction: money out, money in or a move between two of the person's accounts.
@@ -127,8 +130,14 @@ class _AddScreenState extends ConsumerState<AddScreen> {
     });
   }
 
-  Future<void> _save(Account? defaultAccount, List<Account> accounts) async {
+  Future<void> _save(
+    Account? defaultAccount,
+    List<Account> accounts,
+    CategorySuggestion? suggestion,
+  ) async {
     final from = _fromId ?? defaultAccount?.id;
+    // The tile the person tapped, or else the suggested one, which the grid shows as chosen.
+    final categoryId = _categoryId ?? suggestion?.categoryId;
     final to = _toId ?? _otherAccount(accounts, from)?.id;
     // The chosen moment, or else the moment of saving (not the screen's cached "now", which
     // only moves once a day).
@@ -146,7 +155,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
         amount: parseAmount(_amount.text),
         accountId: from ?? '',
         toAccountId: isTransfer ? to : null,
-        categoryId: isTransfer ? null : _categoryId,
+        categoryId: isTransfer ? null : categoryId,
         fee: isMoneyIn ? 0 : parseAmount(_fee.text),
         tax: isMoneyIn ? 0 : parseAmount(_tax.text),
         occurredAt: occurredAt,
@@ -173,13 +182,16 @@ class _AddScreenState extends ConsumerState<AddScreen> {
               direction: direction,
               amount: parseAmount(_amount.text),
               description: _what.text.trim(),
-              categoryId: isTransfer ? null : _categoryId,
+              categoryId: isTransfer ? null : categoryId,
               accountId: from!,
               toAccountId: isTransfer ? to : null,
               fee: isMoneyIn ? 0 : parseAmount(_fee.text),
               tax: isMoneyIn ? 0 : parseAmount(_tax.text),
               note: note.isEmpty ? null : note,
               occurredAt: occurredAt,
+              // What was suggested, so a different pick is stored as a correction.
+              suggestedCategoryId: isTransfer ? null : suggestion?.categoryId,
+              suggestionConfidence: isTransfer ? null : suggestion?.probability,
             ),
           );
     } on Object catch (error, stack) {
@@ -228,6 +240,23 @@ class _AddScreenState extends ConsumerState<AddScreen> {
     final categoriesAsync = isMoneyIn
         ? ref.watch(incomeCategoriesProvider)
         : ref.watch(spendingCategoriesProvider);
+    final offered = categoriesAsync.value ?? const <Category>[];
+    // Smart help: a suggestion from the words typed, among the categories on offer. Null
+    // when switched off, still loading, too little history or not sure enough.
+    final suggester = ref.watch(categorySuggesterProvider);
+    final suggestion = isTransfer || suggester == null
+        ? null
+        : suggester.suggest(
+            _what.text,
+            amount: parseAmount(_amount.text),
+            hour: (_when ?? _shownNow).hour,
+            offered: {for (final cat in offered) cat.id},
+          );
+    final categoryId = _categoryId ?? suggestion?.categoryId;
+    Category? suggested;
+    for (final cat in offered) {
+      if (cat.id == suggestion?.categoryId) suggested = cat;
+    }
 
     return Scaffold(
       backgroundColor: c.ground,
@@ -288,10 +317,42 @@ class _AddScreenState extends ConsumerState<AddScreen> {
               controller: _what,
               textInputAction: TextInputAction.done,
               hint: isTransfer ? null : 'Groceries, Nakasero market',
+              // The suggestion follows the words as they are typed.
+              onChanged: (_) => setState(() {}),
             ),
             if (!isTransfer) ...[
               const SizedBox(height: AkSpace.s5),
-              const AkEyebrowLabel('Category'),
+              // The pill sits at the end of the heading row, as drawn; a long category name
+              // moves it to its own line rather than breaking its words. While suggestions
+              // are on, the row keeps the pill's height, so the grid does not jump as the
+              // pill comes and goes during typing.
+              ConstrainedBox(
+                constraints: BoxConstraints(minHeight: suggester == null ? 0 : AkSize.target),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: AkSpace.s2,
+                      children: [
+                        const AkEyebrowLabel('Category'),
+                        if (suggestion != null && suggested != null)
+                          SuggestionPill(
+                            categoryName: suggested.name,
+                            probability: suggestion.probability,
+                            selected: categoryId == suggestion.categoryId,
+                            onTap: () => setState(() {
+                              _categoryId = suggestion.categoryId;
+                              _problems = const [];
+                            }),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: AkSpace.s2),
               categoriesAsync.when(
                 loading: () => const SizedBox(height: AkSize.catCell),
@@ -310,7 +371,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                     for (final cat in rows)
                       _CategoryTile(
                         category: cat,
-                        selected: cat.id == _categoryId,
+                        selected: cat.id == categoryId,
                         onTap: () => setState(() {
                           _categoryId = cat.id;
                           _problems = const [];
@@ -389,7 +450,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
             const SizedBox(height: AkSpace.s5),
             AkPrimaryButton(
               label: _saving ? 'Saving' : 'Save transaction',
-              onPressed: _saving ? null : () => _save(defaultAccount, accounts),
+              onPressed: _saving ? null : () => _save(defaultAccount, accounts, suggestion),
             ),
           ],
         ),

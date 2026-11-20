@@ -124,6 +124,9 @@ class TransactionRepository {
   Stream<List<Transaction>> watchAll() =>
       (_db.select(_db.transactions)..orderBy([(t) => OrderingTerm.desc(t.occurredAt)])).watch();
 
+  /// Every transaction once, in no particular order (for rebuilding what Smart help learned).
+  Future<List<Transaction>> listAll() => _db.select(_db.transactions).get();
+
   /// One transaction, or null once it has been deleted.
   Stream<Transaction?> watchById(String id) =>
       (_db.select(_db.transactions)..where((t) => t.id.equals(id))).watchSingleOrNull();

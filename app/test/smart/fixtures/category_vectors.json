@@ -1,0 +1,796 @@
+{
+ "synthetic": true,
+ "note": "Probabilities from ml/category/export.py on the exported (rounded) model.",
+ "model": [
+  {
+   "description": "Nakasero market",
+   "amount": 15000,
+   "hour": 9,
+   "probs": {
+    "cat.bills": 0.002121891872744612,
+    "cat.family": 0.0011962404279187591,
+    "cat.food": 0.9912937040554854,
+    "cat.health": 0.0035915949681675635,
+    "cat.other": 0.0005621312965147937,
+    "cat.school": 0.0006261820555189311,
+    "cat.transport": 0.0006082553236499595
+   },
+   "top": "cat.food"
+  },
+  {
+   "description": "nakasero mkt",
+   "amount": 12000,
+   "hour": 17,
+   "probs": {
+    "cat.bills": 0.00041796259944221957,
+    "cat.family": 0.0003667520385290738,
+    "cat.food": 0.9649665577170203,
+    "cat.health": 0.01007844017783858,
+    "cat.other": 0.00998442089440331,
+    "cat.school": 0.013419112595595124,
+    "cat.transport": 0.000766753977171267
+   },
+   "top": "cat.food"
+  },
+  {
+   "description": "Kalerwe market veg",
+   "amount": 9800,
+   "hour": 8,
+   "probs": {
+    "cat.bills": 0.012744969609047908,
+    "cat.family": 0.00274270465335792,
+    "cat.food": 0.9513191230390505,
+    "cat.health": 0.014703529936406785,
+    "cat.other": 0.0020583208866804706,
+    "cat.school": 0.0008579528609822723,
+    "cat.transport": 0.015573399014474196
+   },
+   "top": "cat.food"
+  },
+  {
+   "description": "matooke",
+   "amount": 20000,
+   "hour": 18,
+   "probs": {
+    "cat.bills": 0.01855942057471459,
+    "cat.family": 0.011071900449494231,
+    "cat.food": 0.9519428335071424,
+    "cat.health": 0.0003240584208086446,
+    "cat.other": 0.0006691008471073666,
+    "cat.school": 0.0010110317888430067,
+    "cat.transport": 0.016421654411889773
+   },
+   "top": "cat.food"
+  },
+  {
+   "description": "posho and beans",
+   "amount": 5000,
+   "hour": 12,
+   "probs": {
+    "cat.bills": 0.004115315849126624,
+    "cat.family": 0.00017095267386515236,
+    "cat.food": 0.9836346406501177,
+    "cat.health": 0.0004296165757197739,
+    "cat.other": 0.008210890393519778,
+    "cat.school": 0.0019268346658481677,
+    "cat.transport": 0.0015117491918028086
+   },
+   "top": "cat.food"
+  },
+  {
+   "description": "emmere",
+   "amount": 4500,
+   "hour": 13,
+   "probs": {
+    "cat.bills": 0.04134530289458282,
+    "cat.family": 0.00032697329164649996,
+    "cat.food": 0.916698512872501,
+    "cat.health": 0.0009487218597863332,
+    "cat.other": 0.009957828688916816,
+    "cat.school": 0.001575183062983575,
+    "cat.transport": 0.029147477329582987
+   },
+   "top": "cat.food"
+  },
+  {
+   "description": "pozho",
+   "amount": 5000,
+   "hour": 12,
+   "probs": {
+    "cat.bills": 0.008713525978527453,
+    "cat.family": 0.0003122241675054689,
+    "cat.food": 0.9746189264574321,
+    "cat.health": 0.001050832802931878,
+    "cat.other": 0.009978666134628637,
+    "cat.school": 0.001655769482401406,
+    "cat.transport": 0.003670054976573038
+   },
+   "top": "cat.food"
+  },
+  {
+   "description": "Quality Supermarket",
+   "amount": 42000,
+   "hour": 19,
+   "probs": {
+    "cat.bills": 0.01587385418215761,
+    "cat.family": 0.008261238444876856,
+    "cat.food": 0.9673919411471861,
+    "cat.health": 0.0006652695733102726,
+    "cat.other": 0.0011126908824065315,
+    "cat.school": 0.0006367930023868185,
+    "cat.transport": 0.006058212767675849
+   },
+   "top": "cat.food"
+  },
+  {
+   "description": "grocries",
+   "amount": 38000,
+   "hour": 18,
+   "probs": {
+    "cat.bills": 0.010113243156816724,
+    "cat.family": 0.0035358765604564355,
+    "cat.food": 0.9808920808895822,
+    "cat.health": 0.00034853328612282323,
+    "cat.other": 0.0005347934344515455,
+    "cat.school": 0.0005711917709161665,
+    "cat.transport": 0.004004280901654089
+   },
+   "top": "cat.food"
+  },
+  {
+   "description": "Cafe Javas",
+   "amount": 9000,
+   "hour": 11,
+   "probs": {
+    "cat.bills": 0.005349316837018572,
+    "cat.family": 9.70608834443945e-05,
+    "cat.food": 0.9867132898850047,
+    "cat.health": 0.0003104149297545231,
+    "cat.other": 0.004181403934517332,
+    "cat.school": 0.00054599017249902,
+    "cat.transport": 0.0028025233577613573
+   },
+   "top": "cat.food"
+  },
+  {
+   "description": "boda to work",
+   "amount": 4000,
+   "hour": 7,
+   "probs": {
+    "cat.bills": 0.005549517244297743,
+    "cat.family": 0.0018152036367299993,
+    "cat.food": 0.0014668824550299864,
+    "cat.health": 0.0015508277805183104,
+    "cat.other": 0.0002849498469129912,
+    "cat.school": 0.000237974866637228,
+    "cat.transport": 0.9890946441698737
+   },
+   "top": "cat.transport"
+  },
+  {
+   "description": "bodaboda home",
+   "amount": 3500,
+   "hour": 19,
+   "probs": {
+    "cat.bills": 0.00621371035479461,
+    "cat.family": 0.0005266530406781231,
+    "cat.food": 0.002270888793794353,
+    "cat.health": 0.00013255316874368942,
+    "cat.other": 0.00018690928503597884,
+    "cat.school": 6.144465839021744e-05,
+    "cat.transport": 0.9906078406985629
+   },
+   "top": "cat.transport"
+  },
+  {
+   "description": "matatu to Ntinda",
+   "amount": 2500,
+   "hour": 8,
+   "probs": {
+    "cat.bills": 0.010784702383856525,
+    "cat.family": 0.0023372575226479164,
+    "cat.food": 0.0030737608701559027,
+    "cat.health": 0.0023314195197194332,
+    "cat.other": 0.0003890841606636553,
+    "cat.school": 0.0002552095665715767,
+    "cat.transport": 0.980828565976385
+   },
+   "top": "cat.transport"
+  },
+  {
+   "description": "Shell fuel",
+   "amount": 60000,
+   "hour": 9,
+   "probs": {
+    "cat.bills": 0.005754275744337655,
+    "cat.family": 0.005794362667145539,
+    "cat.food": 0.0010275273737469972,
+    "cat.health": 0.004392782739878673,
+    "cat.other": 0.00010488409767664505,
+    "cat.school": 0.00044473221183868715,
+    "cat.transport": 0.9824814351653758
+   },
+   "top": "cat.transport"
+  },
+  {
+   "description": "petrol for car",
+   "amount": 75000,
+   "hour": 18,
+   "probs": {
+    "cat.bills": 0.006053234450644892,
+    "cat.family": 0.012750034258831856,
+    "cat.food": 0.005840012291621731,
+    "cat.health": 0.0009522100252633978,
+    "cat.other": 0.00013598545708614615,
+    "cat.school": 0.00044577899100747294,
+    "cat.transport": 0.9738227445255444
+   },
+   "top": "cat.transport"
+  },
+  {
+   "description": "MTN airtime",
+   "amount": 5000,
+   "hour": 20,
+   "probs": {
+    "cat.bills": 0.9582464280597239,
+    "cat.family": 0.0036932912584040876,
+    "cat.food": 0.011572972022073401,
+    "cat.health": 0.0014255754376731244,
+    "cat.other": 0.018091926019719273,
+    "cat.school": 0.00028037536823906746,
+    "cat.transport": 0.006689431834167098
+   },
+   "top": "cat.bills"
+  },
+  {
+   "description": "airtme top up",
+   "amount": 2000,
+   "hour": 21,
+   "probs": {
+    "cat.bills": 0.9544018741753038,
+    "cat.family": 0.004438449334008965,
+    "cat.food": 0.010332092420913147,
+    "cat.health": 0.0006143027838215884,
+    "cat.other": 0.003600506828225405,
+    "cat.school": 0.00022213953795880806,
+    "cat.transport": 0.026390634919768362
+   },
+   "top": "cat.bills"
+  },
+  {
+   "description": "Umeme prepaid",
+   "amount": 30000,
+   "hour": 10,
+   "probs": {
+    "cat.bills": 0.9724269717767563,
+    "cat.family": 0.0006409283688543446,
+    "cat.food": 0.012488846385377379,
+    "cat.health": 0.00030257312612412914,
+    "cat.other": 0.008386606802726432,
+    "cat.school": 0.002924737562425409,
+    "cat.transport": 0.002829335977736153
+   },
+   "top": "cat.bills"
+  },
+  {
+   "description": "yaka electricity",
+   "amount": 25000,
+   "hour": 9,
+   "probs": {
+    "cat.bills": 0.966443858422408,
+    "cat.family": 0.007095994811560322,
+    "cat.food": 0.007620418042561101,
+    "cat.health": 0.004979547743993541,
+    "cat.other": 0.0014637261030887808,
+    "cat.school": 0.001698369023657363,
+    "cat.transport": 0.010698085852730884
+   },
+   "top": "cat.bills"
+  },
+  {
+   "description": "NWSC water",
+   "amount": 20000,
+   "hour": 10,
+   "probs": {
+    "cat.bills": 0.9814229997544578,
+    "cat.family": 0.0006781441268517598,
+    "cat.food": 0.007506943516191364,
+    "cat.health": 0.0002544690317151101,
+    "cat.other": 0.0040337016435583045,
+    "cat.school": 0.00226798285185027,
+    "cat.transport": 0.003835759075375337
+   },
+   "top": "cat.bills"
+  },
+  {
+   "description": "Smile internet",
+   "amount": 80000,
+   "hour": 9,
+   "probs": {
+    "cat.bills": 0.9746061703569032,
+    "cat.family": 0.008055239118556526,
+    "cat.food": 0.002770004977491534,
+    "cat.health": 0.005269203225891452,
+    "cat.other": 0.00018986229583172617,
+    "cat.school": 0.0005462845878249203,
+    "cat.transport": 0.008563235437500687
+   },
+   "top": "cat.bills"
+  },
+  {
+   "description": "skul fees",
+   "amount": 250000,
+   "hour": 10,
+   "probs": {
+    "cat.bills": 0.0017704205050254112,
+    "cat.family": 0.000552759688540907,
+    "cat.food": 0.003440272568618354,
+    "cat.health": 0.00012882220218874202,
+    "cat.other": 0.0015946048725288477,
+    "cat.school": 0.9909310455216416,
+    "cat.transport": 0.0015820746414561021
+   },
+   "top": "cat.school"
+  },
+  {
+   "description": "Kampala Parents school",
+   "amount": 300000,
+   "hour": 11,
+   "probs": {
+    "cat.bills": 0.0031462194886612916,
+    "cat.family": 0.0004532374352209725,
+    "cat.food": 0.0035645437995917837,
+    "cat.health": 0.0007812487056880396,
+    "cat.other": 0.002529473747993818,
+    "cat.school": 0.9882461152708488,
+    "cat.transport": 0.0012791615519952746
+   },
+   "top": "cat.school"
+  },
+  {
+   "description": "exercise books",
+   "amount": 18000,
+   "hour": 14,
+   "probs": {
+    "cat.bills": 0.0012084946325523307,
+    "cat.family": 0.00042696458841177167,
+    "cat.food": 0.012096772031205561,
+    "cat.health": 0.010228323003710325,
+    "cat.other": 0.00852581842719367,
+    "cat.school": 0.9661520836228532,
+    "cat.transport": 0.0013615436940732286
+   },
+   "top": "cat.school"
+  },
+  {
+   "description": "MoMo to mother",
+   "amount": 100000,
+   "hour": 8,
+   "probs": {
+    "cat.bills": 0.0073482440768482616,
+    "cat.family": 0.9611436807415864,
+    "cat.food": 0.003305393111975258,
+    "cat.health": 0.015520307799932983,
+    "cat.other": 0.00043370607949895165,
+    "cat.school": 0.006676731299406396,
+    "cat.transport": 0.005571936890751753
+   },
+   "top": "cat.family"
+  },
+  {
+   "description": "Mama upkeep",
+   "amount": 150000,
+   "hour": 19,
+   "probs": {
+    "cat.bills": 0.015618634244486637,
+    "cat.family": 0.9421632012118052,
+    "cat.food": 0.02543950708152639,
+    "cat.health": 0.002374867476325602,
+    "cat.other": 0.0005299026090661129,
+    "cat.school": 0.006327992013050453,
+    "cat.transport": 0.007545895363739531
+   },
+   "top": "cat.family"
+  },
+  {
+   "description": "paracetamol",
+   "amount": 3000,
+   "hour": 16,
+   "probs": {
+    "cat.bills": 0.0018343201993177276,
+    "cat.family": 0.0005222274404252295,
+    "cat.food": 0.013821082950757861,
+    "cat.health": 0.9127873500377548,
+    "cat.other": 0.01214315164820128,
+    "cat.school": 0.008613563941452004,
+    "cat.transport": 0.0502783037820911
+   },
+   "top": "cat.health"
+  },
+  {
+   "description": "chemist",
+   "amount": 12000,
+   "hour": 17,
+   "probs": {
+    "cat.bills": 0.0007979451772473622,
+    "cat.family": 0.0005773964947002567,
+    "cat.food": 0.016044728608967697,
+    "cat.health": 0.953215439301394,
+    "cat.other": 0.012284929493745626,
+    "cat.school": 0.016212507536898048,
+    "cat.transport": 0.0008670533870470309
+   },
+   "top": "cat.health"
+  },
+  {
+   "description": "hair salon",
+   "amount": 15000,
+   "hour": 14,
+   "probs": {
+    "cat.bills": 0.0008464529041737605,
+    "cat.family": 0.0004450151568615944,
+    "cat.food": 0.009043792793191584,
+    "cat.health": 0.015030176440906762,
+    "cat.other": 0.9599393914467912,
+    "cat.school": 0.013636302145933425,
+    "cat.transport": 0.0010588691121416259
+   },
+   "top": "cat.other"
+  },
+  {
+   "description": "house rent",
+   "amount": 600000,
+   "hour": 9,
+   "probs": {
+    "cat.bills": 0.9654912506502068,
+    "cat.family": 0.005609379151407935,
+    "cat.food": 0.008531214095945837,
+    "cat.health": 0.003904282099375924,
+    "cat.other": 0.00101750743961196,
+    "cat.school": 0.009674260214148248,
+    "cat.transport": 0.005772106349303337
+   },
+   "top": "cat.bills"
+  },
+  {
+   "description": "DStv subscription",
+   "amount": 45000,
+   "hour": 20,
+   "probs": {
+    "cat.bills": 0.9611360323709448,
+    "cat.family": 0.007763703574714595,
+    "cat.food": 0.01852907029902207,
+    "cat.health": 0.0009382933684787241,
+    "cat.other": 0.0015227500628188532,
+    "cat.school": 0.001818122189188832,
+    "cat.transport": 0.008292028134832194
+   },
+   "top": "cat.bills"
+  },
+  {
+   "description": "Netflix",
+   "amount": 35000,
+   "hour": 2,
+   "probs": {
+    "cat.bills": 0.008741648895410145,
+    "cat.family": 0.002844037188923179,
+    "cat.food": 0.01040425432873469,
+    "cat.health": 0.0021293745990541525,
+    "cat.other": 0.9660247006068232,
+    "cat.school": 0.003228345095825708,
+    "cat.transport": 0.006627639285228899
+   },
+   "top": "cat.other"
+  },
+  {
+   "description": "Jubilee insurance",
+   "amount": 120000,
+   "hour": 9,
+   "probs": {
+    "cat.bills": 0.01697010203971709,
+    "cat.family": 0.014323119652779532,
+    "cat.food": 0.007851345096163058,
+    "cat.health": 0.9463424586172765,
+    "cat.other": 0.0006893802005262769,
+    "cat.school": 0.008228336223717549,
+    "cat.transport": 0.005595258169820024
+   },
+   "top": "cat.health"
+  },
+  {
+   "description": "",
+   "amount": 5000,
+   "hour": 12,
+   "probs": {
+    "cat.bills": 0.23244666302991546,
+    "cat.family": 0.0021353611566259706,
+    "cat.food": 0.536316671894344,
+    "cat.health": 0.009031575194742633,
+    "cat.other": 0.13232166209670326,
+    "cat.school": 0.013722554491399638,
+    "cat.transport": 0.07402551213626911
+   },
+   "top": "cat.food"
+  },
+  {
+   "description": "!!!",
+   "amount": 1000,
+   "hour": 0,
+   "probs": {
+    "cat.bills": 0.07809859499145759,
+    "cat.family": 0.017577914688464865,
+    "cat.food": 0.06371132076590696,
+    "cat.health": 0.025061135678518726,
+    "cat.other": 0.45760724237908734,
+    "cat.school": 0.0335087723859324,
+    "cat.transport": 0.32443501911063205
+   },
+   "top": "cat.other"
+  },
+  {
+   "description": "Groceries, Nakasero  market",
+   "amount": 1000000,
+   "hour": 23,
+   "probs": {
+    "cat.bills": 0.0007259961075316718,
+    "cat.family": 0.0004359089995826047,
+    "cat.food": 0.9952997284728452,
+    "cat.health": 0.0005084038176895513,
+    "cat.other": 0.00089703527993599,
+    "cat.school": 0.0009004325083563731,
+    "cat.transport": 0.0012324948140586922
+   },
+   "top": "cat.food"
+  },
+  {
+   "description": "nyama ya mbuzi",
+   "amount": 999,
+   "hour": 5,
+   "probs": {
+    "cat.bills": 0.13744523764389804,
+    "cat.family": 0.06905972634976738,
+    "cat.food": 0.07701234886589957,
+    "cat.health": 0.03957789355234814,
+    "cat.other": 0.5008592394842342,
+    "cat.school": 0.04724565135836648,
+    "cat.transport": 0.1287999027454863
+   },
+   "top": "cat.other"
+  },
+  {
+   "description": "new payee 4821",
+   "amount": 2000,
+   "hour": 6,
+   "probs": {
+    "cat.bills": 0.24877401008258473,
+    "cat.family": 0.013756962525404882,
+    "cat.food": 0.08692554268360746,
+    "cat.health": 0.15404532030607754,
+    "cat.other": 0.014144111787864504,
+    "cat.school": 0.006889529950460958,
+    "cat.transport": 0.475464522664
+   },
+   "top": "cat.transport"
+  },
+  {
+   "description": "ÉCOLE fees",
+   "amount": 200000,
+   "hour": 22,
+   "probs": {
+    "cat.bills": 0.007209497111733584,
+    "cat.family": 0.007378122400727106,
+    "cat.food": 0.016583342655583304,
+    "cat.health": 0.002867593165179529,
+    "cat.other": 0.004973298362984323,
+    "cat.school": 0.9546030520752297,
+    "cat.transport": 0.006385094228562379
+   },
+   "top": "cat.school"
+  },
+  {
+   "description": "Kikuubo chips",
+   "amount": 1999,
+   "hour": 14,
+   "probs": {
+    "cat.bills": 0.0028095580062384275,
+    "cat.family": 0.0029527924787453204,
+    "cat.food": 0.5797540351345235,
+    "cat.health": 0.026531226147027093,
+    "cat.other": 0.014315876845628744,
+    "cat.school": 0.06392230584262552,
+    "cat.transport": 0.3097142055452114
+   },
+   "top": "cat.food"
+  },
+  {
+   "description": "taxi fare",
+   "amount": 500,
+   "hour": 6,
+   "probs": {
+    "cat.bills": 0.03651377990699655,
+    "cat.family": 0.020672205801217872,
+    "cat.food": 0.012274879997809646,
+    "cat.health": 0.014192315049709862,
+    "cat.other": 0.0019143532058788365,
+    "cat.school": 0.0070258581304963996,
+    "cat.transport": 0.9074066079078907
+   },
+   "top": "cat.transport"
+  },
+  {
+   "description": "a",
+   "amount": 100000,
+   "hour": 13,
+   "probs": {
+    "cat.bills": 0.411644511397825,
+    "cat.family": 0.04048845562294244,
+    "cat.food": 0.15411026441986472,
+    "cat.health": 0.012504947997633103,
+    "cat.other": 0.0761433407090473,
+    "cat.school": 0.24482647823887002,
+    "cat.transport": 0.060282001613817464
+   },
+   "top": "cat.bills"
+  }
+ ],
+ "blend": {
+  "history": [
+   {
+    "description": "Nakasero market",
+    "categoryId": "cat.food"
+   },
+   {
+    "description": "Nakasero market",
+    "categoryId": "cat.food"
+   },
+   {
+    "description": "Nakasero market",
+    "categoryId": "cat.family"
+   },
+   {
+    "description": "boda to work",
+    "categoryId": "cat.custom.work"
+   },
+   {
+    "description": "boda to office",
+    "categoryId": "cat.custom.work"
+   },
+   {
+    "description": "MTN airtime",
+    "categoryId": "cat.bills"
+   },
+   {
+    "description": "posho lunch",
+    "categoryId": "cat.food"
+   },
+   {
+    "description": "Java House",
+    "categoryId": "cat.other"
+   }
+  ],
+  "cases": [
+   {
+    "description": "Nakasero market",
+    "amount": 15000,
+    "hour": 9,
+    "probs": {
+     "cat.food": 0.2733229187926453,
+     "cat.other": 5.6213129651479364e-05,
+     "cat.bills": 0.00021218918727446115,
+     "cat.school": 6.26182055518931e-05,
+     "cat.health": 0.00035915949681675625,
+     "cat.family": 0.7259260756556951,
+     "cat.transport": 6.082553236499594e-05
+    },
+    "top": "cat.family"
+   },
+   {
+    "description": "nakasero mkt",
+    "amount": 15000,
+    "hour": 9,
+    "probs": {
+     "cat.other": 0.0013547510707716912,
+     "cat.health": 0.009433255495854614,
+     "cat.family": 0.1803971274720078,
+     "cat.food": 0.7982840405493488,
+     "cat.bills": 0.007307830414144084,
+     "cat.school": 0.0018059319278423023,
+     "cat.transport": 0.0014170630700306407
+    },
+    "top": "cat.food"
+   },
+   {
+    "description": "boda to work",
+    "amount": 4000,
+    "hour": 7,
+    "probs": {
+     "cat.other": 2.498190438689237e-05,
+     "cat.custom.work": 0.9123287671232877,
+     "cat.health": 0.00013596298349749568,
+     "cat.family": 0.00015914114075441085,
+     "cat.food": 0.0001286033933176974,
+     "cat.bills": 0.0004865330186781581,
+     "cat.school": 2.086354995175697e-05,
+     "cat.transport": 0.08671514688612589
+    },
+    "top": "cat.custom.work"
+   },
+   {
+    "description": "boda to town",
+    "amount": 4000,
+    "hour": 8,
+    "probs": {
+     "cat.food": 0.0003069932579915287,
+     "cat.other": 0.0001081235556267238,
+     "cat.custom.work": 0.27167729701775556,
+     "cat.bills": 0.002151402085842673,
+     "cat.school": 7.423215696143332e-05,
+     "cat.health": 0.0005233300901691725,
+     "cat.family": 0.0008163659328696613,
+     "cat.transport": 0.7243422559027832
+    },
+    "top": "cat.transport"
+   },
+   {
+    "description": "MTN bundles",
+    "amount": 5000,
+    "hour": 20,
+    "probs": {
+     "cat.food": 0.02286713793191252,
+     "cat.other": 0.0005049511122722448,
+     "cat.bills": 0.9708121710203529,
+     "cat.school": 0.00042130571762794976,
+     "cat.health": 0.0008570360281567301,
+     "cat.family": 0.0016351014224629337,
+     "cat.transport": 0.002902296767214766
+    },
+    "top": "cat.bills"
+   },
+   {
+    "description": "Java House",
+    "amount": 9000,
+    "hour": 11,
+    "probs": {
+     "cat.food": 0.09600185676298054,
+     "cat.other": 0.9009101037624354,
+     "cat.bills": 0.002519858720427452,
+     "cat.school": 7.843428725893252e-05,
+     "cat.health": 4.820388653278451e-05,
+     "cat.family": 1.804371714900506e-05,
+     "cat.transport": 0.00042349886321587597
+    },
+    "top": "cat.other"
+   },
+   {
+    "description": "Umeme prepaid",
+    "amount": 30000,
+    "hour": 10,
+    "probs": {
+     "cat.food": 0.012488846385377379,
+     "cat.other": 0.008386606802726432,
+     "cat.bills": 0.9724269717767563,
+     "cat.school": 0.002924737562425409,
+     "cat.health": 0.00030257312612412914,
+     "cat.family": 0.0006409283688543446,
+     "cat.transport": 0.002829335977736153
+    },
+    "top": "cat.bills"
+   },
+   {
+    "description": "",
+    "amount": 5000,
+    "hour": 12,
+    "probs": {
+     "cat.food": 0.536316671894344,
+     "cat.other": 0.13232166209670326,
+     "cat.bills": 0.23244666302991546,
+     "cat.school": 0.013722554491399638,
+     "cat.health": 0.009031575194742633,
+     "cat.family": 0.0021353611566259706,
+     "cat.transport": 0.07402551213626911
+    },
+    "top": "cat.food"
+   }
+  ]
+ }
+}
