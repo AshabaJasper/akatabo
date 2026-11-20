@@ -14,6 +14,7 @@ import '../../data/db/app_database.dart';
 import '../../data/seed/default_data.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
+import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/add_providers.dart';
 import '../settings/home_layout.dart';
@@ -185,7 +186,7 @@ class _Header extends StatelessWidget {
                 const SizedBox(height: AkSpace.s3h),
                 Text(caption, style: t.bodySm.copyWith(color: c.onBrandMuted)),
                 const SizedBox(height: AkSpace.s1),
-                Text(figure, style: t.figureXl.copyWith(color: c.onBrand)),
+                AkHiddenAmount(figure, style: t.figureXl.copyWith(color: c.onBrand)),
                 if (comparison != null) ...[
                   const SizedBox(height: AkSpace.s1),
                   Text(comparison!, style: t.bodySm.copyWith(color: c.accent)),
@@ -229,7 +230,7 @@ class _StatTile extends StatelessWidget {
         children: [
           Text(label, style: t.caption.copyWith(color: c.onBrandMuted)),
           const SizedBox(height: AkSpace.s0h),
-          Text(value, style: t.bodyStrong.copyWith(color: c.onBrand)),
+          AkHiddenAmount(value, style: t.bodyStrong.copyWith(color: c.onBrand)),
         ],
       ),
     );
@@ -275,7 +276,7 @@ class _WhereItWent extends StatelessWidget {
   }
 }
 
-class _SplitRow extends StatelessWidget {
+class _SplitRow extends ConsumerWidget {
   const _SplitRow({
     required this.category,
     required this.amount,
@@ -289,16 +290,18 @@ class _SplitRow extends StatelessWidget {
   final double fraction;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final t = context.type;
+    final hidden = ref.watch(amountsHiddenProvider);
+    final amountText = hidden ? hiddenFigure : formatAmount(amount);
     final name = category?.name ?? 'Other';
     final colour = colourForToken(c, category?.colourToken ?? 'cat-slate');
     final ink = categoryIconColour(c, category?.colourToken ?? 'cat-slate');
     final shareText = formatPercent(share);
 
     return Semantics(
-      label: '$name, ${formatAmount(amount)}, $shareText of money out',
+      label: '$name, ${hidden ? 'amount hidden' : amountText}, $shareText of money out',
       container: true,
       excludeSemantics: true,
       child: Padding(
@@ -326,7 +329,7 @@ class _SplitRow extends StatelessWidget {
                           style: t.bodySm.copyWith(color: c.ink),
                         ),
                       ),
-                      Text(formatAmount(amount), style: t.figure.copyWith(color: c.ink)),
+                      Text(amountText, style: t.figure.copyWith(color: c.ink)),
                       const SizedBox(width: AkSpace.s1),
                       Text(shareText, style: t.caption.copyWith(color: c.inkMuted)),
                     ],

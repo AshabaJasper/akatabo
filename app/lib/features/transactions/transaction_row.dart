@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -8,6 +9,7 @@ import '../../core/theme/token_colour.dart';
 import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
 import '../../widgets/ak_category_choices.dart';
+import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_surfaces.dart';
 
 /// "today", "yesterday", a weekday within the last week, or a short date.
@@ -25,7 +27,8 @@ String clockLabel(DateTime when) => DateFormat('HH:mm').format(when);
 /// One saved transaction as a list row: category tile, words, where and when, and the amount.
 ///
 /// The amount's sign and colour both say the direction, so colour is never the only cue.
-class TransactionRow extends StatelessWidget {
+/// With "Hide amounts" on, the amount is dots until a main figure is tapped.
+class TransactionRow extends ConsumerWidget {
   const TransactionRow({
     super.key,
     required this.transaction,
@@ -48,10 +51,11 @@ class TransactionRow extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final t = context.type;
     final tx = transaction;
+    final hidden = ref.watch(amountsHiddenProvider);
     final isTransfer = tx.direction == Direction.transfer;
     final isMoneyIn = tx.direction == Direction.moneyIn;
     final tileColour = category == null ? c.catSlate : colourForToken(c, category!.colourToken);
@@ -69,14 +73,16 @@ class TransactionRow extends StatelessWidget {
         : accountName;
     final subtitle = where.isEmpty ? when : '$where, $when';
 
-    final amountText = isTransfer
+    final amountText = hidden
+        ? hiddenFigure
+        : isTransfer
         ? formatAmount(tx.amount)
         : formatSigned(tx.amount, moneyIn: isMoneyIn);
     final amountColour = isTransfer ? c.inkMuted : (isMoneyIn ? c.moneyIn : c.moneyOut);
 
     return Semantics(
       button: onTap != null,
-      label: '$title, $amountText, $subtitle',
+      label: '$title, ${hidden ? 'amount hidden' : amountText}, $subtitle',
       container: true,
       excludeSemantics: true,
       onTap: onTap,
