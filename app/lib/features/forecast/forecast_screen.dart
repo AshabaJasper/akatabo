@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/close_screen.dart';
+import '../../app/routes.dart';
 import '../../core/format/money.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../core/time/clock_provider.dart';
@@ -71,6 +73,8 @@ class ForecastScreen extends ConsumerWidget {
               AkEmptyNote(
                 'A forecast appears once seven days this month have entries. '
                 '${(forecastMinDays - daysWithEntries).clamp(0, forecastMinDays)} more to go.',
+                actionLabel: 'Add a transaction',
+                onAction: () => context.push(Routes.add),
               )
             else
               _ForecastBody(

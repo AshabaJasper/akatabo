@@ -17,6 +17,7 @@ import '../features/filters/filters_screen.dart';
 import '../features/forecast/forecast_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/insights/insights_screen.dart';
+import '../features/lock/app_lock_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/onboarding/welcome_screen.dart';
 import '../features/privacy/privacy_data_screen.dart';
@@ -115,7 +116,8 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       GoRoute(
         path: Routes.regularNew,
         parentNavigatorKey: rootKey,
-        builder: (_, _) => const RegularNewScreen(),
+        builder: (_, state) =>
+            RegularNewScreen(fromHome: state.uri.queryParameters['from'] == 'home'),
       ),
       GoRoute(
         path: '${Routes.budgets}/:id',
@@ -168,6 +170,14 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
         path: Routes.settingsPrivacy,
         builder: (_, state) =>
             PrivacyDataScreen(openAtData: state.uri.queryParameters['section'] == 'data'),
+      ),
+      GoRoute(
+        path: Routes.settingsLock,
+        builder: (_, state) => AppLockScreen(
+          backLabel: state.uri.queryParameters['from'] == 'privacy'
+              ? 'Privacy and data'
+              : 'Settings',
+        ),
       ),
       GoRoute(
         path: Routes.dataExport,

@@ -22,7 +22,10 @@ const _repeats = [(7, 'Weekly'), (30, 'Monthly'), (365, 'Yearly')];
 /// payments it finds by itself are offered under Looks regular. The form asks for what the forecast needs: a name, an amount,
 /// how often, and the next date.
 class RegularNewScreen extends ConsumerStatefulWidget {
-  const RegularNewScreen({super.key});
+  const RegularNewScreen({super.key, this.fromHome = false});
+
+  /// Opened from Home's first day, so the back link names Home rather than Coming up.
+  final bool fromHome;
 
   @override
   ConsumerState<RegularNewScreen> createState() => _RegularNewScreenState();
@@ -103,7 +106,7 @@ class _RegularNewScreenState extends ConsumerState<RegularNewScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
           children: [
-            AkBackLink('Coming up', onTap: () => closeScreen(context)),
+            AkBackLink(widget.fromHome ? 'Home' : 'Coming up', onTap: () => closeScreen(context)),
             const SizedBox(height: AkSpace.s3),
             Semantics(
               header: true,

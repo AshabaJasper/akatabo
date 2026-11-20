@@ -97,6 +97,45 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('back links name the page they came from: App lock and New regular payment', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(390, 844)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final semantics = tester.ensureSemantics();
+    final db = memoryDb();
+    for (final (location, label) in const [
+      ('/settings/lock?from=privacy', 'Back to Privacy and data'),
+      ('/settings/lock', 'Back to Settings'),
+      ('/regular/new?from=home', 'Back to Home'),
+      ('/regular/new', 'Back to Coming up'),
+    ]) {
+      final router = buildRouter(initialLocation: location);
+      await tester.pumpWidget(
+        ProviderScope(
+          key: UniqueKey(),
+          retry: (_, _) => null,
+          overrides: [
+            appDatabaseProvider.overrideWithValue(db),
+            appNowProvider.overrideWithValue(testNow),
+            ...securityOverrides(values: MapSecureValues()),
+          ],
+          child: AkataboApp(router: router, onboardingDone: true),
+        ),
+      );
+      await _settle(tester);
+      expect(find.bySemanticsLabel(label), findsOneWidget, reason: location);
+      router.dispose();
+    }
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 1));
+    addTearDown(db.close);
+    semantics.dispose();
+  });
+
   testWidgets('the first day fills the screen: chart note, restore, regular, what it does', (
     tester,
   ) async {

@@ -577,7 +577,7 @@ class _FirstDay extends ConsumerWidget {
                   icon: AkIcons.repeat,
                   title: 'Pay something every month?',
                   detail: 'Add rent, fees or bundles once, and they show up as they come due',
-                  onTap: () => context.push(Routes.regularNew),
+                  onTap: () => context.push('${Routes.regularNew}?from=home'),
                 ),
                 const SizedBox(height: AkSpace.s6),
                 Semantics(

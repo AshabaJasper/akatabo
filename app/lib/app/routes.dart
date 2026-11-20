@@ -29,6 +29,9 @@ abstract final class Routes {
   /// Privacy and data: app lock, hidden amounts, data and backup, about. One page reached
   /// from both hub rows; the Data and backup row opens it at that section.
   static const settingsPrivacy = '/settings/privacy';
+
+  /// App lock: the lock switch, the PIN, Unlock with and Lock after.
+  static const settingsLock = '/settings/lock';
   static const settingsData = '$settingsPrivacy?section=data';
 
   /// Export and back up, and Restore from a backup. [exportPdf] opens Export on the PDF

@@ -136,6 +136,8 @@ class CategoryDetailScreen extends ConsumerWidget {
             else if (mine.isEmpty)
               AkEmptyNote(
                 'Nothing spent on ${category?.name.toLowerCase() ?? 'this'} this month yet.',
+                actionLabel: 'Add a transaction',
+                onAction: () => context.push(Routes.add),
               )
             else ...[
               Text(

@@ -57,10 +57,11 @@ class SettingsScreen extends ConsumerWidget {
       ),
     ],
     [
+      _Entry(AkIcons.lock, 'App lock', 'PIN, fingerprint or face, lock after', Routes.settingsLock),
       _Entry(
-        AkIcons.lock,
+        AkIcons.phone,
         'Privacy and security',
-        'App lock, hidden amounts',
+        'Hidden amounts, the app switcher',
         Routes.settingsPrivacy,
       ),
       _Entry(

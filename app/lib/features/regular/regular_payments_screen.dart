@@ -78,9 +78,11 @@ class RegularPaymentsScreen extends ConsumerWidget {
             else if (payments.isEmpty && ref.watch(looksRegularProvider).isNotEmpty)
               const AkEmptyNote('None saved yet. Smart help found the ones below.')
             else if (payments.isEmpty)
-              const AkEmptyNote(
+              AkEmptyNote(
                 'Nothing repeating yet. Add a bill you pay every week or month, and it '
                 'comes up here.',
+                actionLabel: 'Add a regular payment',
+                onAction: () => context.push(Routes.regularNew),
               )
             else ...[
               Text(formatUgx(total), style: t.figureXl.copyWith(color: c.ink)),

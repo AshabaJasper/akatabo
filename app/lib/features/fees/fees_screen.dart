@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/close_screen.dart';
+import '../../app/routes.dart';
 import '../../core/format/money.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../core/time/clock_provider.dart';
@@ -69,8 +71,10 @@ class FeesScreen extends ConsumerWidget {
             else if (!ready)
               const SizedBox(height: AkSize.chart)
             else if (split.total == 0)
-              const AkEmptyNote(
+              AkEmptyNote(
                 'No fees or tax this month. They appear here when an entry has one.',
+                actionLabel: 'Add a transaction',
+                onAction: () => context.push(Routes.add),
               )
             else ...[
               Text(

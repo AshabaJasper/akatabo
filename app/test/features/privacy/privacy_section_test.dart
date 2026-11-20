@@ -1,13 +1,18 @@
+import 'dart:async';
+
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
+import 'package:akatabo/features/lock/app_lock_screen.dart';
 import 'package:akatabo/features/lock/pin_flow_screen.dart';
 import 'package:akatabo/features/privacy/privacy_section.dart';
 import 'package:akatabo/features/settings/settings_page.dart';
 import 'package:akatabo/services/security/biometrics.dart';
+import 'package:akatabo/services/security/lock_controller.dart';
 import 'package:akatabo/services/security/privacy_settings.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -26,6 +31,7 @@ Future<void> _pump(
   Map<String, String> settings = const {},
   FakeBiometrics? biometrics,
   Brightness brightness = Brightness.light,
+  List<Override> extra = const [],
 }) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -38,10 +44,15 @@ Future<void> _pump(
         appDatabaseProvider.overrideWithValue(db),
         storedSettingsProvider.overrideWith((ref) => Stream.value(settings)),
         ...securityOverrides(values: values, biometrics: biometrics),
+        ...extra,
       ],
       child: MaterialApp(
         theme: buildAkTheme(brightness, const AkAppearance()),
-        home: const SettingsPage(title: 'Privacy and data', children: [PrivacySection()]),
+        // App lock has its own page; both sections are pumped so each test finds its rows.
+        home: const SettingsPage(
+          title: 'Privacy and data',
+          children: [AppLockSection(), PrivacySection()],
+        ),
       ),
     ),
   );
@@ -76,6 +87,59 @@ void main() {
   late AppDatabase db;
   setUp(() => db = AppDatabase(NativeDatabase.memory()));
   tearDown(() => db.close());
+
+  testWidgets('with no PIN, App lock offers "Set a PIN" and says what forgetting one means', (
+    tester,
+  ) async {
+    await _pump(tester, db, MapSecureValues());
+    await _settle(tester);
+    expect(find.text('Set a PIN'), findsOneWidget, reason: 'always in reach, lock on or off');
+    expect(find.text('Change PIN'), findsNothing);
+    expect(find.textContaining('the only way back in is to delete everything'), findsOneWidget);
+    expect(find.text('Off'), findsOneWidget, reason: "Privacy's App lock row says the state");
+
+    await tester.tap(find.text('Set a PIN'));
+    await _settle(tester);
+    expect(
+      find.text('Choose a $pinLength-digit PIN'),
+      findsOneWidget,
+      reason: 'the set-a-PIN screen opened',
+    );
+  });
+
+  testWidgets('a PIN left behind with the lock off is replaced, never asked for', (tester) async {
+    final values = await valuesWithPin('2580');
+    await _pump(tester, db, values);
+    await _settle(tester);
+    expect(find.text('Set a PIN'), findsOneWidget);
+    expect(find.text('Change PIN'), findsNothing);
+    await tester.tap(find.text('Set a PIN'));
+    await _settle(tester);
+    expect(find.text('Choose a $pinLength-digit PIN'), findsOneWidget);
+    expect(find.text('Enter your current PIN'), findsNothing);
+  });
+
+  testWidgets('while the PIN check loads, no lock row is offered and App lock has no value', (
+    tester,
+  ) async {
+    final pending = Completer<bool>();
+    await _pump(
+      tester,
+      db,
+      MapSecureValues(),
+      settings: {PrivacyKeys.lockOn.name: '1'},
+      extra: [pinIsSetProvider.overrideWith((ref) => pending.future)],
+    );
+    expect(find.text('Set a PIN'), findsNothing, reason: 'it would replace the PIN unasked');
+    expect(find.text('Lock the app'), findsNothing);
+    expect(find.text('Off'), findsNothing);
+
+    pending.complete(true);
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Change PIN'), findsOneWidget);
+    expect(find.text('On'), findsOneWidget);
+  });
 
   testWidgets('switching the lock on sets a PIN, entered twice', (tester) async {
     final values = MapSecureValues();
