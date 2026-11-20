@@ -16,6 +16,7 @@ import '../add/add_providers.dart';
 import '../home/home_providers.dart';
 import '../settings/settings_page.dart';
 import '../transactions/transactions_providers.dart';
+import '../transactions/unusual_providers.dart';
 import 'date_choice_providers.dart';
 import 'transaction_filter_providers.dart';
 
@@ -100,7 +101,8 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
     // entries, and its chip must stay visible while it narrows the list.
     final accounts = ref.watch(allAccountsProvider).value ?? const <Account>[];
     final all = ref.watch(allTransactionsProvider).value ?? const <Transaction>[];
-    final matching = all.where((tx) => matchesFilter(tx, filter, period)).length;
+    final unusual = filter.onlyUnusual ? ref.watch(unusualIdsProvider) : const <String>{};
+    final matching = all.where((tx) => matchesFilter(tx, filter, period, unusual: unusual)).length;
     final changed = filter.narrows || period != null || filter.order != FilterOrder.newest;
 
     return Scaffold(

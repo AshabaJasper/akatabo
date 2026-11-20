@@ -59,13 +59,15 @@ void main() {
       expect(keep(food, f: f), isFalse);
     });
 
-    test('only unusual skips entries the person dismissed', () {
+    test('only unusual keeps the entries the detector points out now', () {
       const f = TransactionFilter(onlyUnusual: true);
-      final flagged = txRow(id: 'odd').copyWith(flaggedUnusual: true);
-      final dismissed = flagged.copyWith(flagDismissed: true);
-      expect(keep(flagged, f: f), isTrue);
-      expect(keep(dismissed, f: f), isFalse);
-      expect(keep(food, f: f), isFalse);
+      final odd = txRow(id: 'odd');
+      expect(matchesFilter(odd, f, null, unusual: {'odd'}), isTrue);
+      expect(matchesFilter(food, f, null, unusual: {'odd'}), isFalse);
+      // The stored flag is not read: nothing writes it, and the detector is the one rule.
+      expect(keep(odd.copyWith(flaggedUnusual: true), f: f), isFalse);
+      // Without "only unusual", the set changes nothing.
+      expect(matchesFilter(food, const TransactionFilter(), null, unusual: {'odd'}), isTrue);
     });
 
     test('a period keeps the days inside it, the last day included', () {

@@ -18,6 +18,7 @@ Transaction txRow({
   int? day,
   bool categoryWasCorrected = false,
   String? regularPaymentId,
+  bool flagDismissed = false,
 }) {
   final when = at ?? DateTime(2026, 11, 19, 9, 14);
   return Transaction(
@@ -38,7 +39,7 @@ Transaction txRow({
     localDay: day ?? when.year * 10000 + when.month * 100 + when.day,
     categoryWasCorrected: categoryWasCorrected,
     flaggedUnusual: false,
-    flagDismissed: false,
+    flagDismissed: flagDismissed,
     regularPaymentId: regularPaymentId,
   );
 }

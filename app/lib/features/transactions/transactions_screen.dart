@@ -22,6 +22,7 @@ import '../filters/transaction_filter_providers.dart';
 import '../home/home_providers.dart';
 import 'transaction_row.dart';
 import 'transactions_providers.dart';
+import 'unusual_providers.dart';
 
 /// All transactions: search, a kind filter, the month's money out by day, and every entry
 /// grouped by day with the day's net total.
@@ -82,10 +83,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     // uses only those and stays newest first.
     final scope = oneDay ? filter.listControlsOnly : filter;
     final order = oneDay ? FilterOrder.newest : filter.order;
+    final unusual = scope.onlyUnusual ? ref.watch(unusualIdsProvider) : const <String>{};
     final shown = orderedRows(
       all
           .where((tx) => !oneDay || tx.localDay == widget.day)
-          .where((tx) => matchesFilter(tx, scope, oneDay ? null : period))
+          .where((tx) => matchesFilter(tx, scope, oneDay ? null : period, unusual: unusual))
           .toList(),
       order,
     );

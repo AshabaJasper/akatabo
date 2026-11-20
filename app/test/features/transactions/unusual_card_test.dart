@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:akatabo/app/appearance.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/time/clock_provider.dart';
+import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/seed/default_data.dart';
 import 'package:akatabo/features/add/add_providers.dart';
@@ -17,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../support/backup_seed.dart' show memoryDb;
 import '../../support/fixtures.dart';
 
 final _now = DateTime(2026, 11, 19, 9, 14);
@@ -36,6 +38,8 @@ Future<ProviderContainer> _pump(
   WidgetTester tester, {
   Map<String, String> settings = const {},
   Brightness brightness = Brightness.light,
+  AppDatabase? db,
+  List<Transaction>? rows,
 }) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -49,8 +53,9 @@ Future<ProviderContainer> _pump(
         storedSettingsProvider.overrideWith((ref) => Stream.value(settings)),
         appearanceProvider.overrideWithValue(const AkAppearance()),
         appNowProvider.overrideWithValue(_now),
-        allTransactionsProvider.overrideWith((ref) => Stream.value(_rows)),
-        transactionByIdProvider('big').overrideWith((ref) => Stream.value(_rows.first)),
+        appDatabaseProvider.overrideWithValue(db ?? memoryDb()),
+        allTransactionsProvider.overrideWith((ref) => Stream.value(rows ?? _rows)),
+        transactionByIdProvider('big').overrideWith((ref) => Stream.value((rows ?? _rows).first)),
         unusualParamsProvider.overrideWith((ref) async => params),
         allCategoriesProvider.overrideWith(
           (ref) => Stream.value([categoryRow(id: DefaultIds.food, name: 'Food and shopping')]),
@@ -82,14 +87,32 @@ void main() {
     expect(find.text('Compared with your 30 earlier Food and shopping entries.'), findsOneWidget);
   });
 
-  testWidgets('"This was me" hides the card for the rest of the session', (tester) async {
-    final container = await _pump(tester);
+  testWidgets('"This was me" hides the card at once and saves the answer on the entry', (
+    tester,
+  ) async {
+    final db = memoryDb();
+    addTearDown(db.close);
+    await tester.runAsync(() => db.into(db.transactions).insert(_rows.first));
+    final container = await _pump(tester, db: db);
     await tester.tap(find.bySemanticsLabel('This was me. Hide this note'));
     await tester.pumpAndSettle();
     expect(find.byType(UnusualCard), findsNothing);
     expect(container.read(unusualDismissedProvider), {'big'});
-    // Still hidden when the note is worked out again in the same session.
     expect(container.read(unusualNoteProvider('big')), isNull);
+    final saved = await tester.runAsync(
+      () => (db.select(db.transactions)..where((t) => t.id.equals('big'))).getSingle(),
+    );
+    expect(saved!.flagDismissed, isTrue, reason: 'the answer outlives this session');
+  });
+
+  testWidgets('an entry answered "This was me" earlier shows no card', (tester) async {
+    await _pump(tester, rows: [_rows.first.copyWith(flagDismissed: true), ..._rows.skip(1)]);
+    expect(find.byType(UnusualCard), findsNothing);
+  });
+
+  testWidgets('"Only unusual" finds the flagged entry and not the ordinary ones', (tester) async {
+    final container = await _pump(tester);
+    expect(container.read(unusualIdsProvider), {'big'});
   });
 
   testWidgets('switched off in Smart help, no card', (tester) async {

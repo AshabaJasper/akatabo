@@ -79,8 +79,14 @@ class TransactionFilter {
 
 /// Whether [t] is shown under [f] and the [period] chosen on Choose dates (null for all dates).
 ///
-/// A transfer has no category, so any category choice leaves it out.
-bool matchesFilter(Transaction t, TransactionFilter f, Period? period) {
+/// A transfer has no category, so any category choice leaves it out. [unusual] holds the
+/// entries the detector points out now; it is read only for "Only unusual".
+bool matchesFilter(
+  Transaction t,
+  TransactionFilter f,
+  Period? period, {
+  Set<String> unusual = const {},
+}) {
   if (period != null && !period.containsDay(t.localDay)) return false;
   if (!_matchesKind(t, f.kind)) return false;
   if (!_matchesQuery(t, f.query)) return false;
@@ -91,7 +97,7 @@ bool matchesFilter(Transaction t, TransactionFilter f, Period? period) {
   if (f.minAmount != null && t.amount < f.minAmount!) return false;
   if (f.maxAmount != null && t.amount > f.maxAmount!) return false;
   if (f.onlyFee && t.fee <= 0) return false;
-  if (f.onlyUnusual && !(t.flaggedUnusual && !t.flagDismissed)) return false;
+  if (f.onlyUnusual && !unusual.contains(t.id)) return false;
   return true;
 }
 

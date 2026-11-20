@@ -17,8 +17,9 @@ final unusualParamsProvider = FutureProvider<UnusualParams>((ref) async {
   return UnusualParams.fromJson(jsonDecode(raw) as Map<String, Object?>);
 });
 
-/// Entries the person answered "This was me" for. Held in memory for this session only:
-/// the card stays away until the app is next started.
+/// Entries the person answered "This was me" for in this session. The answer is also
+/// saved on the entry (`flagDismissed`); this set hides the card at once, before the
+/// database write comes back.
 class UnusualDismissed extends Notifier<Set<String>> {
   @override
   Set<String> build() => const {};
@@ -75,7 +76,10 @@ final unusualNoteProvider = Provider.autoDispose.family<UnusualNote?, String>((r
   for (final t in all) {
     if (t.id == id) target = t;
   }
-  if (target == null || target.direction != Direction.moneyOut || target.categoryId == null) {
+  if (target == null ||
+      target.flagDismissed ||
+      target.direction != Direction.moneyOut ||
+      target.categoryId == null) {
     return null;
   }
   final history = [
@@ -83,14 +87,7 @@ final unusualNoteProvider = Provider.autoDispose.family<UnusualNote?, String>((r
       if (t.direction == Direction.moneyOut && t.categoryId != null && _before(t, target))
         _entryOf(t),
   ];
-  final level = switch (SettingKeys.unusualHowOften.decode(
-    settings[SettingKeys.unusualHowOften.name],
-  )) {
-    UnusualHowOften.rarely => UnusualLevel.rarely,
-    UnusualHowOften.balanced => UnusualLevel.balanced,
-    UnusualHowOften.often => UnusualLevel.often,
-  };
-  final result = scoreUnusual(_entryOf(target), history, params, level: level);
+  final result = scoreUnusual(_entryOf(target), history, params, level: _levelOf(settings));
   if (!result.flagged) return null;
   return UnusualNote(
     result: result,
@@ -98,4 +95,39 @@ final unusualNoteProvider = Provider.autoDispose.family<UnusualNote?, String>((r
     hour: target.occurredAt.hour,
     amount: target.amount,
   );
+});
+
+UnusualLevel _levelOf(Map<String, String> settings) =>
+    switch (SettingKeys.unusualHowOften.decode(settings[SettingKeys.unusualHowOften.name])) {
+      UnusualHowOften.rarely => UnusualLevel.rarely,
+      UnusualHowOften.balanced => UnusualLevel.balanced,
+      UnusualHowOften.often => UnusualLevel.often,
+    };
+
+/// Every entry the detector points out now, for the "Only unusual" filter: each money-out
+/// entry scored against the entries before it, as the card does, less those answered
+/// "This was me". Watched only while that filter is on.
+final unusualIdsProvider = Provider.autoDispose<Set<String>>((ref) {
+  final settings = ref.watch(storedSettingsProvider).value ?? const {};
+  final params = ref.watch(unusualParamsProvider).value;
+  final all = ref.watch(allTransactionsProvider).value;
+  if (params == null || all == null) return const {};
+  final dismissed = ref.watch(unusualDismissedProvider);
+  final level = _levelOf(settings);
+  final ordered = [
+    for (final t in all)
+      if (t.direction == Direction.moneyOut && t.categoryId != null) t,
+  ]..sort((a, b) => _before(a, b) ? -1 : (_before(b, a) ? 1 : 0));
+  final history = <UnusualEntry>[];
+  final out = <String>{};
+  for (final t in ordered) {
+    final entry = _entryOf(t);
+    if (!t.flagDismissed &&
+        !dismissed.contains(t.id) &&
+        scoreUnusual(entry, history, params, level: level).flagged) {
+      out.add(t.id);
+    }
+    history.add(entry);
+  }
+  return out;
 });

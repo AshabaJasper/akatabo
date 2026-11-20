@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
@@ -114,7 +116,19 @@ class TransactionDetailScreen extends ConsumerWidget {
               UnusualCard(
                 note: unusual,
                 categoryName: category?.name ?? 'this category',
-                onThisWasMe: () => ref.read(unusualDismissedProvider.notifier).dismiss(tx.id),
+                onThisWasMe: () {
+                  ref.read(unusualDismissedProvider.notifier).dismiss(tx.id);
+                  unawaited(
+                    ref
+                        .read(transactionRepositoryProvider)
+                        .dismissUnusual(tx.id)
+                        .catchError(
+                          (Object e, StackTrace s) => FlutterError.reportError(
+                            FlutterErrorDetails(exception: e, stack: s, library: 'akatabo unusual'),
+                          ),
+                        ),
+                  );
+                },
               ),
               const SizedBox(height: AkSpace.s4),
             ],

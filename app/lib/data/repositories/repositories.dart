@@ -100,6 +100,13 @@ class TransactionRepository {
   Future<void> delete(String id) =>
       (_db.delete(_db.transactions)..where((t) => t.id.equals(id))).go();
 
+  /// "This was me" on an unusual entry: it is not pointed out again, and the answer is
+  /// kept so the share of flags the person waves away can be measured.
+  Future<void> dismissUnusual(String id) =>
+      (_db.update(_db.transactions)..where((t) => t.id.equals(id))).write(
+        TransactionsCompanion(flagDismissed: const Value(true), updatedAt: Value(clock.now())),
+      );
+
   Future<Transaction?> byId(String id) =>
       (_db.select(_db.transactions)..where((t) => t.id.equals(id))).getSingleOrNull();
 
