@@ -14,6 +14,13 @@ class TransactionFilterNotifier extends Notifier<TransactionFilter> {
     state = _with(categoryIds: next);
   }
 
+  /// Drops a category from the choice, for one that was deleted: its chip is gone, so it
+  /// could not be unselected, and no entry can match it any more.
+  void removeCategory(String id) {
+    if (!state.categoryIds.contains(id)) return;
+    state = _with(categoryIds: {...state.categoryIds}..remove(id));
+  }
+
   void toggleAccount(String id) {
     final next = {...state.accountIds};
     if (!next.remove(id)) next.add(id);

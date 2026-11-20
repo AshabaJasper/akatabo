@@ -17,6 +17,7 @@ import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../insights/insights_text.dart';
+import 'category_edit_screen.dart';
 import 'income_categories_providers.dart';
 
 /// The short line under a money-in category: how many payments came in under it this month.
@@ -40,8 +41,13 @@ String incomeCategoryWords(Iterable<Category> categories) {
       c.name.trim().split(' ').first,
   ];
   if (words.isEmpty) return 'None yet';
-  return [words.first, for (final w in words.skip(1)) w.toLowerCase()].join(', ');
+  return [words.first, for (final w in words.skip(1)) _inSentence(w)].join(', ');
 }
+
+/// A word as it reads inside a sentence: "Business" becomes "business", but a name written
+/// with more than one capital ("MTN", "MoMo") keeps its spelling.
+String _inSentence(String word) =>
+    word.replaceAll(RegExp('[^A-Z]'), '').length > 1 ? word : word.toLowerCase();
 
 /// Money-in categories: where money comes from, what came in under each this month, and a
 /// way to add another. "This month" follows "Month starts on".
@@ -119,7 +125,9 @@ class IncomeCategoriesScreen extends ConsumerWidget {
               _IncomeRow(
                 line: line,
                 divider: i < s.lines.length - 1,
-                onTap: () => context.push(Routes.categoryEdit(line.category.id)),
+                onTap: () => context.push(
+                  Routes.categoryEdit(line.category.id, from: CategoryEditFrom.income.name),
+                ),
               ),
           ],
         ),

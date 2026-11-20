@@ -12,7 +12,11 @@ abstract final class Routes {
   static const settingsAccountNew = '/settings/accounts/new';
   static const settingsCategories = '/settings/categories';
 
-  /// Money-in categories with this month's money in, and adding one.
+  /// Edit a category in its "new" mode, for money out.
+  static const settingsCategoryNew = '$settingsCategories/new';
+
+  /// Money-in categories with this month's money in, and adding one (the same "new" mode,
+  /// for money in).
   static const settingsIncomeCategories = '$settingsCategories/income';
   static const settingsIncomeCategoryNew = '$settingsIncomeCategories/new';
 
@@ -26,8 +30,11 @@ abstract final class Routes {
   static const filters = '/filters';
   static const chooseDates = '/filters/dates';
 
-  /// Renaming one category.
-  static String categoryEdit(String id) => '$settingsCategories/$id/edit';
+  /// Edit a category. [from] names the page it was opened from, so its back link can say
+  /// where it returns to: `income` (Money-in categories) or `detail` (the category's page).
+  /// Left out, it is Settings > Categories.
+  static String categoryEdit(String id, {String? from}) =>
+      '$settingsCategories/$id/edit${from == null ? '' : '?from=$from'}';
 
   /// First launch: three short steps, then Welcome. Outside the tabs.
   static const onboarding = '/onboarding';

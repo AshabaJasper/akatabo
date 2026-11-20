@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/close_screen.dart';
+import '../../app/routes.dart';
 import '../../core/format/money.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
@@ -14,10 +16,12 @@ import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../domain/calendar.dart';
 import '../../widgets/ak_category_choices.dart';
+import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../home/home_providers.dart';
 import '../insights/insights_text.dart';
+import '../settings/category_edit_screen.dart';
 import 'categories_screen.dart';
 
 /// One category, the same page for every category: School fees, Transport, Bills, Other and
@@ -64,6 +68,24 @@ class CategoryDetailScreen extends ConsumerWidget {
     final biggestWeek = weeks.fold<int>(0, (m, w) => w.moneyOut > m ? w.moneyOut : m);
 
     final payees = _payees(mine);
+    final back = AkBackLink('Categories', onTap: () => closeScreen(context));
+
+    // Deleted from Edit (opened here), or never there: say so rather than show "Other".
+    if (catsAsync.hasValue && category == null) {
+      return Scaffold(
+        backgroundColor: c.ground,
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
+            children: [
+              back,
+              const SizedBox(height: AkSpace.s3),
+              const AkEmptyNote('This category is no longer here.'),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: c.ground,
@@ -71,7 +93,19 @@ class CategoryDetailScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
           children: [
-            AkBackLink('Categories', onTap: () => closeScreen(context)),
+            Row(
+              children: [
+                Expanded(child: back),
+                // Fees and tax is fixed: its name, icon and colour are the app's own.
+                if (category != null && !category.isSystem)
+                  AkPillButton(
+                    label: 'Edit',
+                    onTap: () => context.push(
+                      Routes.categoryEdit(category.id, from: CategoryEditFrom.detail.name),
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(height: AkSpace.s3),
             Row(
               children: [

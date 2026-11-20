@@ -12,50 +12,110 @@ import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/amount_text.dart';
+import '../filters/transaction_filter_providers.dart';
 import '../home/home_providers.dart';
 
 /// The preview tile at the top of Edit a category is drawn at 64px with a 32px icon. There
 /// is no size token for it yet (design check), so it is built from the 48px large tile.
 const double _previewTile = AkSize.tileLg + AkSpace.s4;
 
+/// The icon and colour a new category starts with: those of Other and Other money in in the
+/// default data, a neutral start the person then changes.
+const newCategoryIconKey = 'dots';
+const newCategoryColourToken = 'cat-slate';
+
+/// Where Edit a category was opened from, so its back link names the page it returns to.
+enum CategoryEditFrom {
+  /// Settings > Categories: "Categories".
+  settings,
+
+  /// Money-in categories: "Money-in categories".
+  income,
+
+  /// The category's own page: the category's name.
+  detail;
+
+  /// The value of a route's `from`; anything else is Settings > Categories.
+  static CategoryEditFrom parse(String? value) =>
+      values.where((f) => f.name == value).firstOrNull ?? settings;
+
+  String backLabel(Category? category) => switch (this) {
+    settings => 'Categories',
+    income => 'Money-in categories',
+    detail => category?.name ?? 'Categories',
+  };
+}
+
 /// Edit a category: its name, colour, icon and monthly budget, and Delete. The preview tile
 /// follows the choices as they are made; nothing is stored until "Save category".
+///
+/// [CategoryEditScreen.create] is the same screen for a new category of one kind: no Delete,
+/// and a budget only for money out. It is added at the end of its kind's order.
 class CategoryEditScreen extends ConsumerWidget {
-  const CategoryEditScreen({super.key, required this.categoryId});
+  const CategoryEditScreen({
+    super.key,
+    required String this.categoryId,
+    this.from = CategoryEditFrom.settings,
+  }) : newKind = null;
 
-  final String categoryId;
+  const CategoryEditScreen.create({
+    super.key,
+    required CategoryKind kind,
+    this.from = CategoryEditFrom.settings,
+  }) : categoryId = null,
+       newKind = kind;
+
+  /// The category being edited; null for a new one.
+  final String? categoryId;
+
+  /// The kind of the new category; null when editing.
+  final CategoryKind? newKind;
+
+  final CategoryEditFrom from;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final all = ref.watch(allCategoriesProvider);
-    final cats = all.value ?? const <Category>[];
-    final category = cats.where((c) => c.id == categoryId).firstOrNull;
-
-    Widget note(String text) => ListView(
-      padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
-      children: [
-        AkBackLink('Categories', onTap: () => closeScreen(context)),
-        const SizedBox(height: AkSpace.s3),
-        AkEmptyNote(text),
-      ],
-    );
-
+    final kind = newKind;
     final Widget body;
-    if (all.hasError) {
-      body = note('This category could not load. Close Akatabo and open it again.');
-    } else if (!all.hasValue) {
-      body = const SizedBox.shrink();
-    } else if (category == null) {
-      body = note('This category is no longer here.');
-    } else {
-      final fallbackId = CategoryRepository.fallbackFor(category);
+    if (kind != null) {
       body = _CategoryForm(
-        key: ValueKey(category.id),
-        category: category,
-        fallbackName: fallbackId == null
-            ? null
-            : cats.where((c) => c.id == fallbackId).firstOrNull?.name ?? 'Other',
+        category: null,
+        kind: kind,
+        fallbackName: null,
+        backLabel: from.backLabel(null),
       );
+    } else {
+      final all = ref.watch(allCategoriesProvider);
+      final cats = all.value ?? const <Category>[];
+      final category = cats.where((c) => c.id == categoryId).firstOrNull;
+
+      Widget note(String text) => ListView(
+        padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
+        children: [
+          AkBackLink(from.backLabel(null), onTap: () => closeScreen(context)),
+          const SizedBox(height: AkSpace.s3),
+          AkEmptyNote(text),
+        ],
+      );
+
+      if (all.hasError) {
+        body = note('This category could not load. Close Akatabo and open it again.');
+      } else if (!all.hasValue) {
+        body = const SizedBox.shrink();
+      } else if (category == null) {
+        body = note('This category is no longer here.');
+      } else {
+        final fallbackId = CategoryRepository.fallbackFor(category);
+        body = _CategoryForm(
+          key: ValueKey(category.id),
+          category: category,
+          kind: category.kind,
+          fallbackName: fallbackId == null
+              ? null
+              : cats.where((c) => c.id == fallbackId).firstOrNull?.name ?? 'Other',
+          backLabel: from.backLabel(category),
+        );
+      }
     }
     return Scaffold(
       backgroundColor: context.colors.ground,
@@ -65,13 +125,24 @@ class CategoryEditScreen extends ConsumerWidget {
 }
 
 class _CategoryForm extends ConsumerStatefulWidget {
-  const _CategoryForm({super.key, required this.category, required this.fallbackName});
+  const _CategoryForm({
+    super.key,
+    required this.category,
+    required this.kind,
+    required this.fallbackName,
+    required this.backLabel,
+  });
 
-  final Category category;
+  /// The stored category; null while making a new one.
+  final Category? category;
+
+  final CategoryKind kind;
 
   /// The name of the category its entries move to when it is deleted; null when it cannot
-  /// be deleted.
+  /// be deleted (and for a new category).
   final String? fallbackName;
+
+  final String backLabel;
 
   @override
   ConsumerState<_CategoryForm> createState() => _CategoryFormState();
@@ -87,20 +158,25 @@ class _CategoryFormState extends ConsumerState<_CategoryForm> {
   String? _problem;
   bool _busy = false;
 
-  Category get _cat => widget.category;
+  /// The stored category. Only read where [_isNew] is false.
+  Category get _cat => widget.category!;
+
+  bool get _isNew => widget.category == null;
 
   /// Fees and tax cannot be budgeted (its total comes from fee and tax fields), and budgets
   /// are for money out, so money-in categories have none.
-  bool get _budgetable => !_cat.isSystem && _cat.kind == CategoryKind.spending;
+  bool get _budgetable =>
+      !(widget.category?.isSystem ?? false) && widget.kind == CategoryKind.spending;
 
   @override
   void initState() {
     super.initState();
-    _name = TextEditingController(text: _cat.name);
-    final base = _cat.monthlyBudget;
+    final cat = widget.category;
+    _name = TextEditingController(text: cat?.name ?? '');
+    final base = cat?.monthlyBudget;
     _budget = TextEditingController(text: base == null ? '' : formatAmount(base));
-    _colour = _cat.colourToken;
-    _icon = _cat.iconKey;
+    _colour = cat?.colourToken ?? newCategoryColourToken;
+    _icon = cat?.iconKey ?? newCategoryIconKey;
   }
 
   @override
@@ -140,6 +216,7 @@ class _CategoryFormState extends ConsumerState<_CategoryForm> {
     if (_nameError != null || _budgetError != null) return;
 
     final int? budget = _budgetable && typed.isNotEmpty ? amount : null;
+    if (_isNew) return _create(name, budget);
     final changeBudget = _budgetable && budget != _cat.monthlyBudget;
     if (changeBudget && budget == null) {
       // Clearing the field removes the budget, so it asks first, as Set a budget does.
@@ -181,9 +258,39 @@ class _CategoryFormState extends ConsumerState<_CategoryForm> {
     }
   }
 
+  Future<void> _create(String name, int? budget) async {
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(categoryRepositoryProvider)
+          .add(
+            name: name,
+            kind: widget.kind,
+            iconKey: _icon,
+            colourToken: _colour,
+            monthlyBudget: budget,
+          );
+      if (mounted) await closeScreen(context);
+    } on CategoryNameTaken {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _nameError = 'Another category already has this name.';
+        });
+      }
+    } on Object {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _problem = 'The category could not be saved. Try again.';
+        });
+      }
+    }
+  }
+
   Future<void> _delete() async {
     final fallback = widget.fallbackName;
-    if (_busy || fallback == null) return;
+    if (_busy || _isNew || fallback == null) return;
     setState(() {
       _busy = true;
       _problem = null;
@@ -209,7 +316,14 @@ class _CategoryFormState extends ConsumerState<_CategoryForm> {
         if (mounted) setState(() => _busy = false);
         return;
       }
-      await repo.delete(_cat.id);
+      // Read before the delete: the category list can rebuild this screen without the form
+      // once the row is gone, and a disposed form can no longer read providers.
+      final filter = ref.read(transactionFilterProvider.notifier);
+      final id = _cat.id;
+      await repo.delete(id);
+      // A deleted category chosen in Filters would leave the list empty with no chip to
+      // unselect, so it leaves the choice too.
+      filter.removeCategory(id);
       if (mounted) await closeScreen(context);
     } on Object {
       if (mounted) {
@@ -225,14 +339,18 @@ class _CategoryFormState extends ConsumerState<_CategoryForm> {
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = context.type;
-    final shownName = _name.text.trim().isEmpty ? _cat.name : _name.text.trim();
+    final typedName = _name.text.trim();
+    final shownName = typedName.isNotEmpty
+        ? typedName
+        : widget.category?.name ??
+              (widget.kind == CategoryKind.income ? 'New money-in category' : 'New category');
     return ListView(
       padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
       children: [
         Row(
           children: [
-            Expanded(child: AkBackLink('Categories', onTap: () => closeScreen(context))),
-            if (widget.fallbackName != null)
+            Expanded(child: AkBackLink(widget.backLabel, onTap: () => closeScreen(context))),
+            if (!_isNew && widget.fallbackName != null)
               Semantics(
                 button: true,
                 label: 'Delete ${_cat.name}',

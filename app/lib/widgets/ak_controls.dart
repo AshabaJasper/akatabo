@@ -451,12 +451,13 @@ class AkEyebrowLabel extends StatelessWidget {
 }
 
 /// A compact 44px link drawn as a pill: `line-strong` outline on `surface`, an icon and a
-/// label in `brand-text`. "List" on Calendar, "Calendar" on All transactions.
+/// label in `brand-text`. "List" on Calendar, "Calendar" on All transactions, and "Edit" on a
+/// category's page, which is drawn without an icon.
 class AkPillButton extends StatelessWidget {
-  const AkPillButton({super.key, required this.label, required this.icon, required this.onTap});
+  const AkPillButton({super.key, required this.label, this.icon, required this.onTap});
 
   final String label;
-  final AkIcons icon;
+  final AkIcons? icon;
   final VoidCallback onTap;
 
   @override
@@ -481,12 +482,14 @@ class AkPillButton extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: AkSize.target),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3h),
+              padding: EdgeInsets.symmetric(horizontal: icon == null ? AkSpace.s4 : AkSpace.s3h),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  AkIcon(icon, color: c.brandText, size: AkSize.iconSm),
-                  const SizedBox(width: AkSpace.s1h),
+                  if (icon case final icon?) ...[
+                    AkIcon(icon, color: c.brandText, size: AkSize.iconSm),
+                    const SizedBox(width: AkSpace.s1h),
+                  ],
                   Text(label, style: context.type.bodyStrong.copyWith(color: c.brandText)),
                 ],
               ),
