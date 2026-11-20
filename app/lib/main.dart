@@ -8,6 +8,7 @@ import 'app/bootstrap.dart';
 import 'data/providers.dart';
 import 'data/seed/demo_seed.dart';
 import 'data/settings/setting_keys.dart';
+import 'features/data/backup_weekly_prompt.dart';
 import 'services/notifications/reminder_scheduler.dart';
 
 Future<void> main() async {
@@ -43,4 +44,6 @@ Future<void> main() async {
     ),
   );
   unawaited(rescheduleRemindersAtStart(container));
+  // The weekly backup runs when the app is opened a week after the last one.
+  startWeeklyBackupChecks(container);
 }
