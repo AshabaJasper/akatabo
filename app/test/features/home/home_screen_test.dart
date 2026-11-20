@@ -1,4 +1,5 @@
 import 'package:akatabo/app/appearance.dart';
+import 'package:akatabo/core/format/money.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/time/clock_provider.dart';
 import 'package:akatabo/core/time/period.dart';
@@ -6,11 +7,18 @@ import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/seed/default_data.dart';
 import 'package:akatabo/data/settings/setting_keys.dart';
+import 'package:akatabo/domain/forecast.dart';
 import 'package:akatabo/features/add/add_providers.dart';
+import 'package:akatabo/features/forecast/forecast_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/home/home_screen.dart';
+import 'package:akatabo/features/regular/regular_providers.dart';
+import 'package:akatabo/services/security/privacy_settings.dart';
+import 'package:akatabo/smart/forecast/forecast_range.dart';
+import 'package:akatabo/widgets/ak_hidden_amount.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -33,6 +41,7 @@ Future<void> _pumpHome(
   List<Transaction> previous = const [],
   Brightness brightness = Brightness.light,
   Map<String, String> settings = const {},
+  List<Override> extra = const [],
 }) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -52,6 +61,7 @@ Future<void> _pumpHome(
         previousSameDaysRowsProvider.overrideWith((ref) => Stream.value(previous)),
         allCategoriesProvider.overrideWith((ref) => Stream.value(_categories)),
         enabledAccountsProvider.overrideWith((ref) => Stream.value(_accounts)),
+        ...extra,
       ],
       child: MaterialApp(
         theme: buildAkTheme(brightness, const AkAppearance()),
@@ -86,7 +96,111 @@ Future<void> _pumpHome(
   return (a, b, c, oct);
 }
 
+/// Ten days of shopping in November, so the forecast card shows (it needs seven days).
+List<Transaction> _tenDays() => [
+  for (var d = 1; d <= 10; d++)
+    txRow(
+      id: 'd$d',
+      amount: 8000 + d * 500,
+      day: 20261100 + d,
+      at: DateTime(2026, 11, d, 10),
+      description: 'Shop $d',
+    ),
+];
+
+/// What the forecast card reads, with no saved forecasts from earlier months.
+List<Override> _forecastData(List<Transaction> window) => [
+  forecastWindowRowsProvider.overrideWith((ref) => Stream.value(window)),
+  activeRegularProvider.overrideWith((ref) => Stream.value(const <RegularPayment>[])),
+  forecastSnapshotErrorsProvider.overrideWithValue(const []),
+  forecastSnapshotSaverProvider.overrideWithValue(ForecastSnapshotSaver(_noWrite)),
+];
+
+Future<void> _noWrite({
+  required int periodStart,
+  required int takenOn,
+  required int point,
+  required int low,
+  required int high,
+  required int spentSoFar,
+}) async {}
+
 void main() {
+  group('forecast card', () {
+    testWidgets('after seven days it says where the month is heading, with its range', (
+      tester,
+    ) async {
+      final days = _tenDays();
+      await _pumpHome(
+        tester,
+        latest: days.take(3).toList(),
+        month: days,
+        extra: _forecastData(days),
+      );
+      final f = forecastFor(
+        month: const PeriodCalculator().month(_now),
+        today: dateOnly(_now),
+        monthRows: days,
+        windowRows: days,
+        regular: const [],
+      )!;
+      final r = forecastRange(
+        spentSoFar: f.spentSoFar,
+        everydayDaily: f.everydayDaily,
+        spentToday: f.everydayToday,
+        daysLeft: f.daysLeft,
+        regular: const [],
+        dayOfMonth: _now.day,
+      );
+      expect(find.text('Heading for UGX ${formatShort(r.point)} this month'), findsOneWidget);
+      expect(
+        find.text(
+          'Likely ${formatShort(r.low)} to ${formatShort(r.high)}, most likely '
+          '${formatShort(r.point)}. About ${formatAmount(r.point)} more than came in',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('before seven days have entries there is no card', (tester) async {
+      final (a, b, c, oct) = _filled();
+      await _pumpHome(tester, latest: [a, b, c], month: [a, b, c], previous: [oct]);
+      expect(find.textContaining('Heading for'), findsNothing);
+    });
+
+    testWidgets('with "Forecast the month" off there is no card', (tester) async {
+      final days = _tenDays();
+      await _pumpHome(
+        tester,
+        latest: days.take(3).toList(),
+        month: days,
+        extra: _forecastData(days),
+        settings: {SettingKeys.forecastMonth.name: '0'},
+      );
+      expect(find.textContaining('Heading for'), findsNothing);
+      expect(find.textContaining('Likely'), findsNothing);
+    });
+
+    testWidgets('Hide amounts hides the forecast figures too', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final days = _tenDays();
+      await _pumpHome(
+        tester,
+        latest: days.take(3).toList(),
+        month: days,
+        extra: _forecastData(days),
+        settings: {PrivacyKeys.hideAmounts.name: '1'},
+      );
+      expect(find.text('Heading for UGX $hiddenFigure this month'), findsOneWidget);
+      expect(find.text('Likely range hidden'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Forecast for this month. $hiddenFigureLabel. Open the forecast'),
+        findsOneWidget,
+      );
+      semantics.dispose();
+    });
+  });
+
   testWidgets('a switched-off Latest section leaves the rest of Home', (tester) async {
     final (a, b, c, oct) = _filled();
     await _pumpHome(
@@ -148,6 +262,21 @@ void main() {
       await expectLater(
         find.byType(HomeScreen),
         matchesGoldenFile('goldens/home_first_day_${b.name}.png'),
+      );
+    });
+
+    testWidgets('home with the forecast card golden, ${b.name}', (tester) async {
+      final days = _tenDays();
+      await _pumpHome(
+        tester,
+        latest: days.reversed.take(3).toList(),
+        month: days,
+        extra: _forecastData(days),
+        brightness: b,
+      );
+      await expectLater(
+        find.byType(HomeScreen),
+        matchesGoldenFile('goldens/home_forecast_${b.name}.png'),
       );
     });
 

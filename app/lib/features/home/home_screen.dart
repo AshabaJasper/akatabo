@@ -11,12 +11,17 @@ import '../../core/theme/ak_theme.dart';
 import '../../core/theme/token_colour.dart';
 import '../../core/time/clock_provider.dart';
 import '../../data/db/app_database.dart';
+import '../../data/providers.dart';
 import '../../data/seed/default_data.dart';
+import '../../data/settings/setting_keys.dart';
+import '../../domain/forecast.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/add_providers.dart';
+import '../forecast/forecast_providers.dart';
+import '../forecast/forecast_words.dart';
 import '../settings/home_layout.dart';
 import '../transactions/transaction_row.dart';
 import 'home_providers.dart';
@@ -50,6 +55,10 @@ class HomeScreen extends ConsumerWidget {
     final change = percentChange(current: totals.moneyOut, previous: previousOut);
     final parts = moneyOutByCategory(rows);
     final feesAndTax = parts[DefaultIds.fees] ?? 0;
+    final daysWithEntries = {for (final t in rows) t.localDay}.length;
+    final forecastOn = SettingKeys.forecastMonth.decode(
+      ref.watch(storedSettingsProvider).value?[SettingKeys.forecastMonth.name],
+    );
 
     return Scaffold(
       backgroundColor: context.colors.ground,
@@ -72,6 +81,15 @@ class HomeScreen extends ConsumerWidget {
                   ]
                 : const [],
           ),
+          // The forecast card, as Main.html draws it, once seven days have entries and while
+          // "Forecast the month" is on. Its providers are only read once it can show.
+          if (daysWithEntries >= forecastMinDays && forecastOn) ...[
+            const SizedBox(height: AkSpace.s3h),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: AkSpace.s6),
+              child: _ForecastCard(),
+            ),
+          ],
           if (layout.whereItWent) ...[
             const SizedBox(height: AkSpace.s5),
             Padding(
@@ -232,6 +250,65 @@ class _StatTile extends StatelessWidget {
           const SizedBox(height: AkSpace.s0h),
           AkHiddenAmount(value, style: t.bodyStrong.copyWith(color: c.onBrand)),
         ],
+      ),
+    );
+  }
+}
+
+/// "Heading for UGX 1.25M this month" with its likely range, linking to the Forecast screen.
+/// Shows nothing until the forecast and its range are ready.
+class _ForecastCard extends ConsumerWidget {
+  const _ForecastCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final view = ref.watch(monthForecastProvider);
+    final forecast = view.forecast;
+    final range = view.range;
+    if (forecast == null || range == null) return const SizedBox.shrink();
+
+    final today = ref.watch(appNowProvider);
+    ref
+        .read(forecastSnapshotSaverProvider)
+        .remember(
+          monthStart: ref.watch(currentMonthProvider).start,
+          today: today,
+          range: range,
+          spentSoFar: forecast.spentSoFar,
+        );
+
+    final hidden = ref.watch(amountsHiddenProvider);
+    final moneyIn = totalsOf(ref.watch(monthRowsProvider).value ?? const []).moneyIn;
+    final gap = forecast.point - moneyIn;
+    final title =
+        'Heading for UGX ${hidden ? hiddenFigure : formatShort(forecast.point)} this month';
+    final subtitle = hidden
+        ? 'Likely range hidden'
+        : '${rangeInWords(range, formatShort)}. '
+              'About ${formatAmount(gap.abs())} ${gap >= 0 ? 'more' : 'less'} than came in';
+
+    return AkCard(
+      padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3),
+      semanticLabel: hidden
+          ? 'Forecast for this month. $hiddenFigureLabel. Open the forecast'
+          : '$title. $subtitle. Open the forecast',
+      onTap: () => context.push(Routes.forecast),
+      // The card's label says it all once; the texts inside are not read a second time, and
+      // hidden figures are never read out as dots.
+      child: ExcludeSemantics(
+        child: AkListRow(
+          leading: AkIconTile(
+            icon: AkIcons.trend,
+            background: c.surfaceSunk,
+            foreground: c.brand,
+            size: AkSize.tileSm,
+            iconSize: AkSize.iconSm,
+          ),
+          title: title,
+          subtitle: subtitle,
+          trailing: AkIcon(AkIcons.chevron, color: c.inkMuted, size: AkSize.iconSm),
+        ),
       ),
     );
   }

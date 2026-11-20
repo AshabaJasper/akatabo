@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "prng": {
+    "kind": "xorshift32",
+    "shifts": [
+      13,
+      17,
+      5
+    ],
+    "seed": 2654435769,
+    "seedRule": "state = (seed XOR dayOfMonth) AND 0xFFFFFFFF; if 0 then seed",
+    "index": "state mod n"
+  },
+  "samples": 500,
+  "percentileLow": 0.1,
+  "percentileHigh": 0.9,
+  "percentileMethod": "linear interpolation, h = (n - 1) * p",
+  "snapshotAdjustment": {
+    "shrinkMonths": 3,
+    "maxMonths": 12,
+    "rule": "w = k / (k + shrinkMonths); lo' = lo + w * min(0, p10(errors) - lo); hi' = hi + w * max(0, p90(errors) - hi); lo, hi relative to the point; error = (actual - snapshot point) / snapshot point"
+  }
+}

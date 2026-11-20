@@ -37,6 +37,9 @@ class Forecast {
     required this.point,
     required this.low,
     required this.high,
+    this.everydayDaily = const [],
+    this.everydayToday = 0,
+    this.regularBands = const [],
   });
 
   /// Money out this month so far, including fees and tax.
@@ -59,9 +62,21 @@ class Forecast {
   /// The most likely month-end money out.
   final int point;
 
-  /// The range the month is most likely to land in. Always contains [point].
+  /// The range the month is most likely to land in. Always contains [point]. This is the
+  /// Phase 3 first estimate; the screens show the range from `lib/smart/forecast/` instead,
+  /// which is worked out from the inputs below.
   final int low;
   final int high;
+
+  /// The everyday spending of each history day, oldest first, with one-offs and regular
+  /// payments taken out. Its mean is the daily rate.
+  final List<int> everydayDaily;
+
+  /// The everyday part of what was already spent today.
+  final int everydayToday;
+
+  /// One band for each regular payment occurrence still due this month.
+  final List<({int low, int typical, int high})> regularBands;
 }
 
 /// The window of history the rate is worked out from: [rateWindowDays] days, ending today.
@@ -109,6 +124,7 @@ Forecast? forecastFor({
   var regularDue = 0;
   var regularLow = 0;
   var regularHigh = 0;
+  final bands = <({int low, int typical, int high})>[];
   for (final p in regular) {
     var dues = regularDuesIn(p, from: now, through: month.lastDate);
     // A payment due today that is already entered is in "spent so far"; do not add it again.
@@ -119,6 +135,9 @@ Forecast? forecastFor({
     regularDue += p.typicalAmount * occurrences;
     regularLow += p.amountLow * occurrences;
     regularHigh += p.amountHigh * occurrences;
+    for (var i = 0; i < occurrences; i++) {
+      bands.add((low: p.amountLow, typical: p.typicalAmount, high: p.amountHigh));
+    }
   }
 
   final point = spent + toCome.round() + regularDue;
@@ -133,6 +152,9 @@ Forecast? forecastFor({
     point: point,
     low: low,
     high: high,
+    everydayDaily: everyday.daily,
+    everydayToday: spentToday ?? 0,
+    regularBands: bands,
   );
 }
 
@@ -185,14 +207,15 @@ DateTime _addMonths(DateTime d, int months) {
 
 /// The everyday daily rate and how much it varies, over the history window.
 class _Everyday {
-  const _Everyday(this.mean, this.sd);
+  const _Everyday(this.mean, this.sd, this.daily);
   final double mean;
   final double sd;
+  final List<int> daily;
 }
 
 _Everyday _everydayRate(List<Transaction> windowRows, DateTime today, Set<String> regularKeys) {
   final ordinary = _withoutOneOffsAndRegular(windowRows, regularKeys);
-  if (windowRows.isEmpty) return const _Everyday(0, 0);
+  if (windowRows.isEmpty) return const _Everyday(0, 0, []);
 
   // The history is the window, or less when the person has not been using the app that long.
   // It is never shorter than the forecast's own minimum, so one busy day cannot set the rate.
@@ -201,17 +224,17 @@ _Everyday _everydayRate(List<Transaction> windowRows, DateTime today, Set<String
   final historyDays = math.max(forecastMinDays, math.min(rateWindowDays, since));
 
   final byDay = moneyOutByDay(ordinary);
-  final daily = <double>[];
-  for (var i = historyDays - 1; i >= 0; i--) {
-    daily.add((byDay[toLocalDay(addDays(today, -i))] ?? 0).toDouble());
-  }
+  final amounts = <int>[
+    for (var i = historyDays - 1; i >= 0; i--) byDay[toLocalDay(addDays(today, -i))] ?? 0,
+  ];
+  final daily = [for (final a in amounts) a.toDouble()];
   final total = daily.fold<double>(0, (a, b) => a + b);
   final mean = total / historyDays;
   var squares = 0.0;
   for (final x in daily) {
     squares += (x - mean) * (x - mean);
   }
-  return _Everyday(mean, math.sqrt(squares / historyDays));
+  return _Everyday(mean, math.sqrt(squares / historyDays), amounts);
 }
 
 /// The entries that belong in the everyday rate: not a regular payment (linked to one, or

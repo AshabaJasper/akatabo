@@ -9,6 +9,7 @@ import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/data/seed/default_data.dart';
 import 'package:akatabo/data/settings/setting_keys.dart';
+import 'package:akatabo/domain/forecast.dart';
 import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/categories/categories_screen.dart';
 import 'package:akatabo/features/categories/category_detail_screen.dart';
@@ -23,6 +24,7 @@ import 'package:akatabo/features/regular/regular_payments_screen.dart';
 import 'package:akatabo/features/regular/regular_providers.dart';
 import 'package:akatabo/features/settings/category_edit_screen.dart';
 import 'package:akatabo/services/security/privacy_settings.dart';
+import 'package:akatabo/smart/forecast/forecast_range.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -89,14 +91,27 @@ List<Override> _data({
   List<Transaction> window = const [],
   List<RegularPayment> regular = const [],
   List<Override> extra = const [],
+  List<double> snapshotErrors = const [],
+  ForecastSnapshotSaver? saver,
 }) => [
   monthRowsProvider.overrideWith((ref) => Stream.value(month)),
   previousSameDaysRowsProvider.overrideWith((ref) => Stream.value(previous)),
   forecastWindowRowsProvider.overrideWith((ref) => Stream.value(window)),
   activeRegularProvider.overrideWith((ref) => Stream.value(regular)),
   insightsRowsProvider.overrideWith((ref, period) => Stream.value(month)),
+  forecastSnapshotErrorsProvider.overrideWithValue(snapshotErrors),
+  forecastSnapshotSaverProvider.overrideWithValue(saver ?? ForecastSnapshotSaver(_noWrite)),
   ...extra,
 ];
+
+Future<void> _noWrite({
+  required int periodStart,
+  required int takenOn,
+  required int point,
+  required int low,
+  required int high,
+  required int spentSoFar,
+}) async {}
 
 /// Ten days of spending in November, so a forecast is shown (it needs seven days).
 List<Transaction> _tenDays() => [
@@ -345,7 +360,77 @@ void main() {
         const ForecastScreen(),
         data: _data(month: days, window: days),
       );
-      expect(find.textContaining('Most likely between'), findsOneWidget);
+      expect(find.text('HOW IT ADDS UP'), findsOneWidget);
+    });
+
+    testWidgets('the range is shown in words with its numbers, as worked out on the phone', (
+      tester,
+    ) async {
+      final days = _tenDays();
+      final saved = <(int, int, int)>[];
+      Future<void> write({
+        required int periodStart,
+        required int takenOn,
+        required int point,
+        required int low,
+        required int high,
+        required int spentSoFar,
+      }) async => saved.add((low, point, high));
+      await _pump(
+        tester,
+        const ForecastScreen(),
+        data: _data(month: days, window: days, saver: ForecastSnapshotSaver(write)),
+      );
+      final f = forecastFor(
+        month: const PeriodCalculator().month(_now),
+        today: dateOnly(_now),
+        monthRows: days,
+        windowRows: days,
+        regular: const [],
+      )!;
+      final r = forecastRange(
+        spentSoFar: f.spentSoFar,
+        everydayDaily: f.everydayDaily,
+        spentToday: f.everydayToday,
+        daysLeft: f.daysLeft,
+        regular: const [],
+        dayOfMonth: _now.day,
+      );
+      expect(r.point, f.point, reason: 'the range keeps the Phase 3 point');
+      expect(r.low, lessThan(r.high));
+      expect(
+        find.textContaining(
+          'Likely ${formatUgx(r.low)} to ${formatUgx(r.high)}, most likely ${formatUgx(r.point)}.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('replays end inside it'), findsOneWidget);
+      expect(find.textContaining('earlier month'), findsNothing, reason: 'no snapshot yet');
+      expect(saved, [(r.low, r.point, r.high)], reason: 'the shown range is saved once');
+    });
+
+    testWidgets('earlier forecasts that were out say so beside the range', (tester) async {
+      final days = _tenDays();
+      await _pump(
+        tester,
+        const ForecastScreen(),
+        data: _data(month: days, window: days, snapshotErrors: const [0.3, -0.2]),
+      );
+      expect(
+        find.textContaining('how far your forecasts were out in 2 earlier months'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('with "Forecast the month" off, the point shows without a range', (tester) async {
+      final days = _tenDays();
+      await _pump(
+        tester,
+        const ForecastScreen(),
+        data: _data(month: days, window: days),
+        settings: {SettingKeys.forecastMonth.name: '0'},
+      );
+      expect(find.textContaining('Likely'), findsNothing);
       expect(find.text('HOW IT ADDS UP'), findsOneWidget);
     });
 
