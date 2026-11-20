@@ -1,0 +1,18 @@
+{
+  "model": "unusual_payment",
+  "version": 1,
+  "synthetic_tuning": "Thresholds tuned on synthetic seeds 101-110 only; see ml/unusual/RESULTS.md.",
+  "minCategoryHistory": 20,
+  "minPayeeHistory": 4,
+  "madScale": 1.4826,
+  "madFloor": 0.1,
+  "amountReasonZ": 2.0,
+  "hourShareMin": 0.005,
+  "hourWeight": 7.0,
+  "payeeWeight": 5.0,
+  "thresholds": {
+    "rarely": 7.0,
+    "balanced": 5.25,
+    "often": 3.75
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "model": "regular_payment",
+  "version": 1,
+  "synthetic_tuning": "Constants chosen on synthetic seeds 101-110 only; see ml/regular/RESULTS.md.",
+  "minOccurrences": 3,
+  "minIntervalDays": 5.0,
+  "maxIntervalDays": 400.0,
+  "cvMax": 0.25,
+  "amountBand": 0.1,
+  "amountShareMin": 0.8,
+  "staleIntervals": 2.5,
+  "maxMissedShare": 0.3
+}
