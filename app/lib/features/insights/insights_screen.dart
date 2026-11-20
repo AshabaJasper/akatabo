@@ -16,6 +16,7 @@ import '../../data/providers.dart';
 import '../../data/seed/default_data.dart';
 import '../../domain/insights.dart';
 import '../../domain/spending.dart';
+import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
@@ -286,9 +287,7 @@ class _ChangeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final colour = colourForToken(c, category?.colourToken ?? 'cat-slate');
-    final ink = ThemeData.estimateBrightnessForColor(colour) == Brightness.light
-        ? c.ink
-        : c.onBrand;
+    final ink = categoryIconColour(c, category?.colourToken ?? 'cat-slate');
     final up = change.change > 0;
     final detail =
         '${up ? 'Up' : 'Down'} ${formatPercent(change.percent!.abs().toDouble())}, '

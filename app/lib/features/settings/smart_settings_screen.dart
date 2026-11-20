@@ -284,9 +284,11 @@ class _SmartSettingsScreenState extends ConsumerState<SmartSettingsScreen> {
               onChanged: (v) => _switchReminder(SettingKeys.dailyReminder, v),
               divider: true,
             ),
-            _Inset(
+            SettingsValueRow(
+              title: 'At',
+              value: _clock(at),
+              onTap: () => _pickTime(at),
               divider: true,
-              child: SettingsValueRow(title: 'At', value: _clock(at), onTap: () => _pickTime(at)),
             ),
             _SegmentRow(
               label: 'Warn me when a budget reaches',
@@ -314,12 +316,10 @@ class _SmartSettingsScreenState extends ConsumerState<SmartSettingsScreen> {
               onChanged: (v) => _switchReminder(SettingKeys.weeklySummary, v),
               divider: true,
             ),
-            _Inset(
-              child: SettingsValueRow(
-                title: 'Sent on',
-                value: _evening(read(SettingKeys.weeklySummaryDay)),
-                onTap: _pickDay,
-              ),
+            SettingsValueRow(
+              title: 'Sent on',
+              value: _evening(read(SettingKeys.weeklySummaryDay)),
+              onTap: _pickDay,
             ),
           ],
         ),
@@ -380,28 +380,6 @@ class _NotedSwitchRow extends StatelessWidget {
           AkSwitch(label: label, value: value, onChanged: onChanged),
         ],
       ),
-    );
-  }
-}
-
-/// Gives a [SettingsValueRow] the same side padding as the switch rows, with the line under
-/// it running the full width as theirs do. [SettingsValueRow] has no side padding of its own.
-class _Inset extends StatelessWidget {
-  const _Inset({required this.child, this.divider = false});
-
-  final Widget child;
-  final bool divider;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: divider
-          ? BoxDecoration(
-              border: Border(bottom: BorderSide(color: context.colors.line)),
-            )
-          : null,
-      padding: const EdgeInsets.symmetric(horizontal: AkSpace.s4),
-      child: child,
     );
   }
 }

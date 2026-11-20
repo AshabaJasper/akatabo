@@ -13,6 +13,7 @@ import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/repositories.dart';
 import '../../data/settings/setting_keys.dart';
+import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_pickers.dart';
 import '../../widgets/ak_surfaces.dart';
@@ -501,9 +502,7 @@ class _CategoryTile extends StatelessWidget {
     final m = context.metrics;
     final colour = colourForToken(c, category.colourToken);
     // Dark ink on light colours (amber, ochre), white on the rest, so the icon stays readable.
-    final foreground = ThemeData.estimateBrightnessForColor(colour) == Brightness.light
-        ? c.ink
-        : c.onBrand;
+    final foreground = categoryIconColour(c, category.colourToken);
     return Semantics(
       button: true,
       selected: selected,

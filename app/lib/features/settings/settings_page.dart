@@ -66,12 +66,17 @@ class SettingsValueRow extends StatelessWidget {
     required this.value,
     this.onTap,
     this.divider = false,
+    this.chevron = false,
   });
 
   final String title;
   final String value;
   final VoidCallback? onTap;
   final bool divider;
+
+  /// A chevron after the value. Settings rows are drawn without one (the whole row is the
+  /// target); Filters draws one on its Dates row.
+  final bool chevron;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +85,8 @@ class SettingsValueRow extends StatelessWidget {
       title: title,
       divider: divider,
       onTap: onTap,
+      // Inside a card, as drawn: 14 at the sides.
+      padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3h),
       trailing: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.5),
         child: Row(
@@ -88,13 +95,14 @@ class SettingsValueRow extends StatelessWidget {
             Flexible(
               child: Text(
                 value,
-                style: context.type.bodyMd.copyWith(color: c.ink),
+                // The design system: the row shows the current value in ink-muted.
+                style: context.type.body.copyWith(color: c.inkMuted),
                 textAlign: TextAlign.end,
               ),
             ),
-            if (onTap != null) ...[
+            if (chevron && onTap != null) ...[
               const SizedBox(width: AkSpace.s2),
-              AkIcon(AkIcons.chevron, color: c.ink),
+              AkIcon(AkIcons.chevron, color: c.inkMuted),
             ],
           ],
         ),

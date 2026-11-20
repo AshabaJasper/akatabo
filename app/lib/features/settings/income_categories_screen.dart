@@ -12,6 +12,7 @@ import '../../core/time/clock_provider.dart';
 import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
 import '../../domain/income.dart';
+import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
@@ -165,9 +166,7 @@ class _IncomeRow extends StatelessWidget {
     final t = context.type;
     final cat = line.category;
     final colour = colourForToken(c, cat.colourToken);
-    final tileInk = ThemeData.estimateBrightnessForColor(colour) == Brightness.light
-        ? c.ink
-        : c.onBrand;
+    final tileInk = categoryIconColour(c, cat.colourToken);
     final subtitle = incomeCountLine(line);
     final hasMoney = line.amount > 0;
     final spoken = hasMoney ? '${formatUgx(line.amount)} in' : 'nothing in';

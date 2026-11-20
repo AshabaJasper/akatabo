@@ -13,6 +13,7 @@ import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../domain/calendar.dart';
+import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../home/home_providers.dart';
@@ -52,9 +53,7 @@ class CategoryDetailScreen extends ConsumerWidget {
     final previousTotal = minePrevious.fold<int>(0, (a, tx) => a + tx.amount);
     final against = DateFormat('MMMM').format(calc.previous(month).start);
     final colour = colourForToken(c, category?.colourToken ?? 'cat-slate');
-    final ink = ThemeData.estimateBrightnessForColor(colour) == Brightness.light
-        ? c.ink
-        : c.onBrand;
+    final ink = categoryIconColour(c, category?.colourToken ?? 'cat-slate');
 
     // Money out by day, for this category only, so the weeks add back to its total.
     final byDay = <int, int>{};

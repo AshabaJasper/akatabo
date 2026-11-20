@@ -89,7 +89,11 @@ class AkListRow extends StatelessWidget {
     this.onTap,
     this.divider = false,
     this.minHeight = AkSize.row,
+    this.padding = EdgeInsets.zero,
   });
+
+  /// Space inside the row. The divider still runs the full width under it.
+  final EdgeInsetsGeometry padding;
 
   final Widget? leading;
   final String title;
@@ -107,6 +111,7 @@ class AkListRow extends StatelessWidget {
     final t = context.type;
     final row = Container(
       constraints: BoxConstraints(minHeight: minHeight),
+      padding: padding,
       decoration: divider
           ? BoxDecoration(
               border: Border(bottom: BorderSide(color: c.line)),

@@ -7,6 +7,7 @@ import '../../core/theme/ak_theme.dart';
 import '../../core/theme/token_colour.dart';
 import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
+import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_surfaces.dart';
 
 /// "today", "yesterday", a weekday within the last week, or a short date.
@@ -54,9 +55,7 @@ class TransactionRow extends StatelessWidget {
     final isTransfer = tx.direction == Direction.transfer;
     final isMoneyIn = tx.direction == Direction.moneyIn;
     final tileColour = category == null ? c.catSlate : colourForToken(c, category!.colourToken);
-    final tileInk = ThemeData.estimateBrightnessForColor(tileColour) == Brightness.light
-        ? c.ink
-        : c.onBrand;
+    final tileInk = categoryIconColour(c, category?.colourToken ?? 'cat-slate');
 
     final words = tx.description.trim();
     final title = words.isNotEmpty

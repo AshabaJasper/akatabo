@@ -59,7 +59,7 @@ class LocalNotificationsService implements NotificationsService {
     }
     await _plugin.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings('ic_stat_akatabo'),
         // Never ask at start-up: permission is asked only when a reminder is switched on.
         iOS: DarwinInitializationSettings(
           requestAlertPermission: false,

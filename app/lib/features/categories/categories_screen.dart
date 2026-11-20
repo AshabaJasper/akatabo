@@ -16,6 +16,7 @@ import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/seed/default_data.dart';
 import '../../domain/spending.dart';
+import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../home/home_providers.dart';
@@ -135,9 +136,7 @@ class _CategoryRow extends StatelessWidget {
     final t = context.type;
     final name = category?.name ?? 'Other';
     final colour = colourForToken(c, category?.colourToken ?? 'cat-slate');
-    final ink = ThemeData.estimateBrightnessForColor(colour) == Brightness.light
-        ? c.ink
-        : c.onBrand;
+    final ink = categoryIconColour(c, category?.colourToken ?? 'cat-slate');
     return Semantics(
       button: true,
       container: true,

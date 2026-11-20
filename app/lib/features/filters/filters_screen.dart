@@ -202,6 +202,7 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
                 SettingsValueRow(
                   title: 'Dates',
                   value: _datesLabel(period),
+                  chevron: true,
                   onTap: () => context.push(Routes.chooseDates),
                 ),
               ],

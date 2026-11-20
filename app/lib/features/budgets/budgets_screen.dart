@@ -16,6 +16,7 @@ import '../../data/providers.dart';
 import '../../data/seed/default_data.dart';
 import '../../domain/budget.dart';
 import '../../domain/spending.dart';
+import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../home/home_providers.dart';
@@ -251,9 +252,7 @@ class _BudgetRow extends StatelessWidget {
     final t = context.type;
     final cat = line.category;
     final colour = colourForToken(c, cat.colourToken);
-    final ink = ThemeData.estimateBrightnessForColor(colour) == Brightness.light
-        ? c.ink
-        : c.onBrand;
+    final ink = categoryIconColour(c, cat.colourToken);
     final over = line.status == BudgetStatus.over;
     final word = switch (line.status) {
       BudgetStatus.over => 'Over by ${formatAmount(line.spent - line.budget)}',
