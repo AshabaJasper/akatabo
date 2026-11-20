@@ -97,6 +97,11 @@ class Accounts extends Table with _Synced {
   /// An `acct-` or `cat-` colour token name.
   TextColumn get colourToken => text()();
   IntColumn get openingBalance => integer().withDefault(const Constant(0))();
+
+  /// When [openingBalance] was what was in the account: entries from this moment on change
+  /// its balance; earlier ones were already in it. Null until the person says what is in it,
+  /// so the default accounts never show a made-up balance. Schema v3.
+  DateTimeColumn get balanceAt => dateTime().nullable()();
   BoolColumn get askFeeEachTime => boolean().withDefault(const Constant(false))();
   BoolColumn get countInTotals => boolean().withDefault(const Constant(true))();
   BoolColumn get enabled => boolean().withDefault(const Constant(true))();

@@ -94,7 +94,8 @@ class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
             name: name,
             kind: _kind,
             colourToken: _colour,
-            openingBalance: parseAmount(_opening.text),
+            // Left empty, the balance stays unset rather than claiming the account holds 0.
+            openingBalance: _opening.text.trim().isEmpty ? null : parseAmount(_opening.text),
             askFeeEachTime: _askFee,
             countInTotals: _countInTotals,
             makeDefault: _makeDefault,

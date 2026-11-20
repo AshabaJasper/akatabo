@@ -6,6 +6,7 @@ import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/settings/accounts_settings_screen.dart';
 import 'package:akatabo/features/settings/general_settings_screen.dart';
 import 'package:akatabo/features/transactions/transactions_providers.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -142,6 +143,59 @@ void main() {
       );
       expect(find.text('UGX 520,000'), findsOneWidget, reason: '20,000 + 0 + 500,000');
       expect(find.textContaining('Not counted'), findsNothing);
+    });
+
+    testWidgets('an account never set says so and stays out of the total', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(
+        tester,
+        db,
+        const AccountsSettingsScreen(),
+        all: [
+          _cash,
+          _mtn.copyWith(balanceAt: const Value(null)),
+        ],
+        rows: [txRow(amount: 45000)], // money out from MTN, whose balance is not set
+      );
+      expect(find.text('Not set'), findsOneWidget);
+      expect(find.text('UGX 20,000'), findsNWidgets(2), reason: 'Cash, and the total of Cash');
+      expect(find.textContaining('UGX -'), findsNothing, reason: 'no made-up negative balance');
+      expect(find.textContaining('Accounts not set are not in the total.'), findsOneWidget);
+    });
+
+    testWidgets('tapping an account saves what is in it now', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(
+        tester,
+        db,
+        const AccountsSettingsScreen(),
+        all: [
+          _cash,
+          _mtn.copyWith(balanceAt: const Value(null)),
+        ],
+      );
+
+      await tester.tap(find.text('Not set'));
+      await tester.pumpAndSettle();
+      expect(find.text('What is in MTN MoMo now'), findsOneWidget);
+
+      // Empty is asked for again, not saved as 0.
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(find.text('Type what is in it, or 0 if it is empty.'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), '100000');
+      await tester.tap(find.text('Save'));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pumpAndSettle();
+
+      final mtn = await tester.runAsync(
+        () => (db.select(db.accounts)..where((a) => a.id.equals(DefaultIds.mtn))).getSingle(),
+      );
+      expect(mtn!.openingBalance, 100000);
+      expect(mtn.balanceAt, isNotNull);
     });
   });
 }

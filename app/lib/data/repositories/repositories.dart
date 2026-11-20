@@ -402,13 +402,14 @@ class AccountRepository {
   ///
   /// The name is trimmed; an empty one is refused. [colourToken] must be one of
   /// [accountColourTokens] (left out, the kind's own colour). [openingBalance] is what is in
-  /// the account today and cannot be below zero. [makeDefault] makes it the account Add
-  /// opens on, taking that from whichever account had it, so only one ever does.
+  /// the account now and cannot be below zero; left out, the balance stays unset until the
+  /// person says what is in it. [makeDefault] makes it the account Add opens on, taking that
+  /// from whichever account had it, so only one ever does.
   Future<String> add({
     required String name,
     required AccountKind kind,
     String? colourToken,
-    int openingBalance = 0,
+    int? openingBalance,
     bool askFeeEachTime = false,
     bool countInTotals = true,
     bool makeDefault = false,
@@ -419,7 +420,7 @@ class AccountRepository {
     if (!accountColourTokens.contains(colour)) {
       throw ArgumentError.value(colourToken, 'colourToken', 'must be an account colour');
     }
-    if (openingBalance < 0) {
+    if (openingBalance != null && openingBalance < 0) {
       throw ArgumentError.value(openingBalance, 'openingBalance', 'must not be below zero');
     }
     final now = clock.now();
@@ -435,7 +436,8 @@ class AccountRepository {
             name: trimmed,
             kind: kind,
             colourToken: colour,
-            openingBalance: Value(openingBalance),
+            openingBalance: Value(openingBalance ?? 0),
+            balanceAt: Value(openingBalance == null ? null : now),
             askFeeEachTime: Value(askFeeEachTime),
             countInTotals: Value(countInTotals),
             sortOrder: Value((top.read(last) ?? -1) + 1),
@@ -445,6 +447,22 @@ class AccountRepository {
         );
     if (makeDefault) await _moveDefaultTo(id, now);
     return id;
+  });
+
+  /// Says what is in account [id] now: its balance becomes [amount], and from now on each
+  /// entry dated from this moment changes it. Entries dated earlier were already in it. An
+  /// amount below zero or an unknown id is refused and nothing changes.
+  Future<void> setBalanceToday(String id, int amount) => _db.transaction(() async {
+    if (amount < 0) throw ArgumentError.value(amount, 'amount', 'must not be below zero');
+    final now = clock.now();
+    final changed = await (_db.update(_db.accounts)..where((a) => a.id.equals(id))).write(
+      AccountsCompanion(
+        openingBalance: Value(amount),
+        balanceAt: Value(now),
+        updatedAt: Value(now),
+      ),
+    );
+    if (changed == 0) throw StateError('No account $id');
   });
 
   /// Makes [id] the account Add opens on. Only one account is the default, so the one that

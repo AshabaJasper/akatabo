@@ -55,4 +55,44 @@ void main() {
     final after = balancesOf([mtn, cash], [rows[2]]);
     expect(after.total, before.total - 2000);
   });
+
+  group('when the balance was set', () {
+    final set = DateTime(2026, 11, 10, 12);
+    final savings = accountRow(id: 'sav', name: 'Savings', openingBalance: 50000, balanceAt: set);
+
+    test('an entry dated before the balance was set was already in it', () {
+      final before = txRow(id: 'x', amount: 5000, accountId: 'sav', at: DateTime(2026, 11, 9));
+      expect(balancesOf([savings], [before]).byAccount['sav'], 50000);
+    });
+
+    test('an entry dated from that moment on changes it', () {
+      final after = txRow(id: 'y', amount: 5000, accountId: 'sav', at: DateTime(2026, 11, 11));
+      final atSet = txRow(id: 'z', amount: 1000, accountId: 'sav', at: set);
+      expect(balancesOf([savings], [after, atSet]).byAccount['sav'], 44000);
+    });
+
+    test('a transfer dated before only changes the account already set then', () {
+      final move = txRow(
+        id: 't',
+        direction: Direction.transfer,
+        amount: 20000,
+        fee: 500,
+        toAccountId: 'sav',
+        at: DateTime(2026, 11, 9),
+      );
+      final b = balancesOf([mtn, savings], [move]);
+      expect(b.byAccount[DefaultIds.mtn], 200000 - 20500);
+      expect(b.byAccount['sav'], 50000);
+    });
+
+    test('an account never set has no balance and stays out of the total', () {
+      final unset = accountRow(id: DefaultIds.airtel, name: 'Airtel Money', unset: true);
+      final spent = txRow(id: 'u', amount: 45000, accountId: DefaultIds.airtel);
+      final b = balancesOf([cash, unset], [spent]);
+      expect(b.byAccount.containsKey(DefaultIds.airtel), isFalse);
+      expect(b.notSet.map((a) => a.name), ['Airtel Money']);
+      expect(b.total, 0, reason: 'Cash holds 0; the unset account adds nothing');
+      expect(b.leftOut, isEmpty);
+    });
+  });
 }

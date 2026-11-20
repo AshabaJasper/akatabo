@@ -9,6 +9,7 @@ import 'generated/schema.dart';
 
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
+import 'generated/schema_v3.dart' as v3;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -106,6 +107,51 @@ void main() {
           expectedNewForecastSnapshotsData,
           await newDb.select(newDb.forecastSnapshots).get(),
         );
+      },
+    );
+  });
+
+  test('v2 to v3 makes the default mobile-money and bank accounts ask for the '
+      'fee, and leaves Cash and the person\'s own accounts alone', () async {
+    v2.AccountsData account(String id, String kind) => v2.AccountsData(
+      id: id,
+      createdAt: 0,
+      updatedAt: 0,
+      name: id,
+      kind: kind,
+      colourToken: 'acct-bank',
+      openingBalance: 0,
+      askFeeEachTime: 0,
+      countInTotals: 1,
+      enabled: 1,
+      isDefault: 0,
+      sortOrder: 0,
+    );
+    final old = [
+      account('acct.cash', 'cash'),
+      account('acct.mtn', 'mtn'),
+      account('acct.airtel', 'airtel'),
+      account('acct.bank', 'bank'),
+      account('own.bank', 'bank'),
+    ];
+    final expected = {
+      'acct.cash': 0,
+      'acct.mtn': 1,
+      'acct.airtel': 1,
+      'acct.bank': 1,
+      'own.bank': 0,
+    };
+
+    await verifier.testWithDataIntegrity(
+      oldVersion: 2,
+      newVersion: 3,
+      createOld: v2.DatabaseAtV2.new,
+      createNew: v3.DatabaseAtV3.new,
+      openTestedDatabase: AppDatabase.new,
+      createItems: (batch, oldDb) => batch.insertAll(oldDb.accounts, old),
+      validateItems: (newDb) async {
+        final rows = await newDb.select(newDb.accounts).get();
+        expect({for (final r in rows) r.id: r.askFeeEachTime}, expected);
       },
     );
   });

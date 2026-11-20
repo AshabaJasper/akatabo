@@ -811,8 +811,217 @@ i1.GeneratedColumn<int> _column_54(String aliasedName) =>
       type: i1.DriftSqlType.int,
       $customConstraints: 'NOT NULL',
     );
+
+final class Schema3 extends i0.VersionedSchema {
+  Schema3({required super.database}) : super(version: 3);
+  @override
+  late final List<i1.DatabaseSchemaEntity> entities = [
+    categories,
+    accounts,
+    transactions,
+    regularPayments,
+    settings,
+    forecastSnapshots,
+    txLocalDay,
+    txCategory,
+    txPayee,
+  ];
+  late final Shape0 categories = Shape0(
+    source: i0.VersionedTable(
+      entityName: 'categories',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_4,
+        _column_5,
+        _column_6,
+        _column_7,
+        _column_8,
+        _column_9,
+        _column_10,
+        _column_11,
+        _column_12,
+        _column_13,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape6 accounts = Shape6(
+    source: i0.VersionedTable(
+      entityName: 'accounts',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_6,
+        _column_5,
+        _column_14,
+        _column_55,
+        _column_15,
+        _column_16,
+        _column_17,
+        _column_18,
+        _column_7,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape2 transactions = Shape2(
+    source: i0.VersionedTable(
+      entityName: 'transactions',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_19,
+        _column_20,
+        _column_21,
+        _column_22,
+        _column_23,
+        _column_24,
+        _column_25,
+        _column_26,
+        _column_27,
+        _column_28,
+        _column_29,
+        _column_30,
+        _column_31,
+        _column_32,
+        _column_33,
+        _column_34,
+        _column_35,
+        _column_36,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape3 regularPayments = Shape3(
+    source: i0.VersionedTable(
+      entityName: 'regular_payments',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_37,
+        _column_23,
+        _column_22,
+        _column_38,
+        _column_39,
+        _column_40,
+        _column_41,
+        _column_42,
+        _column_43,
+        _column_44,
+        _column_45,
+        _column_46,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape4 settings = Shape4(
+    source: i0.VersionedTable(
+      entityName: 'settings',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY("key")'],
+      columns: [_column_47, _column_48, _column_2],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape5 forecastSnapshots = Shape5(
+    source: i0.VersionedTable(
+      entityName: 'forecast_snapshots',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(period_start, taken_on)'],
+      columns: [
+        _column_49,
+        _column_50,
+        _column_51,
+        _column_52,
+        _column_53,
+        _column_54,
+        _column_1,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Index txLocalDay = i1.Index(
+    'tx_local_day',
+    'CREATE INDEX tx_local_day ON transactions (local_day)',
+  );
+  final i1.Index txCategory = i1.Index(
+    'tx_category',
+    'CREATE INDEX tx_category ON transactions (category_id)',
+  );
+  final i1.Index txPayee = i1.Index(
+    'tx_payee',
+    'CREATE INDEX tx_payee ON transactions (payee_key)',
+  );
+}
+
+class Shape6 extends i0.VersionedTable {
+  Shape6({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get createdAt =>
+      columnsByName['created_at']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get updatedAt =>
+      columnsByName['updated_at']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get name =>
+      columnsByName['name']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get kind =>
+      columnsByName['kind']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get colourToken =>
+      columnsByName['colour_token']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get openingBalance =>
+      columnsByName['opening_balance']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get balanceAt =>
+      columnsByName['balance_at']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get askFeeEachTime =>
+      columnsByName['ask_fee_each_time']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get countInTotals =>
+      columnsByName['count_in_totals']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get enabled =>
+      columnsByName['enabled']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get isDefault =>
+      columnsByName['is_default']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get sortOrder =>
+      columnsByName['sort_order']! as i1.GeneratedColumn<int>;
+}
+
+i1.GeneratedColumn<int> _column_55(String aliasedName) =>
+    i1.GeneratedColumn<int>(
+      'balance_at',
+      aliasedName,
+      true,
+      type: i1.DriftSqlType.int,
+      $customConstraints: 'NULL',
+    );
 i0.MigrationStepWithVersion migrationSteps({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
+  required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
 }) {
   return (currentVersion, database) async {
     switch (currentVersion) {
@@ -821,6 +1030,11 @@ i0.MigrationStepWithVersion migrationSteps({
         final migrator = i1.Migrator(database, schema);
         await from1To2(migrator, schema);
         return 2;
+      case 2:
+        final schema = Schema3(database: database);
+        final migrator = i1.Migrator(database, schema);
+        await from2To3(migrator, schema);
+        return 3;
       default:
         throw ArgumentError.value('Unknown migration from $currentVersion');
     }
@@ -829,6 +1043,7 @@ i0.MigrationStepWithVersion migrationSteps({
 
 i1.OnUpgrade stepByStep({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
+  required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
 }) => i0.VersionedSchema.stepByStepHelper(
-  step: migrationSteps(from1To2: from1To2),
+  step: migrationSteps(from1To2: from1To2, from2To3: from2To3),
 );

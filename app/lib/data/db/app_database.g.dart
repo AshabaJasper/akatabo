@@ -831,6 +831,15 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _balanceAtMeta = const VerificationMeta('balanceAt');
+  @override
+  late final GeneratedColumn<DateTime> balanceAt = GeneratedColumn<DateTime>(
+    'balance_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _askFeeEachTimeMeta = const VerificationMeta('askFeeEachTime');
   @override
   late final GeneratedColumn<bool> askFeeEachTime = GeneratedColumn<bool>(
@@ -894,6 +903,7 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
     kind,
     colourToken,
     openingBalance,
+    balanceAt,
     askFeeEachTime,
     countInTotals,
     enabled,
@@ -947,6 +957,12 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
       context.handle(
         _openingBalanceMeta,
         openingBalance.isAcceptableOrUnknown(data['opening_balance']!, _openingBalanceMeta),
+      );
+    }
+    if (data.containsKey('balance_at')) {
+      context.handle(
+        _balanceAtMeta,
+        balanceAt.isAcceptableOrUnknown(data['balance_at']!, _balanceAtMeta),
       );
     }
     if (data.containsKey('ask_fee_each_time')) {
@@ -1006,6 +1022,10 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
         DriftSqlType.int,
         data['${effectivePrefix}opening_balance'],
       )!,
+      balanceAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}balance_at'],
+      ),
       askFeeEachTime: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}ask_fee_each_time'],
@@ -1048,6 +1068,11 @@ class Account extends DataClass implements Insertable<Account> {
   /// An `acct-` or `cat-` colour token name.
   final String colourToken;
   final int openingBalance;
+
+  /// When [openingBalance] was what was in the account: entries from this moment on change
+  /// its balance; earlier ones were already in it. Null until the person says what is in it,
+  /// so the default accounts never show a made-up balance. Schema v3.
+  final DateTime? balanceAt;
   final bool askFeeEachTime;
   final bool countInTotals;
   final bool enabled;
@@ -1061,6 +1086,7 @@ class Account extends DataClass implements Insertable<Account> {
     required this.kind,
     required this.colourToken,
     required this.openingBalance,
+    this.balanceAt,
     required this.askFeeEachTime,
     required this.countInTotals,
     required this.enabled,
@@ -1079,6 +1105,9 @@ class Account extends DataClass implements Insertable<Account> {
     }
     map['colour_token'] = Variable<String>(colourToken);
     map['opening_balance'] = Variable<int>(openingBalance);
+    if (!nullToAbsent || balanceAt != null) {
+      map['balance_at'] = Variable<DateTime>(balanceAt);
+    }
     map['ask_fee_each_time'] = Variable<bool>(askFeeEachTime);
     map['count_in_totals'] = Variable<bool>(countInTotals);
     map['enabled'] = Variable<bool>(enabled);
@@ -1096,6 +1125,7 @@ class Account extends DataClass implements Insertable<Account> {
       kind: Value(kind),
       colourToken: Value(colourToken),
       openingBalance: Value(openingBalance),
+      balanceAt: balanceAt == null && nullToAbsent ? const Value.absent() : Value(balanceAt),
       askFeeEachTime: Value(askFeeEachTime),
       countInTotals: Value(countInTotals),
       enabled: Value(enabled),
@@ -1114,6 +1144,7 @@ class Account extends DataClass implements Insertable<Account> {
       kind: $AccountsTable.$converterkind.fromJson(serializer.fromJson<String>(json['kind'])),
       colourToken: serializer.fromJson<String>(json['colourToken']),
       openingBalance: serializer.fromJson<int>(json['openingBalance']),
+      balanceAt: serializer.fromJson<DateTime?>(json['balanceAt']),
       askFeeEachTime: serializer.fromJson<bool>(json['askFeeEachTime']),
       countInTotals: serializer.fromJson<bool>(json['countInTotals']),
       enabled: serializer.fromJson<bool>(json['enabled']),
@@ -1132,6 +1163,7 @@ class Account extends DataClass implements Insertable<Account> {
       'kind': serializer.toJson<String>($AccountsTable.$converterkind.toJson(kind)),
       'colourToken': serializer.toJson<String>(colourToken),
       'openingBalance': serializer.toJson<int>(openingBalance),
+      'balanceAt': serializer.toJson<DateTime?>(balanceAt),
       'askFeeEachTime': serializer.toJson<bool>(askFeeEachTime),
       'countInTotals': serializer.toJson<bool>(countInTotals),
       'enabled': serializer.toJson<bool>(enabled),
@@ -1148,6 +1180,7 @@ class Account extends DataClass implements Insertable<Account> {
     AccountKind? kind,
     String? colourToken,
     int? openingBalance,
+    Value<DateTime?> balanceAt = const Value.absent(),
     bool? askFeeEachTime,
     bool? countInTotals,
     bool? enabled,
@@ -1161,6 +1194,7 @@ class Account extends DataClass implements Insertable<Account> {
     kind: kind ?? this.kind,
     colourToken: colourToken ?? this.colourToken,
     openingBalance: openingBalance ?? this.openingBalance,
+    balanceAt: balanceAt.present ? balanceAt.value : this.balanceAt,
     askFeeEachTime: askFeeEachTime ?? this.askFeeEachTime,
     countInTotals: countInTotals ?? this.countInTotals,
     enabled: enabled ?? this.enabled,
@@ -1176,6 +1210,7 @@ class Account extends DataClass implements Insertable<Account> {
       kind: data.kind.present ? data.kind.value : this.kind,
       colourToken: data.colourToken.present ? data.colourToken.value : this.colourToken,
       openingBalance: data.openingBalance.present ? data.openingBalance.value : this.openingBalance,
+      balanceAt: data.balanceAt.present ? data.balanceAt.value : this.balanceAt,
       askFeeEachTime: data.askFeeEachTime.present ? data.askFeeEachTime.value : this.askFeeEachTime,
       countInTotals: data.countInTotals.present ? data.countInTotals.value : this.countInTotals,
       enabled: data.enabled.present ? data.enabled.value : this.enabled,
@@ -1194,6 +1229,7 @@ class Account extends DataClass implements Insertable<Account> {
           ..write('kind: $kind, ')
           ..write('colourToken: $colourToken, ')
           ..write('openingBalance: $openingBalance, ')
+          ..write('balanceAt: $balanceAt, ')
           ..write('askFeeEachTime: $askFeeEachTime, ')
           ..write('countInTotals: $countInTotals, ')
           ..write('enabled: $enabled, ')
@@ -1212,6 +1248,7 @@ class Account extends DataClass implements Insertable<Account> {
     kind,
     colourToken,
     openingBalance,
+    balanceAt,
     askFeeEachTime,
     countInTotals,
     enabled,
@@ -1229,6 +1266,7 @@ class Account extends DataClass implements Insertable<Account> {
           other.kind == this.kind &&
           other.colourToken == this.colourToken &&
           other.openingBalance == this.openingBalance &&
+          other.balanceAt == this.balanceAt &&
           other.askFeeEachTime == this.askFeeEachTime &&
           other.countInTotals == this.countInTotals &&
           other.enabled == this.enabled &&
@@ -1244,6 +1282,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
   final Value<AccountKind> kind;
   final Value<String> colourToken;
   final Value<int> openingBalance;
+  final Value<DateTime?> balanceAt;
   final Value<bool> askFeeEachTime;
   final Value<bool> countInTotals;
   final Value<bool> enabled;
@@ -1258,6 +1297,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     this.kind = const Value.absent(),
     this.colourToken = const Value.absent(),
     this.openingBalance = const Value.absent(),
+    this.balanceAt = const Value.absent(),
     this.askFeeEachTime = const Value.absent(),
     this.countInTotals = const Value.absent(),
     this.enabled = const Value.absent(),
@@ -1273,6 +1313,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     required AccountKind kind,
     required String colourToken,
     this.openingBalance = const Value.absent(),
+    this.balanceAt = const Value.absent(),
     this.askFeeEachTime = const Value.absent(),
     this.countInTotals = const Value.absent(),
     this.enabled = const Value.absent(),
@@ -1293,6 +1334,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     Expression<String>? kind,
     Expression<String>? colourToken,
     Expression<int>? openingBalance,
+    Expression<DateTime>? balanceAt,
     Expression<bool>? askFeeEachTime,
     Expression<bool>? countInTotals,
     Expression<bool>? enabled,
@@ -1308,6 +1350,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
       if (kind != null) 'kind': kind,
       if (colourToken != null) 'colour_token': colourToken,
       if (openingBalance != null) 'opening_balance': openingBalance,
+      if (balanceAt != null) 'balance_at': balanceAt,
       if (askFeeEachTime != null) 'ask_fee_each_time': askFeeEachTime,
       if (countInTotals != null) 'count_in_totals': countInTotals,
       if (enabled != null) 'enabled': enabled,
@@ -1325,6 +1368,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     Value<AccountKind>? kind,
     Value<String>? colourToken,
     Value<int>? openingBalance,
+    Value<DateTime?>? balanceAt,
     Value<bool>? askFeeEachTime,
     Value<bool>? countInTotals,
     Value<bool>? enabled,
@@ -1340,6 +1384,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
       kind: kind ?? this.kind,
       colourToken: colourToken ?? this.colourToken,
       openingBalance: openingBalance ?? this.openingBalance,
+      balanceAt: balanceAt ?? this.balanceAt,
       askFeeEachTime: askFeeEachTime ?? this.askFeeEachTime,
       countInTotals: countInTotals ?? this.countInTotals,
       enabled: enabled ?? this.enabled,
@@ -1373,6 +1418,9 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     if (openingBalance.present) {
       map['opening_balance'] = Variable<int>(openingBalance.value);
     }
+    if (balanceAt.present) {
+      map['balance_at'] = Variable<DateTime>(balanceAt.value);
+    }
     if (askFeeEachTime.present) {
       map['ask_fee_each_time'] = Variable<bool>(askFeeEachTime.value);
     }
@@ -1404,6 +1452,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
           ..write('kind: $kind, ')
           ..write('colourToken: $colourToken, ')
           ..write('openingBalance: $openingBalance, ')
+          ..write('balanceAt: $balanceAt, ')
           ..write('askFeeEachTime: $askFeeEachTime, ')
           ..write('countInTotals: $countInTotals, ')
           ..write('enabled: $enabled, ')
@@ -4508,6 +4557,7 @@ typedef $$AccountsTableCreateCompanionBuilder = AccountsCompanion Function({
   required AccountKind kind,
   required String colourToken,
   Value<int> openingBalance,
+  Value<DateTime?> balanceAt,
   Value<bool> askFeeEachTime,
   Value<bool> countInTotals,
   Value<bool> enabled,
@@ -4523,6 +4573,7 @@ typedef $$AccountsTableUpdateCompanionBuilder = AccountsCompanion Function({
   Value<AccountKind> kind,
   Value<String> colourToken,
   Value<int> openingBalance,
+  Value<DateTime?> balanceAt,
   Value<bool> askFeeEachTime,
   Value<bool> countInTotals,
   Value<bool> enabled,
@@ -4600,6 +4651,9 @@ class $$AccountsTableFilterComposer extends Composer<_$AppDatabase, $AccountsTab
 
   ColumnFilters<int> get openingBalance =>
       $composableBuilder(column: $table.openingBalance, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get balanceAt =>
+      $composableBuilder(column: $table.balanceAt, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get askFeeEachTime =>
       $composableBuilder(column: $table.askFeeEachTime, builder: (column) => ColumnFilters(column));
@@ -4684,6 +4738,9 @@ class $$AccountsTableOrderingComposer extends Composer<_$AppDatabase, $AccountsT
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get balanceAt =>
+      $composableBuilder(column: $table.balanceAt, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get askFeeEachTime => $composableBuilder(
     column: $table.askFeeEachTime,
     builder: (column) => ColumnOrderings(column),
@@ -4732,6 +4789,9 @@ class $$AccountsTableAnnotationComposer extends Composer<_$AppDatabase, $Account
 
   GeneratedColumn<int> get openingBalance =>
       $composableBuilder(column: $table.openingBalance, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get balanceAt =>
+      $composableBuilder(column: $table.balanceAt, builder: (column) => column);
 
   GeneratedColumn<bool> get askFeeEachTime =>
       $composableBuilder(column: $table.askFeeEachTime, builder: (column) => column);
@@ -4822,6 +4882,7 @@ class $$AccountsTableTableManager
                 Value<AccountKind> kind = const Value.absent(),
                 Value<String> colourToken = const Value.absent(),
                 Value<int> openingBalance = const Value.absent(),
+                Value<DateTime?> balanceAt = const Value.absent(),
                 Value<bool> askFeeEachTime = const Value.absent(),
                 Value<bool> countInTotals = const Value.absent(),
                 Value<bool> enabled = const Value.absent(),
@@ -4836,6 +4897,7 @@ class $$AccountsTableTableManager
                 kind: kind,
                 colourToken: colourToken,
                 openingBalance: openingBalance,
+                balanceAt: balanceAt,
                 askFeeEachTime: askFeeEachTime,
                 countInTotals: countInTotals,
                 enabled: enabled,
@@ -4852,6 +4914,7 @@ class $$AccountsTableTableManager
                 required AccountKind kind,
                 required String colourToken,
                 Value<int> openingBalance = const Value.absent(),
+                Value<DateTime?> balanceAt = const Value.absent(),
                 Value<bool> askFeeEachTime = const Value.absent(),
                 Value<bool> countInTotals = const Value.absent(),
                 Value<bool> enabled = const Value.absent(),
@@ -4866,6 +4929,7 @@ class $$AccountsTableTableManager
                 kind: kind,
                 colourToken: colourToken,
                 openingBalance: openingBalance,
+                balanceAt: balanceAt,
                 askFeeEachTime: askFeeEachTime,
                 countInTotals: countInTotals,
                 enabled: enabled,

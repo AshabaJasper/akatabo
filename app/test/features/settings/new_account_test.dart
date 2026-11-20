@@ -9,6 +9,7 @@ import 'package:akatabo/data/seed/default_data.dart';
 import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/settings/new_account_screen.dart';
 import 'package:akatabo/widgets/ak_controls.dart';
+import 'package:clock/clock.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,7 +35,7 @@ class _FailingAccounts extends AccountRepository {
     required String name,
     required AccountKind kind,
     String? colourToken,
-    int openingBalance = 0,
+    int? openingBalance,
     bool askFeeEachTime = false,
     bool countInTotals = true,
     bool makeDefault = false,
@@ -111,10 +112,29 @@ void main() {
       expect(a.kind, AccountKind.mobile);
       expect(a.colourToken, 'cat-purple');
       expect(a.openingBalance, 120000);
+      expect(a.balanceAt, isNotNull, reason: 'what is in it today was given');
       expect(a.askFeeEachTime, isTrue);
       expect(a.countInTotals, isFalse);
       expect(a.isDefault, isFalse);
       expect(a.sortOrder, 4, reason: 'after the four default accounts');
+    });
+
+    test('the default accounts start with no balance set', () async {
+      final all = await db.select(db.accounts).get();
+      expect(all.map((a) => a.balanceAt), everyElement(isNull));
+    });
+
+    test('saying what is in an account sets its balance from that moment', () async {
+      await withClock(Clock.fixed(DateTime(2026, 11, 20, 10)), () async {
+        await repo.setBalanceToday(DefaultIds.mtn, 100000);
+      });
+      final a = await (db.select(
+        db.accounts,
+      )..where((r) => r.id.equals(DefaultIds.mtn))).getSingle();
+      expect(a.openingBalance, 100000);
+      expect(a.balanceAt, DateTime(2026, 11, 20, 10));
+      await expectLater(repo.setBalanceToday(DefaultIds.mtn, -1), throwsArgumentError);
+      await expectLater(repo.setBalanceToday('no-such-account', 5), throwsStateError);
     });
 
     test('left out, the colour follows the kind', () async {
@@ -247,6 +267,7 @@ void main() {
       expect(a.kind, AccountKind.cash);
       expect(a.colourToken, 'acct-cash');
       expect(a.openingBalance, 0, reason: 'left empty');
+      expect(a.balanceAt, isNull, reason: 'left empty, the balance is not set');
       expect(a.askFeeEachTime, isTrue);
       expect(a.countInTotals, isTrue);
       expect(a.isDefault, isFalse);

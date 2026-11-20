@@ -219,3 +219,37 @@ The five fixed bugs were re-scored when this was written, because the first scor
 | 6 | The day view lost its day heading when the order was Largest | 2 x 3 = 6 | Fixed: the day view is always newest first by day; tested |
 | 7 | A very long typed amount silently becomes no limit | 1 x 2 = 2 | Filed in `docs/BUGS.md` |
 | 8 | Rows from a switched-off account show no account name | 2 x 2 = 4 | Filed |
+
+### Phase 5, sixth pass: parallel builders and two checks (20 November 2026)
+
+Four builders worked in separate git worktrees (Smart help and Reminders, the pickers, Money-in categories, Edit a category); a checker reviewed the merged result twice, and each finding went back to a builder or was fixed here.
+
+- **Works:** Smart help and Reminders settings, with reminders scheduled at a local time and rescheduled on open and on hide, and a budget warning after saving an entry. Themed date, time and choice pickers on Add, General and Smart help. Money-in categories on their own screen. Edit a category: name, icon, colour, budget, delete, and order by dragging, a grip menu or screen-reader actions; New category for both kinds; Edit from a category's own page. Appearance gained Main colour and Category chart. A hidden category says so under its name, and each Main colour disc has a visible edge in dark.
+- **Tested:** 541 tests passed after the second round's merges, with `flutter analyze` clean. New tests cover notification permission asked only when a reminder is switched on, the reminder plan, the budget warning lines, duplicate names refused inside a transaction, delete closing both pages, the theme rebuilding when Appearance changes, and contrast of every main colour in both themes. Goldens for Smart help, Categories, Edit a category and Appearance were checked by eye.
+- **Not tested:** nothing ran on a device or emulator, so notifications were never seen firing and the release build stays BLOCKED (Windows Smart App Control stops Flutter's `gen_snapshot.exe`). **Design checks** are in the PLAN.md log, including the deferred Category colours, "The app opens on", Date style and amount style.
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | The notification small icon was the full-colour launcher icon (shows as a white square) | 10 x 2 = 20 | Fixed: monochrome vector, kept from shrinking |
+| 2 | Value rows wrapped onto two lines, with uneven side padding | 10 x 2 = 20 | Fixed: one shared row padding; tested |
+| 3 | Category tile icons lost contrast in dark | 6 x 2 = 12 | Fixed: icon colour per theme; tested |
+| 4 | Hidden category had no "Hidden" line | 7 x 1 = 7 | Fixed; tested |
+| 5 | Deleting from a category's own page left that page open on a deleted category | 3 x 2 = 6 | Fixed: both pages close; tested |
+| 6 | Dark Main colour discs under 3:1 against the card | 3 x 2 = 6 | Fixed: 1px edge; contrast test |
+| 7 | Cancelling and rescheduling every reminder on hide can drop them if the app is killed between | 1 x 4 = 4 | Filed in `docs/BUGS.md` |
+
+### Phase 5, seventh pass: New account and the default account (20 November 2026)
+
+- **Works:** New account as drawn (name, kind, colour, what is in it today, ask for the fee, pick this first, count it in my totals), each changing behaviour: Add opens on the account picked first and puts the fee box in the form only for accounts that ask; General can change the account picked first; Settings > Accounts shows each account's balance and a Total of the counted ones; tapping an account says what is in it now, and the default accounts read "Not set" until then. Existing installs get the fee setting on the default accounts through a data-only schema v3 step.
+- **Tested:** 581 tests pass (exit code 0) and `flutter analyze` reports no issues. New tests cover saving every New account field, only one account picked first, the fallback when it is switched off, the fee box placement, the balance arithmetic (opening amount, money in and out with fee and tax, moves, uncounted accounts still counting in money out), the Kind labels staying on one line at 360dp, a balance counting only entries dated from when it was set, an unset account staying out of the Total, setting a balance from Accounts, and the v2 to v3 step. The fee step and the date rule were each checked by breaking them on purpose. New account goldens checked by eye.
+- **Not tested:** nothing on a device; no goldens for the Accounts balance section or General. **Design checks:** "Count it in my totals" applies to balances only, and the balance section is not drawn.
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | The default accounts showed a made-up balance (from 0, usually negative) that no screen could correct | 8 x 6 = 48 | Fixed: balance unset until said, settable from Accounts; tested |
+| 2 | An entry dated before an account's balance was set was counted twice | 4 x 6 = 24 | Fixed: only entries from that moment count; tested |
+| 3 | Existing installs kept "ask for the fee" off on MTN, Airtel and Bank | 2 x 4 = 8 | Fixed: schema v3 step; tested |
+| 4 | On General, picking the fallback account saved nothing | 2 x 3 = 6 | Fixed by the builder; tested |
+| 5 | A cleared fee box moves away on a later rebuild | 2 x 2 = 4 | Filed in `docs/BUGS.md` |
+| 6 | A fee hidden by "Fewer details" is still saved | 2 x 2 = 4 | Filed |
+| 7 | The "Not counted" note could name an account not listed | 1 x 1 = 1 | Fixed with bug 1: the note names only listed accounts |

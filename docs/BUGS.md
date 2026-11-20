@@ -94,33 +94,6 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Suggested fix:** insert the bad text straight into the settings table (for example '31' for month start, '9' for week start, 'purple' for theme), wait for the provider, and expect the default. Delete the two literal `decode` lines.
 - **Found:** 19 November 2026, Phase 5 bug review
 
-### [bug-review] New account: save failure message shown twice and under the Name field
-
-- **Where:** `app/lib/features/settings/new_account_screen.dart`, `_error` used as the field error and as the note
-- **What happens:** when saving fails, "The account could not be saved. Try again." shows under the Name field and again below the button, which suggests the name is wrong.
-- **How to trigger:** make the account insert fail (for example a locked database), enter a name and save.
-- **Score:** frequency 2 x severity 2 = 4
-- **Suggested fix:** keep a name error and a save problem in separate fields, each shown in one place.
-- **Found:** 20 November 2026, Phase 5 review
-
-### [bug-review] New account: Kind segment labels may break mid-word on narrow phones
-
-- **Where:** `app/lib/features/settings/new_account_screen.dart`, the five-option Kind control
-- **What happens:** five options share about 256 to 286dp, so "Airtel Money" may break inside a word at 360dp or with larger text. Worked out from sizes, not seen on a screen.
-- **How to trigger:** open New account on a 360dp phone, or with Appearance > Text size Large.
-- **Score:** frequency 4 x severity 1 = 4
-- **Suggested fix:** confirm with a 360dp golden; if it breaks, use wrapping chips or a picker, or shorter labels.
-- **Found:** 20 November 2026, Phase 5 review
-
-### [bug-review] New account: screen does not close when opened as the first route
-
-- **Where:** `app/lib/features/settings/new_account_screen.dart` and `app/lib/app/close_screen.dart`
-- **What happens:** `closeScreen` does nothing when the router cannot pop. The account is saved, but the button stays disabled and the screen stays open.
-- **How to trigger:** open `/settings/accounts/new` as the first route (a deep link) and save.
-- **Score:** frequency 1 x severity 3 = 3
-- **Suggested fix:** when the router cannot pop, go to the parent path; or reset `_saving` if the screen is still mounted after `closeScreen`.
-- **Found:** 20 November 2026, Phase 5 review
-
 ### [bug-review] Choose dates: preset range text goes stale across midnight
 
 - **Where:** `app/lib/features/filters/choose_dates_screen.dart`, the range line under the presets (`_first` and `_last`)
@@ -156,3 +129,21 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 1 x severity 4 = 4
 - **Suggested fix:** keep the last applied plan and skip `replaceAll` when the new plan is the same; otherwise schedule the planned ids first, then cancel only ids no longer in the plan.
 - **Found:** 20 November 2026, Phase 5 second check
+
+### [bug-review] Add: a fee typed under "More details" is still saved after "Fewer details" hides it
+
+- **Where:** `app/lib/features/add/add_screen.dart`, the "More details" section
+- **What happens:** for an account that does not ask for the fee, a fee typed under "More details" stays in the entry after "Fewer details" folds the section away, so it is saved without being on screen. Tax already behaves this way.
+- **How to trigger:** Add, Paid from Cash, More details, type a fee, tap Fewer details, save.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** keep the section open while it holds a fee or tax, or show the hidden amounts in the "More details" row ("Fee 500").
+- **Found:** 20 November 2026, Phase 5 New account review
+
+### [bug-review] Add: a cleared fee box moves away on a later rebuild
+
+- **Where:** `app/lib/features/add/add_screen.dart`, the fee field's `onChanged` (sets `_feeTypedUpFront` without `setState`)
+- **What happens:** after the person empties a fee carried over to an account that does not ask for a fee, nothing rebuilds at once. On the next rebuild from something else (a category tap, or the minute timer), the empty box jumps under "More details", or disappears if that section is closed, and focus goes with it.
+- **How to trigger:** Money out on MTN MoMo, type a fee of 500, switch Paid from to Cash, clear the fee, tap a category.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** only ever set `_feeTypedUpFront = true` in `onChanged`; clear it when the account changes and the box is empty, inside that `setState`.
+- **Found:** 20 November 2026, Phase 5 New account review

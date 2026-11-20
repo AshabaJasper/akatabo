@@ -23,42 +23,65 @@ int balanceChangeOf(Transaction t, String accountId) {
   return change;
 }
 
-/// Each account's balance: its opening balance ("What is in it today" when it was added) plus
-/// every change since.
+/// Each account's balance: what the person said was in it ("What is in it today", at
+/// `balanceAt`) plus every entry dated from that moment on. Entries dated earlier were already
+/// in that amount, so a back-dated entry is not counted twice. An account whose balance was
+/// never set has none: the default accounts start that way, so no made-up figure is shown.
 class Balances {
-  const Balances({required this.byAccount, required this.total, required this.leftOut});
+  const Balances({
+    required this.byAccount,
+    required this.total,
+    required this.leftOut,
+    required this.notSet,
+  });
 
-  /// Balance by account id, for every account given.
+  /// Balance by account id, for every account given whose balance is set.
   final Map<String, int> byAccount;
 
-  /// The sum of the balances of accounts counted in the person's totals.
+  /// The sum of the balances of set accounts counted in the person's totals.
   final int total;
 
-  /// Accounts switched off from the totals, in the order given.
+  /// Accounts with a set balance switched off from the totals, in the order given.
   final List<Account> leftOut;
+
+  /// Accounts whose balance was never set, in the order given. They are not in [total].
+  final List<Account> notSet;
 }
 
 Balances balancesOf(List<Account> accounts, Iterable<Transaction> rows) {
-  final byAccount = {for (final a in accounts) a.id: a.openingBalance};
+  final since = {
+    for (final a in accounts)
+      if (a.balanceAt != null) a.id: a.balanceAt!,
+  };
+  final byAccount = {
+    for (final a in accounts)
+      if (a.balanceAt != null) a.id: a.openingBalance,
+  };
+  bool counts(String id, Transaction t) =>
+      since.containsKey(id) && !t.occurredAt.isBefore(since[id]!);
   for (final t in rows) {
-    if (byAccount.containsKey(t.accountId)) {
+    if (counts(t.accountId, t)) {
       byAccount[t.accountId] = byAccount[t.accountId]! + balanceChangeOf(t, t.accountId);
     }
     final to = t.toAccountId;
-    if (t.direction == Direction.transfer && to != null && to != t.accountId) {
-      if (byAccount.containsKey(to)) byAccount[to] = byAccount[to]! + t.amount;
+    if (t.direction == Direction.transfer && to != null && to != t.accountId && counts(to, t)) {
+      byAccount[to] = byAccount[to]! + t.amount;
     }
   }
   var total = 0;
   for (final a in accounts) {
-    if (a.countInTotals) total += byAccount[a.id]!;
+    if (a.countInTotals && byAccount.containsKey(a.id)) total += byAccount[a.id]!;
   }
   return Balances(
     byAccount: byAccount,
     total: total,
     leftOut: [
       for (final a in accounts)
-        if (!a.countInTotals) a,
+        if (!a.countInTotals && byAccount.containsKey(a.id)) a,
+    ],
+    notSet: [
+      for (final a in accounts)
+        if (a.balanceAt == null) a,
     ],
   );
 }

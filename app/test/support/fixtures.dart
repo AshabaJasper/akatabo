@@ -85,9 +85,13 @@ Account accountRow({
   bool askFeeEachTime = true,
   bool countInTotals = true,
   int openingBalance = 0,
+  // When the balance was set: the account's creation by default; `unset` for one never set.
+  DateTime? balanceAt,
+  bool unset = false,
 }) {
   final now = DateTime(2026, 11);
   return Account(
+    balanceAt: unset ? null : (balanceAt ?? now),
     id: id,
     createdAt: now,
     updatedAt: now,
