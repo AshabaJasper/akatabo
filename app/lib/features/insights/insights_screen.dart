@@ -21,6 +21,7 @@ import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_hidden_amount.dart';
+import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../../widgets/charts/cumulative_line.dart';
 import '../home/home_providers.dart';
@@ -103,7 +104,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
               segments: [for (final k in _kinds) AkSegment(k, _kindLabel(k))],
             ),
             const SizedBox(height: AkSpace.s5),
-            if (!ready)
+            if (!ready && (current.hasError || before.hasError))
+              const AkEmptyNote(loadFailedText)
+            else if (!ready)
               const SizedBox(height: AkSize.chart)
             else if (rows.isEmpty)
               const AkEmptyNote('Nothing spent or received in this period yet.')

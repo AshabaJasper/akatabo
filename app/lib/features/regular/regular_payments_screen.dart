@@ -15,6 +15,7 @@ import '../../data/providers.dart';
 import '../../domain/forecast.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import 'looks_regular_section.dart';
 import 'regular_providers.dart';
@@ -70,7 +71,9 @@ class RegularPaymentsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AkSpace.s2),
-            if (!async.hasValue)
+            if (async.hasError && !async.hasValue)
+              const AkEmptyNote(loadFailedText)
+            else if (!async.hasValue)
               const SizedBox(height: AkSize.chart)
             else if (payments.isEmpty && ref.watch(looksRegularProvider).isNotEmpty)
               const AkEmptyNote('None saved yet. Smart help found the ones below.')
@@ -156,7 +159,12 @@ class _PaymentRow extends ConsumerWidget {
         ],
       ),
     );
-    if (yes != true) return;
-    await ref.read(regularPaymentRepositoryProvider).dismiss(payment.id);
+    if (yes != true || !context.mounted) return;
+    final removed = await saveOrSay(
+      context,
+      () => ref.read(regularPaymentRepositoryProvider).dismiss(payment.id),
+      failed: '${payment.label} could not be removed. Try again.',
+    );
+    if (removed && context.mounted) showAkMessage(context, '${payment.label} removed.');
   }
 }

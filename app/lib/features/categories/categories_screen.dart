@@ -21,6 +21,7 @@ import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../../widgets/charts/category_donut.dart';
 import '../home/home_providers.dart';
@@ -73,7 +74,9 @@ class CategoriesScreen extends ConsumerWidget {
               child: Text('Categories', style: t.displayLg.copyWith(color: c.ink)),
             ),
             const SizedBox(height: AkSpace.s2),
-            if (!ready)
+            if (!ready && [rows, before, cats].any((a) => a.hasError))
+              const AkEmptyNote(loadFailedText)
+            else if (!ready)
               const SizedBox(height: AkSize.chart)
             else if (total == 0)
               const AkEmptyNote('Nothing spent this month yet. Entries you add are grouped here.')

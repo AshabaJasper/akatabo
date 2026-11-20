@@ -31,6 +31,10 @@ android {
             // LAUNCH BLOCKER: the owner's release signing key is not set up yet.
             // Until it is, release builds are signed with the debug key and must not be published.
             signingConfig = signingConfigs.getByName("debug")
+            // R8 shrinks and obfuscates the Java/Kotlin side; unused resources are removed too.
+            // The notification icon is looked up by name, so res/raw/keep.xml keeps it.
+            isMinifyEnabled = true
+            isShrinkResources = true
         }
     }
 }

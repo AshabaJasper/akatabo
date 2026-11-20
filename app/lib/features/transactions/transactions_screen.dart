@@ -15,6 +15,7 @@ import '../../domain/spending.dart';
 import '../../domain/transaction_filter.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_hidden_amount.dart';
+import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/add_providers.dart';
 import '../filters/date_choice_providers.dart';
@@ -116,29 +117,37 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
           children: [
-            Row(
+            // Wraps, so at a large text size the two pills move under the back link (and
+            // under each other) instead of running off the screen.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AkSpace.s2,
+              runSpacing: AkSpace.s2,
               children: [
                 AkBackLink(
                   oneDay || widget.fromCalendar ? 'Calendar' : 'Home',
                   onTap: () => closeScreen(context),
                 ),
-                const Spacer(),
-                if (!oneDay) ...[
-                  AkPillButton(
-                    label: filtersOn ? 'Filters on' : 'Filters',
-                    icon: AkIcons.filter,
-                    onTap: () => context.push(Routes.filters),
-                  ),
-                  const SizedBox(width: AkSpace.s2),
-                ],
                 if (!oneDay)
-                  AkPillButton(
-                    label: 'Calendar',
-                    icon: AkIcons.calendar,
-                    // From Calendar, go back to it rather than stacking a second one.
-                    onTap: widget.fromCalendar
-                        ? () => closeScreen(context)
-                        : () => context.push(Routes.calendarFromList),
+                  Wrap(
+                    spacing: AkSpace.s2,
+                    runSpacing: AkSpace.s2,
+                    children: [
+                      AkPillButton(
+                        label: filtersOn ? 'Filters on' : 'Filters',
+                        icon: AkIcons.filter,
+                        onTap: () => context.push(Routes.filters),
+                      ),
+                      AkPillButton(
+                        label: 'Calendar',
+                        icon: AkIcons.calendar,
+                        // From Calendar, go back to it rather than stacking a second one.
+                        onTap: widget.fromCalendar
+                            ? () => closeScreen(context)
+                            : () => context.push(Routes.calendarFromList),
+                      ),
+                    ],
                   ),
               ],
             ),
@@ -169,7 +178,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               const SizedBox(height: AkSpace.s5),
             ],
             // Nothing is said until the entries have loaded: "nothing here" must be true.
-            if (!allAsync.hasValue)
+            if (!allAsync.hasValue && allAsync.hasError)
+              const _Notice(loadFailedText)
+            else if (!allAsync.hasValue)
               const SizedBox.shrink()
             else if (oneDay && all.every((tx) => tx.localDay != widget.day))
               const _Notice('Nothing added on this day.')
@@ -208,36 +219,42 @@ class _SearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = context.type;
-    return Semantics(
-      label: 'Search transactions',
-      textField: true,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: AkSize.input),
-        padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3h),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(context.metrics.lg),
-          border: Border.all(color: c.lineStrong),
-        ),
-        child: Row(
-          children: [
-            AkIcon(AkIcons.search, color: c.inkMuted, size: AkSize.iconSm),
-            const SizedBox(width: AkSpace.s2),
-            Expanded(
-              child: TextField(
-                controller: controller,
-                onChanged: onChanged,
-                style: t.bodyMd.copyWith(color: c.ink),
-                cursorColor: c.brand,
-                decoration: InputDecoration(
-                  isCollapsed: true,
-                  border: InputBorder.none,
-                  hintText: 'Search a name, note or amount',
-                  hintStyle: t.bodyMd.copyWith(color: c.inkMuted),
+    // Merged, so the name sits on the edit box itself, not on a node around it.
+    return MergeSemantics(
+      child: Semantics(
+        label: 'Search transactions',
+        textField: true,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: AkSize.input),
+          padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3h),
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(context.metrics.lg),
+            border: Border.all(color: c.lineStrong),
+          ),
+          child: Row(
+            children: [
+              AkIcon(AkIcons.search, color: c.inkMuted, size: AkSize.iconSm),
+              const SizedBox(width: AkSpace.s2),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  onChanged: onChanged,
+                  style: t.bodyMd.copyWith(color: c.ink),
+                  cursorColor: c.brand,
+                  // The field fills the box's height, so a tap anywhere on the box (and the
+                  // screen reader's touch target) reaches it, not just the 20px line of text.
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: AkSpace.s3h),
+                    border: InputBorder.none,
+                    hintText: 'Search a name, note or amount',
+                    hintStyle: t.bodyMd.copyWith(color: c.inkMuted),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -203,9 +203,11 @@ class _AddStep extends StatelessWidget {
                 children: [
                   AkIcon(AkIcons.basket, color: c.onLightFill),
                   const SizedBox(width: AkSpace.s2h),
-                  Text(
-                    'Food and shopping, 87% sure',
-                    style: t.bodyStrong.copyWith(color: c.onLightFill),
+                  Flexible(
+                    child: Text(
+                      'Food and shopping, 87% sure',
+                      style: t.bodyStrong.copyWith(color: c.onLightFill),
+                    ),
                   ),
                 ],
               ),
@@ -219,7 +221,12 @@ class _AddStep extends StatelessWidget {
             children: [
               AkIcon(AkIcons.check, color: c.accent, strokeWidth: 2.5),
               const SizedBox(width: AkSpace.s2),
-              Text('Saved in about five seconds', style: t.body.copyWith(color: c.onBrandMuted)),
+              Flexible(
+                child: Text(
+                  'Saved in about five seconds',
+                  style: t.body.copyWith(color: c.onBrandMuted),
+                ),
+              ),
             ],
           ),
         ),

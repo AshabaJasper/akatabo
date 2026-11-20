@@ -1,5 +1,7 @@
 import 'package:akatabo/data/db/app_database.dart';
+import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
+import 'package:akatabo/data/settings/setting_keys.dart';
 import 'package:akatabo/features/data/backup_section.dart';
 import 'package:akatabo/features/settings/settings_page.dart';
 import 'package:akatabo/services/backup/backup_codec.dart';
@@ -11,6 +13,16 @@ import 'package:material_ui/material_ui.dart';
 import '../../support/backup_seed.dart';
 import '../../support/fake_backup.dart';
 import 'data_widgets_support.dart';
+
+/// Settings whose "Protect with a password" cannot be read, as with a damaged database.
+class _ProtectUnreadable extends SettingsRepository {
+  _ProtectUnreadable(super.db);
+
+  @override
+  Future<T> read<T>(SettingKey<T> key) => key.name == BackupKeys.protect.name
+      ? Future.error(StateError('settings cannot be read'))
+      : super.read(key);
+}
 
 const _page = SettingsPage(title: 'Export and back up', children: [BackupSection()]);
 
@@ -150,6 +162,26 @@ void main() {
       expect(tester.takeException(), isStateError, reason: 'reported, not swallowed');
       expect(await tester.runAsync(() => SettingsRepository(db).read(BackupKeys.weekly)), isFalse);
       expect(find.textContaining('The backup could not be saved'), findsOneWidget);
+    });
+
+    testWidgets('a protect setting that cannot be read: nothing is saved, and it says so', (
+      tester,
+    ) async {
+      files.folder = FakeFolder();
+      await pumpData(
+        tester,
+        _page,
+        db: db,
+        files: files,
+        extra: [settingsRepositoryProvider.overrideWithValue(_ProtectUnreadable(db))],
+      );
+      await tester.tap(switchLabelled('Back up by itself every week'));
+      await settle(tester);
+
+      expect(tester.takeException(), isStateError, reason: 'reported, not swallowed');
+      expect(files.savedInto, isEmpty, reason: 'never an unprotected backup by default');
+      expect(find.textContaining('The backup could not be saved'), findsOneWidget);
+      expect(find.text('Save a backup file now'), findsOneWidget, reason: 'not stuck on Saving');
     });
 
     testWidgets('switching off saves off', (tester) async {

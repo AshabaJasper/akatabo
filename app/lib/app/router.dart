@@ -127,7 +127,11 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       GoRoute(path: Routes.settingsAccounts, builder: (_, _) => const AccountsSettingsScreen()),
       GoRoute(path: Routes.settingsHome, builder: (_, _) => const HomeSettingsScreen()),
       GoRoute(path: Routes.settingsAccountNew, builder: (_, _) => const NewAccountScreen()),
-      GoRoute(path: Routes.settingsCategories, builder: (_, _) => const CategoriesSettingsScreen()),
+      GoRoute(
+        path: Routes.settingsCategories,
+        builder: (_, state) =>
+            CategoriesSettingsScreen(fromHome: state.uri.queryParameters['from'] == 'home'),
+      ),
       GoRoute(
         path: Routes.settingsCategoryNew,
         builder: (_, _) => const CategoryEditScreen.create(kind: CategoryKind.spending),

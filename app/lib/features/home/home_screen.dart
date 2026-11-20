@@ -17,7 +17,9 @@ import '../../data/settings/setting_keys.dart';
 import '../../domain/forecast.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
+import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_hidden_amount.dart';
+import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/add_providers.dart';
 import '../forecast/forecast_providers.dart';
@@ -38,9 +40,21 @@ class HomeScreen extends ConsumerWidget {
     final latest = latestAsync.value ?? const <Transaction>[];
     if (latestAsync.hasValue && latest.isEmpty) return _FirstDay(now: now);
 
+    final monthAsync = ref.watch(monthRowsProvider);
+    // A failed load must not read as "Money out UGX 0": say it could not load instead.
+    if ((latestAsync.hasError && !latestAsync.hasValue) ||
+        (monthAsync.hasError && !monthAsync.hasValue)) {
+      return Scaffold(
+        backgroundColor: context.colors.ground,
+        body: const SafeArea(
+          child: Padding(padding: EdgeInsets.all(AkSpace.s6), child: AkEmptyNote(loadFailedText)),
+        ),
+      );
+    }
+
     final monthName = DateFormat('MMMM').format(now);
     final prevName = DateFormat('MMMM').format(ref.watch(previousSameDaysProvider).start);
-    final rows = ref.watch(monthRowsProvider).value ?? const <Transaction>[];
+    final rows = monthAsync.value ?? const <Transaction>[];
     final previousRows = ref.watch(previousSameDaysRowsProvider).value ?? const <Transaction>[];
     final categories = {
       for (final c in ref.watch(allCategoriesProvider).value ?? const <Category>[]) c.id: c,
@@ -162,44 +176,56 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text('Akatabo', style: t.displaySm.copyWith(color: c.onBrand)),
-                    const Spacer(),
-                    Semantics(
-                      button: true,
-                      label: '$monthName, open the calendar',
-                      container: true,
-                      excludeSemantics: true,
-                      onTap: () => context.push(Routes.calendar),
-                      // The header is a plain coloured box, so the ripple needs its own
-                      // Material to paint on; without it the ink draws under the green.
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: InkWell(
-                          onTap: () => context.push(Routes.calendar),
-                          borderRadius: BorderRadius.circular(context.metrics.pill),
-                          child: Container(
-                            constraints: const BoxConstraints(minHeight: AkSize.target),
-                            padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3h),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(context.metrics.pill),
-                              border: Border.all(color: c.onBrandMuted),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                AkIcon(AkIcons.calendar, color: c.onBrand, size: AkSize.iconSm),
-                                const SizedBox(width: AkSpace.s2),
-                                Text(monthName, style: t.bodyMd.copyWith(color: c.onBrand)),
-                              ],
+                // A Wrap, so at a large text size the month moves under the name instead of
+                // running off the screen; with room, it sits at the right as drawn.
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: AkSpace.s3,
+                    runSpacing: AkSpace.s2,
+                    children: [
+                      Text('Akatabo', style: t.displaySm.copyWith(color: c.onBrand)),
+                      Semantics(
+                        button: true,
+                        label: '$monthName, open the calendar',
+                        container: true,
+                        excludeSemantics: true,
+                        onTap: () => context.push(Routes.calendar),
+                        // The header is a plain coloured box, so the ripple needs its own
+                        // Material to paint on; without it the ink draws under the green.
+                        child: Material(
+                          type: MaterialType.transparency,
+                          // IntrinsicWidth: the centred box would otherwise take the Wrap's
+                          // whole width and drop under the name even when there is room.
+                          child: InkWell(
+                            onTap: () => context.push(Routes.calendar),
+                            borderRadius: BorderRadius.circular(context.metrics.pill),
+                            child: IntrinsicWidth(
+                              child: Container(
+                                constraints: const BoxConstraints(minHeight: AkSize.target),
+                                padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3h),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(context.metrics.pill),
+                                  border: Border.all(color: c.onBrandMuted),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    AkIcon(AkIcons.calendar, color: c.onBrand, size: AkSize.iconSm),
+                                    const SizedBox(width: AkSpace.s2),
+                                    Text(monthName, style: t.bodyMd.copyWith(color: c.onBrand)),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: AkSpace.s3h),
                 Text(caption, style: t.bodySm.copyWith(color: c.onBrandMuted)),
@@ -491,6 +517,9 @@ class _FirstDay extends ConsumerWidget {
                         detail: visible == 0
                             ? 'Your categories will appear here'
                             : '$visible are ready. Rename, recolour or add your own later',
+                        // Its words ask the person to check them, so it opens them, like the
+                        // other two steps.
+                        onTap: () => context.push('${Routes.settingsCategories}?from=home'),
                       ),
                       _StepRow(
                         number: 3,

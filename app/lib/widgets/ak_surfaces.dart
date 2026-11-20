@@ -228,6 +228,8 @@ class AkBackLink extends StatelessWidget {
     final colour = context.colors.brandText;
     return Align(
       alignment: AlignmentDirectional.centerStart,
+      // As wide as the link, not the row, so a Wrap can put pills beside it.
+      widthFactor: 1,
       child: Semantics(
         button: true,
         label: 'Back to $label',

@@ -12,6 +12,7 @@ import '../../data/providers.dart';
 import '../../domain/fees.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/add_providers.dart';
 import '../categories/categories_screen.dart';
@@ -63,7 +64,9 @@ class FeesScreen extends ConsumerWidget {
               child: Text('Fees and tax', style: t.displayLg.copyWith(color: c.ink)),
             ),
             const SizedBox(height: AkSpace.s2),
-            if (!ready)
+            if (!ready && [rowsAsync, beforeAsync, accountsAsync].any((a) => a.hasError))
+              const AkEmptyNote(loadFailedText)
+            else if (!ready)
               const SizedBox(height: AkSize.chart)
             else if (split.total == 0)
               const AkEmptyNote(

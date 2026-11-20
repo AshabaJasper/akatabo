@@ -45,6 +45,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
   build_runner: ^2.17.1
   drift_dev: ^2.35.3
   riverpod_generator: ^4.0.10
@@ -52,6 +54,7 @@ dev_dependencies:
   riverpod_lint: ^3.2.0
   mocktail: ^1.0.5
   fake_async: 1.3.3
+  flutter_launcher_icons: 0.14.4
 
 flutter:
   uses-material-design: false
@@ -73,3 +76,16 @@ flutter:
     - family: Geist
       fonts:
         - asset: assets/fonts/Geist-Variable.ttf
+
+# PROVISIONAL app icon, drawn from the design tokens by tool/render_icon_test.dart: the
+# wordmark's "A" in accent on brand-deep. Final artwork from the owner is a launch blocker
+# (SHIP_GATE.md). To change it: replace assets/icon/*.png, then `dart run flutter_launcher_icons`.
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/icon.png
+  remove_alpha_ios: true
+  min_sdk_android: 24
+  adaptive_icon_background: "#0F3D30"
+  adaptive_icon_foreground: assets/icon/foreground.png
+  adaptive_icon_monochrome: assets/icon/monochrome.png

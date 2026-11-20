@@ -10,12 +10,20 @@ import '../../widgets/ak_surfaces.dart';
 /// rows), 14 as drawn, so their left edges line up.
 const settingsRowSide = AkSpace.s3h;
 
-/// The frame every Settings page shares: a back link to Settings, the page title, then sections.
+/// The frame every Settings page shares: a back link, the page title, then sections.
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key, required this.title, required this.children});
+  const SettingsPage({
+    super.key,
+    required this.title,
+    required this.children,
+    this.backLabel = 'Settings',
+  });
 
   final String title;
   final List<Widget> children;
+
+  /// The screen the back link returns to. Settings, unless the page was opened elsewhere.
+  final String backLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +32,7 @@ class SettingsPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
           children: [
-            AkBackLink('Settings', onTap: () => closeScreen(context)),
+            AkBackLink(backLabel, onTap: () => closeScreen(context)),
             const SizedBox(height: AkSpace.s4),
             Semantics(header: true, child: Text(title, style: context.type.displayLg)),
             const SizedBox(height: AkSpace.s4),

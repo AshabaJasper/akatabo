@@ -22,7 +22,10 @@ import 'settings_page.dart';
 /// to reorder, switch off to hide it. A hidden category keeps its past entries.
 /// The system Fees and tax category is never listed: its totals come from fee and tax fields.
 class CategoriesSettingsScreen extends ConsumerStatefulWidget {
-  const CategoriesSettingsScreen({super.key});
+  const CategoriesSettingsScreen({super.key, this.fromHome = false});
+
+  /// Opened from Home's first-day steps, so the back link names Home.
+  final bool fromHome;
 
   @override
   ConsumerState<CategoriesSettingsScreen> createState() => _CategoriesSettingsScreenState();
@@ -30,6 +33,8 @@ class CategoriesSettingsScreen extends ConsumerStatefulWidget {
 
 class _CategoriesSettingsScreenState extends ConsumerState<CategoriesSettingsScreen> {
   String? _problem;
+
+  String get _back => widget.fromHome ? 'Home' : 'Settings';
 
   Future<void> _setHidden(String id, {required bool hidden}) async {
     setState(() => _problem = null);
@@ -55,12 +60,17 @@ class _CategoriesSettingsScreenState extends ConsumerState<CategoriesSettingsScr
   Widget build(BuildContext context) {
     final all = ref.watch(allCategoriesProvider);
     if (all.hasError) {
-      return const SettingsPage(
+      return SettingsPage(
         title: 'Categories',
-        children: [AkEmptyNote('Categories could not load. Close Akatabo and open it again.')],
+        backLabel: _back,
+        children: const [
+          AkEmptyNote('Categories could not load. Close Akatabo and open it again.'),
+        ],
       );
     }
-    if (!all.hasValue) return const SettingsPage(title: 'Categories', children: []);
+    if (!all.hasValue) {
+      return SettingsPage(title: 'Categories', backLabel: _back, children: const []);
+    }
     final cats = all.requireValue.where((c) => !c.isSystem).toList();
     final spending = cats.where((c) => c.kind == CategoryKind.spending).toList();
     final income = cats.where((c) => c.kind == CategoryKind.income).toList();
@@ -74,6 +84,7 @@ class _CategoriesSettingsScreenState extends ConsumerState<CategoriesSettingsScr
 
     return SettingsPage(
       title: 'Categories',
+      backLabel: _back,
       children: [
         Text(
           'Tap one to change its name, icon, colour or budget. Drag to reorder. '
@@ -259,31 +270,35 @@ class _CategoryRow extends StatelessWidget {
               enabled: moves.isNotEmpty,
               // Named here, not by a tooltip: a tooltip would pop up on the long press that
               // starts a drag.
-              child: Semantics(
-                container: true,
-                button: true,
-                label: 'Move $name',
-                child: PopupMenuButton<_Move>(
-                  tooltip: '',
-                  enabled: moves.isNotEmpty,
-                  elevation: 0,
-                  color: c.surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(context.metrics.lg),
-                    side: BorderSide(color: c.lineStrong),
-                  ),
-                  onSelected: onMove,
-                  itemBuilder: (_) => [
-                    for (final (move, label) in moves)
-                      PopupMenuItem(
-                        value: move,
-                        child: Text(label, style: t.bodyMd.copyWith(color: c.ink)),
+              // Merged, so the menu button's own tap and "expanded" state carry this label;
+              // without it TalkBack meets an unnamed button.
+              child: MergeSemantics(
+                child: Semantics(
+                  container: true,
+                  button: true,
+                  label: 'Move $name',
+                  child: PopupMenuButton<_Move>(
+                    tooltip: '',
+                    enabled: moves.isNotEmpty,
+                    elevation: 0,
+                    color: c.surface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(context.metrics.lg),
+                      side: BorderSide(color: c.lineStrong),
+                    ),
+                    onSelected: onMove,
+                    itemBuilder: (_) => [
+                      for (final (move, label) in moves)
+                        PopupMenuItem(
+                          value: move,
+                          child: Text(label, style: t.bodyMd.copyWith(color: c.ink)),
+                        ),
+                    ],
+                    child: SizedBox.square(
+                      dimension: AkSize.target,
+                      child: Center(
+                        child: AkIcon(AkIcons.grip, size: AkSize.iconSm, color: c.inkMuted),
                       ),
-                  ],
-                  child: SizedBox.square(
-                    dimension: AkSize.target,
-                    child: Center(
-                      child: AkIcon(AkIcons.grip, size: AkSize.iconSm, color: c.inkMuted),
                     ),
                   ),
                 ),

@@ -291,3 +291,9 @@ Four builders worked in separate git worktrees (Smart help and Reminders, the pi
 | 7 | Looks regular: double Add saved twice (6); a bill added under another name offered again (6) | 6 each | Fixed by the builder; tested |
 | 8 | Failed snapshot read silent; Only unusual slow on long histories; stale amount in the suggestion | 3 to 4 | Filed in `docs/BUGS.md` |
 | 9 | Model load failure silent; failed Looks regular save swallowed; xorshift on the web; .5 rounding; payee scan | 2 to 3 | Filed |
+
+## Phase 8: Finish (20 November 2026)
+
+- **Works:** every screen states what happens when its data cannot load or a save fails; 32 screens fit at text size 2.0 with 44 x 44 targets and named controls in both themes; still page transitions under reduced motion (iOS keeps swipe-back); a provisional icon; an obfuscated, R8-shrunk release APK (66.4 MB, three ABIs) holding only notifications and biometrics permissions, 16 KB aligned.
+- **Tested:** `flutter analyze` clean; `flutter test` 1,053 passing (new: accessibility sweep, failure states, field names, still transitions, first-day steps, unreadable backup setting); the journey test (PIN unlock, onboarding, three entries, a budget, back up, delete everything, restore) passes on the Android 16 emulator; the release APK's accessibility tree read on six screens, which found and fixed the unnamed amount field.
+- **Not tested:** a live TalkBack listen-through (spoken words, focus order) and a re-check of the amount-field fix on the device; keyboard and Switch Access; a low-end phone; anything on iOS; an AAB build; a static security scan. Launch blockers needing the owner are listed at the top of `SHIP_GATE.md`.

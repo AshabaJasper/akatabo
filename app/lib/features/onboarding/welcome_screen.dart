@@ -68,10 +68,15 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
+                      // A Wrap, so at a large text size the badge moves under the name
+                      // instead of running off the screen.
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: AkSpace.s3,
+                        runSpacing: AkSpace.s2,
                         children: [
                           Text('Akatabo', style: t.titleLg.copyWith(color: c.onBrand)),
-                          const Spacer(),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AkSpace.s3,

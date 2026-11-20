@@ -110,9 +110,16 @@ class _PrivacySectionState extends ConsumerState<PrivacySection> {
 
   @override
   Widget build(BuildContext context) {
-    final s = ref.watch(storedSettingsProvider).value ?? const <String, String>{};
+    final settingsAsync = ref.watch(storedSettingsProvider);
+    final pinAsync = ref.watch(pinIsSetProvider);
+    // Defaults would show the lock as off when it is on, so a failed load says so instead.
+    if ((settingsAsync.hasError && !settingsAsync.hasValue) ||
+        (pinAsync.hasError && !pinAsync.hasValue)) {
+      return const AkEmptyNote('Privacy settings could not load. Close Akatabo and open it again.');
+    }
+    final s = settingsAsync.value ?? const <String, String>{};
     T read<T>(SettingKey<T> key) => key.decode(s[key.name]);
-    final pinSet = ref.watch(pinIsSetProvider).value ?? false;
+    final pinSet = pinAsync.value ?? false;
     final lockOn = read(PrivacyKeys.lockOn) && pinSet;
     final biometrics = ref.watch(biometricsAvailableProvider).value ?? false;
     final lockAfter = read(PrivacyKeys.lockAfter);

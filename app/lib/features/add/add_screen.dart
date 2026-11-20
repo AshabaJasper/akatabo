@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -287,26 +288,30 @@ class _AddScreenState extends ConsumerState<AddScreen> {
             const SizedBox(height: AkSpace.s5),
             const AkEyebrowLabel('Amount, UGX'),
             const SizedBox(height: AkSpace.s1),
-            Semantics(
-              label: 'Amount in shillings',
-              textField: true,
-              child: TextField(
-                controller: _amount,
-                autofocus: true,
-                keyboardType: TextInputType.number,
-                inputFormatters: const [ThousandsFormatter()],
-                style: t.figureXl.copyWith(color: c.ink),
-                cursorColor: c.brand,
-                decoration: InputDecoration(
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: AkSpace.s2),
-                  hintText: '0',
-                  hintStyle: t.figureXl.copyWith(color: c.inkMuted),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: c.brand, width: 2),
-                  ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: c.brand, width: 2),
+            // Merged, so the name sits on the edit box TalkBack focuses. Without it the box
+            // was announced only by its hint, "0" (found on the emulator in Phase 8).
+            MergeSemantics(
+              child: Semantics(
+                label: 'Amount in shillings',
+                textField: true,
+                child: TextField(
+                  controller: _amount,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: const [ThousandsFormatter()],
+                  style: t.figureXl.copyWith(color: c.ink),
+                  cursorColor: c.brand,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: AkSpace.s2),
+                    hintText: '0',
+                    hintStyle: t.figureXl.copyWith(color: c.inkMuted),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: c.brand, width: 2),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: c.brand, width: 2),
+                    ),
                   ),
                 ),
               ),
@@ -360,24 +365,23 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                   'Categories could not be loaded. Close this and try again.',
                   style: t.bodySm.copyWith(color: c.moneyOut),
                 ),
-                data: (rows) => GridView.count(
-                  crossAxisCount: 4,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: AkSpace.s2,
-                  crossAxisSpacing: AkSpace.s2,
-                  childAspectRatio: 0.82,
-                  children: [
-                    for (final cat in rows)
-                      _CategoryTile(
-                        category: cat,
-                        selected: cat.id == categoryId,
-                        onTap: () => setState(() {
-                          _categoryId = cat.id;
-                          _problems = const [];
-                        }),
-                      ),
-                  ],
+                data: (rows) => LayoutBuilder(
+                  builder: (context, box) => GridView(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: _categoryGrid(context, box.maxWidth),
+                    children: [
+                      for (final cat in rows)
+                        _CategoryTile(
+                          category: cat,
+                          selected: cat.id == categoryId,
+                          onTap: () => setState(() {
+                            _categoryId = cat.id;
+                            _problems = const [];
+                          }),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -559,6 +563,30 @@ class _CloseButton extends StatelessWidget {
   }
 }
 
+/// The category grid: four across as drawn, three at a very large phone text size. Each row
+/// is as tall as the drawn tile (width / 0.82) or as tall as the icon plus two lines of the
+/// person's text size, whichever is more, so a name never runs out of its tile.
+SliverGridDelegate _categoryGrid(BuildContext context, double width) {
+  final scaler = MediaQuery.textScalerOf(context);
+  final caption = context.type.caption;
+  final columns = scaler.scale(1) >= _threeAcrossFrom ? 3 : 4;
+  final cell = (width - AkSpace.s2 * (columns - 1)) / columns;
+  final line = scaler.scale(caption.fontSize!) * (caption.height ?? 1);
+  final needed =
+      AkSpace.s1h * 2 + _tileBorder * 2 + AkSize.tileMd + AkSpace.s1 + line * 2 + _roundingRoom;
+  return SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: columns,
+    mainAxisSpacing: AkSpace.s2,
+    crossAxisSpacing: AkSpace.s2,
+    mainAxisExtent: math.max(cell / _drawnAspect, needed),
+  );
+}
+
+const _drawnAspect = 0.82;
+const _threeAcrossFrom = 1.6;
+const _tileBorder = 2.0;
+const _roundingRoom = 2.0;
+
 class _CategoryTile extends StatelessWidget {
   const _CategoryTile({required this.category, required this.selected, required this.onTap});
 
@@ -592,7 +620,7 @@ class _CategoryTile extends StatelessWidget {
             // A 2px border on all four sides; the transparent one keeps the layout still.
             border: Border.all(
               color: selected ? c.brand : c.surfaceSunk.withValues(alpha: 0),
-              width: 2,
+              width: _tileBorder,
             ),
           ),
           child: Column(

@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'ak_appearance.dart';
+import 'still_transitions.dart';
 import 'tokens.g.dart';
 
 export 'ak_appearance.dart';
@@ -208,6 +209,12 @@ ThemeData buildAkTheme(Brightness brightness, AkAppearance appearance) {
     fontFamily: AkTextTokens.sans,
     textTheme: textTheme,
     dividerColor: c.line,
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: StillWhenReduced(),
+        TargetPlatform.iOS: StillWhenReduced(),
+      },
+    ),
     splashFactory: InkRipple.splashFactory,
     highlightColor: c.ink.withValues(alpha: 0.04),
     splashColor: c.ink.withValues(alpha: 0.08),

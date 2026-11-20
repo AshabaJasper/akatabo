@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -69,17 +71,21 @@ class AkSegmented<T> extends StatelessWidget {
     final scaler = MediaQuery.textScalerOf(context);
     final direction = Directionality.of(context);
     // The chosen style is the widest, so a label fits whichever segment is chosen.
+    // Never narrower than a 44px target, so a short label ("All") stays easy to tap.
     final natural = [
       for (final s in segments)
-        (TextPainter(
-              text: TextSpan(text: s.label, style: t.bodyStrong),
-              textDirection: direction,
-              textScaler: scaler,
-              maxLines: 1,
-            )..layout()).width +
-            AkSpace.s1 * 2 +
-            (s.icon == null ? 0 : AkSize.iconSm + AkSpace.s2) +
-            1, // rounding slack, so a label that just fits is not measured a hair short
+        math.max(
+          AkSize.target,
+          (TextPainter(
+                text: TextSpan(text: s.label, style: t.bodyStrong),
+                textDirection: direction,
+                textScaler: scaler,
+                maxLines: 1,
+              )..layout()).width +
+              AkSpace.s1 * 2 +
+              (s.icon == null ? 0 : AkSize.iconSm + AkSpace.s2) +
+              1,
+        ), // rounding slack, so a label that just fits is not measured a hair short
     ];
     final room = width - AkSpace.s1 * (n - 1);
     final share = room / n;
@@ -255,11 +261,15 @@ class AkChip extends StatelessWidget {
                     ),
                     const SizedBox(width: AkSpace.s1h),
                   ],
-                  Text(
-                    label,
-                    style: t.bodySm.copyWith(
-                      color: ink,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  // A label longer than the row (large text size) wraps inside the chip
+                  // instead of pushing the chip past the edge of the screen.
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: t.bodySm.copyWith(
+                        color: ink,
+                        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],

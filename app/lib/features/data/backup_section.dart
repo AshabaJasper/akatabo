@@ -24,10 +24,14 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
   bool _working = false;
 
   Future<void> _run(Future<String?> Function(BackupActions) action) async {
-    final message = await action(BackupActions(ref));
-    if (!mounted) return;
-    setState(() => _working = false);
-    showBackupMessage(context, message);
+    String? message;
+    try {
+      message = await action(BackupActions(ref));
+    } finally {
+      // Never left on "Saving the backup…", even if an action throws.
+      if (mounted) setState(() => _working = false);
+    }
+    if (mounted) showBackupMessage(context, message);
   }
 
   void _busy() {
@@ -74,7 +78,10 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
                   detail: 'Nobody can open the file without it',
                   value: protect,
                   divider: true,
-                  onChanged: (v) => BackupActions(ref).setProtect(v),
+                  onChanged: (v) async {
+                    final message = await BackupActions(ref).setProtect(v);
+                    if (context.mounted) showBackupMessage(context, message);
+                  },
                 ),
                 SettingsSwitchRow(
                   label: 'Back up by itself every week',

@@ -14,6 +14,8 @@ import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
+import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/add_providers.dart';
 import '../home/home_providers.dart';
@@ -48,7 +50,9 @@ class TransactionDetailScreen extends ConsumerWidget {
                 AkBackLink('Transactions', onTap: () => closeScreen(context)),
                 const SizedBox(height: AkSpace.s4),
                 if (async.hasValue)
-                  Text('This entry has been deleted.', style: t.bodyStrong.copyWith(color: c.ink)),
+                  Text('This entry has been deleted.', style: t.bodyStrong.copyWith(color: c.ink))
+                else if (async.hasError)
+                  const AkEmptyNote(loadFailedText),
               ],
             ),
           ),
@@ -155,9 +159,17 @@ class TransactionDetailScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AkSpace.s5),
             _DeleteButton(
+              what: [
+                if (tx.description.trim().isNotEmpty) tx.description.trim(),
+                formatUgx(tx.amount),
+              ].join(', '),
               onConfirmed: () async {
-                await ref.read(transactionRepositoryProvider).delete(tx.id);
-                if (context.mounted) await closeScreen(context);
+                final deleted = await saveOrSay(
+                  context,
+                  () => ref.read(transactionRepositoryProvider).delete(tx.id),
+                  failed: 'This entry could not be deleted. It is still in your totals. Try again.',
+                );
+                if (deleted && context.mounted) await closeScreen(context);
               },
             ),
           ],
@@ -215,8 +227,10 @@ class _FactRow extends StatelessWidget {
 
 /// Delete is the last row, in `money-out`, and always asks first.
 class _DeleteButton extends StatelessWidget {
-  const _DeleteButton({required this.onConfirmed});
+  const _DeleteButton({required this.what, required this.onConfirmed});
 
+  /// The entry in words, so the dialog names what goes, as the other delete dialogs do.
+  final String what;
   final Future<void> Function() onConfirmed;
 
   @override
@@ -250,7 +264,7 @@ class _DeleteButton extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete this entry?'),
-        content: const Text('It is removed from your totals and cannot be undone.'),
+        content: Text('$what is removed from your totals. This cannot be undone.'),
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
           TextButton(

@@ -13,6 +13,7 @@ import '../../domain/insights.dart';
 import '../../domain/spending.dart';
 import '../../smart/forecast/forecast_range.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../../widgets/charts/cumulative_line.dart';
 import '../home/home_providers.dart';
@@ -62,7 +63,9 @@ class ForecastScreen extends ConsumerWidget {
               child: Text('Forecast: money out by $ended', style: t.titleLg.copyWith(color: c.ink)),
             ),
             const SizedBox(height: AkSpace.s4),
-            if (!ready)
+            if (view.failed)
+              const AkEmptyNote(loadFailedText)
+            else if (!ready)
               const SizedBox(height: AkSize.chart)
             else if (forecast == null)
               AkEmptyNote(
@@ -154,10 +157,11 @@ class _ForecastBody extends StatelessWidget {
           colours: colours,
         ),
         const SizedBox(height: AkSpace.s2),
-        Row(
+        Wrap(
+          spacing: AkSpace.s3,
+          runSpacing: AkSpace.s1,
           children: [
             Text('Solid is what you spent', style: t.caption.copyWith(color: c.inkMuted)),
-            const SizedBox(width: AkSpace.s3),
             Text('Dotted is the forecast', style: t.caption.copyWith(color: c.inkMuted)),
           ],
         ),

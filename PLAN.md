@@ -368,3 +368,15 @@ Routine decisions made while building, newest last. Each one marked **design che
 - **"This was me" does not change `updatedAt`.** Category suggestion reads `updatedAt` as when the category was last chosen; answering a flag is not choosing one. A restore that merges an older copy of the entry may bring the flag back.
 - **"Only unusual" follows the Smart help switch:** with "Point out unusual payments" off, nothing is marked unusual anywhere.
 - **The forecast reads only the current month's rows and waits for reloads,** so the forecast saved first on the 1st is never worked out from last month's entries.
+
+### Phase 8 (20 November 2026)
+
+- **Touch target is 44 x 44** on every control, checked on 32 screens in both themes. Android's 48 dp is met by the primary controls (tabs, Add, Save); picker swatches stay at 44, as drawn.
+- **Contrast is checked on exact token pairs** (`theme_contrast_test.dart`), not with Flutter's pixel-sampling guideline, which measured anti-aliased edges of small text (it read #55635C as #818B86). Two tokens were nudged to pass 4.5:1: `money-out-soft` light #F3D5C7 to #F7E3D9, and `acct-cash` #6F8A2A to #74902C in both themes. Each has a usage note in `tokens.json`.
+- **Large text:** rows that put pills beside a title are `Wrap`s, so pills move down only when there is no room. The Add category grid shows 3 across from text scale 1.6. Nothing clips at 2.0.
+- **Reduced motion:** page transitions stand still when the phone asks for less motion. The forecast "pulse" in the plan was never built, so there is nothing else to stop.
+- **States:** one shared helper (`lib/widgets/ak_message.dart`) for "could not load" and "could not be saved". A screen whose data fails to load says so instead of a blank box or "UGX 0". A failed delete or save keeps the item and says so.
+- **App icon is provisional:** the wordmark "A" in Bricolage Grotesque Bold, accent on brand-deep, drawn by `tool/render_icon_test.dart` and sized by `flutter_launcher_icons`. Final artwork is a launch blocker.
+- **Release build shrinks code and resources with R8** and is obfuscated, with symbols kept in `build/symbols`.
+- **Accessibility tree check on the emulator** (what TalkBack reads; a live TalkBack listen-through is still to do) found one unnamed field (the Add amount, read as "0"); text fields that carry a label now merge it onto the edit box.
+- **Home's first-day step 2, "Check your categories", now opens Categories,** like the other two steps; it was text only.

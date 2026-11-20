@@ -20,6 +20,40 @@ void main() {
     );
   });
 
+  // Text on the page and inside the shared controls, in both themes. These are the colours
+  // the widgets really use, so this is the contrast evidence; Flutter's pixel-sampling
+  // textContrastGuideline misreads anti-aliased small text and is not used for it.
+  for (final b in Brightness.values) {
+    test('text in the shared controls reaches 4.5:1 in ${b.name}', () {
+      final c = b == Brightness.light ? akLightTokens : akDarkTokens;
+      final pairs = <String, (Color, Color)>{
+        'ink on ground': (c.ink, c.ground),
+        'ink on surface': (c.ink, c.surface),
+        'ink-muted on ground (captions, eyebrows)': (c.inkMuted, c.ground),
+        'ink-muted on surface (captions, nav labels)': (c.inkMuted, c.surface),
+        'ink-muted on surface-sunk (segments not chosen, chips)': (c.inkMuted, c.surfaceSunk),
+        'ink on surface-raised (chosen segment)': (c.ink, c.surfaceRaised),
+        'money-out on ground and surface': (c.moneyOut, c.surface),
+        'money-in on surface': (c.moneyIn, c.surface),
+        'money-out on money-out-soft (Over chip, unusual card)': (c.moneyOut, c.moneyOutSoft),
+        'money-in on money-in-soft': (c.moneyIn, c.moneyInSoft),
+        'brand-text on surface-sunk': (c.brandText, c.surfaceSunk),
+        'on-light-fill on accent': (c.onLightFill, c.accent),
+        'on-light-fill on acct-mtn (chosen chip)': (c.onLightFill, c.acctMtn),
+        'on-light-fill on acct-cash (chosen chip)': (c.onLightFill, c.acctCash),
+        'on-brand on acct-airtel (chosen chip)': (c.onBrand, c.acctAirtel),
+        'on-brand on acct-bank (chosen chip)': (c.onBrand, c.acctBank),
+        'on-heat-4 on heat-4 (calendar)': (c.onHeat4, c.heat4),
+      };
+      final failing = [
+        for (final e in pairs.entries)
+          if (contrastRatio(e.value.$1, e.value.$2) < _text)
+            '${e.key}: ${contrastRatio(e.value.$1, e.value.$2).toStringAsFixed(2)}',
+      ];
+      expect(failing, isEmpty);
+    });
+  }
+
   // Every main colour, in both themes: text drawn on the brand fills and brand text on the
   // page must stay readable, and the switch and selection marks must stand out.
   for (final palette in akPalettes) {

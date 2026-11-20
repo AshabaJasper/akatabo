@@ -7,6 +7,7 @@ import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../core/time/period.dart';
 import '../../smart/regular/regular_detector.dart';
+import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import 'day_number.dart';
 import 'regular_providers.dart';
@@ -68,24 +69,29 @@ class _LooksRegularSectionState extends ConsumerState<LooksRegularSection> {
     );
   }
 
-  Future<void> _save(LooksRegular f, {required bool dismissed}) {
+  Future<void> _save(LooksRegular f, {required bool dismissed}) async {
     final s = f.series;
-    if (_answered.contains(s.payeeKey)) return Future.value();
+    if (_answered.contains(s.payeeKey)) return;
     setState(() => _answered.add(s.payeeKey));
-    return ref
-        .read(regularPaymentRepositoryProvider)
-        .addDetected(
-          label: f.label,
-          payeeKey: s.payeeKey,
-          categoryId: s.categoryId,
-          typicalAmount: s.typicalAmount,
-          amountLow: s.amountLow,
-          amountHigh: s.amountHigh,
-          intervalDays: s.intervalDays,
-          nextDueOn: localDayOfNumber(s.nextDueFromToday),
-          timesSeen: s.occurrences,
-          dismissed: dismissed,
-        );
+    final saved = await saveOrSay(
+      context,
+      () => ref
+          .read(regularPaymentRepositoryProvider)
+          .addDetected(
+            label: f.label,
+            payeeKey: s.payeeKey,
+            categoryId: s.categoryId,
+            typicalAmount: s.typicalAmount,
+            amountLow: s.amountLow,
+            amountHigh: s.amountHigh,
+            intervalDays: s.intervalDays,
+            nextDueOn: localDayOfNumber(s.nextDueFromToday),
+            timesSeen: s.occurrences,
+            dismissed: dismissed,
+          ),
+    );
+    // Not saved: the card comes back, so the person can answer again.
+    if (!saved && mounted) setState(() => _answered.remove(s.payeeKey));
   }
 }
 

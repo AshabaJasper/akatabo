@@ -9,6 +9,7 @@ import '../../services/backup/backup_service.dart';
 import '../../services/backup/backup_settings.dart';
 import '../../services/backup/weekly_backup.dart';
 import '../../services/security/lock_controller.dart';
+import '../../widgets/ak_message.dart';
 import 'backup_password.dart';
 
 /// "19 Nov 2026", or "Never" before the first backup.
@@ -42,17 +43,17 @@ class BackupActions {
   /// "Save a backup file now": asks for the password when protection is on, makes the file,
   /// and lets the person choose where it goes.
   Future<String?> saveNow(BuildContext context, {VoidCallback? onWorking}) async {
-    final password = await _passwordIfProtected(context);
-    if (password == null) return null;
-    onWorking?.call();
     final service = _ref.read(backupServiceProvider);
     try {
+      final password = await _passwordIfProtected(context);
+      if (password == null) return null;
+      onWorking?.call();
       final bytes = await service.createFile(password: password.isEmpty ? null : password);
       final saved = await _whilePicking(
         () => _ref.read(backupFilesProvider).save(bytes, BackupService.fileNameFor(clock.now())),
       );
       if (!saved) return 'Not saved. The backup file was not kept anywhere.';
-      await service.recordSaved();
+      await _recordSaved(service);
       return password.isEmpty
           ? 'Backup saved. Keep it somewhere other than this phone.'
           : 'Backup saved with your password. Keep it somewhere other than this phone.';
@@ -80,10 +81,17 @@ class BackupActions {
       return (false, 'No folder was picked, so no weekly backup was saved.');
     }
     if (!context.mounted) return (false, null);
-    final password = await _passwordIfProtected(
-      context,
-      purpose: 'This week\'s backup goes to the folder you picked.',
-    );
+    final String? password;
+    try {
+      password = await _passwordIfProtected(
+        context,
+        purpose: 'This week\'s backup goes to the folder you picked.',
+      );
+    } catch (error, stack) {
+      // The protect setting could not be read: never fall back to an unprotected backup.
+      _report(error, stack);
+      return (false, failed);
+    }
     if (password == null) return (false, null);
     onWorking?.call();
     final service = _ref.read(backupServiceProvider);
@@ -95,7 +103,7 @@ class BackupActions {
             .read(backupFilesProvider)
             .saveInto(into, bytes, BackupService.fileNameFor(clock.now())),
       );
-      await service.recordSaved();
+      await _recordSaved(service);
       _ref.read(weeklyFolderProvider.notifier).set(folder);
       return (true, 'Backed up to your folder. The next one is due in a week.');
     } catch (error, stack) {
@@ -109,17 +117,51 @@ class BackupActions {
   Future<String?> setWeekly(BuildContext context, bool on, {VoidCallback? onWorking}) async {
     final settings = _ref.read(settingsRepositoryProvider);
     if (!on) {
-      await settings.write(BackupKeys.weekly, false);
+      try {
+        await settings.write(BackupKeys.weekly, false);
+      } catch (error, stack) {
+        _report(error, stack);
+        return notChanged;
+      }
       _ref.read(weeklyFolderProvider.notifier).set(null);
       return null;
     }
     final (saved, message) = await backupIntoPickedFolder(context, onWorking: onWorking);
-    if (saved) await settings.write(BackupKeys.weekly, true);
+    if (saved) {
+      try {
+        await settings.write(BackupKeys.weekly, true);
+      } catch (error, stack) {
+        _report(error, stack);
+        return 'This week\'s backup was saved, but weekly backup could not be switched on. '
+            'Try again.';
+      }
+    }
     return message;
   }
 
-  Future<void> setProtect(bool on) =>
-      _ref.read(settingsRepositoryProvider).write(BackupKeys.protect, on);
+  static const notChanged = 'That could not be changed. Try again.';
+
+  /// "Protect with a password". Returns a sentence only when the change could not be saved,
+  /// so the person never believes the next backup is protected when it is not.
+  Future<String?> setProtect(bool on) async {
+    try {
+      await _ref.read(settingsRepositoryProvider).write(BackupKeys.protect, on);
+      return null;
+    } catch (error, stack) {
+      _report(error, stack);
+      return notChanged;
+    }
+  }
+
+  /// Notes the backup's date. The file is already safe, so a failure here is reported but
+  /// does not turn a saved backup into "could not be saved".
+  Future<void> _recordSaved(BackupService service) async {
+    try {
+      await service.recordSaved();
+    } catch (error, stack) {
+      _report(error, stack);
+    }
+  }
 
   static void _report(Object error, StackTrace stack) => FlutterError.reportError(
     FlutterErrorDetails(exception: error, stack: stack, library: 'akatabo backup'),
@@ -127,9 +169,4 @@ class BackupActions {
 }
 
 /// Shows [message] at the foot of the screen, when there is one.
-void showBackupMessage(BuildContext context, String? message) {
-  if (message == null || !context.mounted) return;
-  ScaffoldMessenger.maybeOf(context)
-    ?..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(message)));
-}
+void showBackupMessage(BuildContext context, String? message) => showAkMessage(context, message);

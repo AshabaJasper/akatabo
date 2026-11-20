@@ -29,10 +29,14 @@ class _DataSectionState extends ConsumerState<DataSection> {
   bool _working = false;
 
   Future<void> _run(Future<String?> Function(BackupActions) action) async {
-    final message = await action(BackupActions(ref));
-    if (!mounted) return;
-    setState(() => _working = false);
-    showBackupMessage(context, message);
+    String? message;
+    try {
+      message = await action(BackupActions(ref));
+    } finally {
+      // Never left on "Saving the backup…", even if an action throws.
+      if (mounted) setState(() => _working = false);
+    }
+    if (mounted) showBackupMessage(context, message);
   }
 
   void _busy() {

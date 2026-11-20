@@ -383,12 +383,12 @@ class _MonthView extends StatelessWidget {
           if (r > 0) const SizedBox(height: AkSpace.s1),
           Row(
             children: [
-              for (var i = 0; i < 7; i++) ...[
-                if (i > 0) const SizedBox(width: AkSpace.s1),
+              // No gap between the cells here: each cell keeps the drawn 4px gap inside
+              // itself, so its tap area spans the gap and stays 44px wide on a 360dp phone.
+              for (var i = 0; i < 7; i++)
                 Expanded(
                   child: SizedBox(height: AkSize.row, child: cells[r + i]),
                 ),
-              ],
             ],
           ),
         ],
@@ -455,35 +455,54 @@ class _DayCell extends StatelessWidget {
       container: true,
       excludeSemantics: true,
       onTap: onTap,
-      child: Material(
-        color: fill,
-        shape: RoundedRectangleBorder(
-          borderRadius: radius,
-          side: future ? BorderSide(color: c.lineStrong) : BorderSide.none,
+      // The tap area is the whole cell, gap included; the drawn square sits inside it.
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AkSpace.s0h),
+          child: _square(c, t, fill, ink, radius, future),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Container(
-            foregroundDecoration: selected
-                ? BoxDecoration(
-                    borderRadius: radius,
-                    border: Border.all(color: c.ink, width: AkSpace.s0h),
-                  )
-                : null,
-            alignment: Alignment.center,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('${mark.start.day}', style: t.figure.copyWith(color: ink)),
-                  // A day with nothing spent keeps its light fill but no "0"; the
-                  // spoken label still says UGX 0.
-                  if (!future && mark.moneyOut > 0)
-                    Text(formatShort(mark.moneyOut), style: t.caption.copyWith(color: ink)),
-                ],
-              ),
+      ),
+    );
+  }
+
+  Widget _square(
+    AkColorTokens c,
+    AkType t,
+    Color fill,
+    Color ink,
+    BorderRadius radius,
+    bool future,
+  ) {
+    return Material(
+      color: fill,
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: future ? BorderSide(color: c.lineStrong) : BorderSide.none,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          foregroundDecoration: selected
+              ? BoxDecoration(
+                  borderRadius: radius,
+                  border: Border.all(color: c.ink, width: AkSpace.s0h),
+                )
+              : null,
+          alignment: Alignment.center,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('${mark.start.day}', style: t.figure.copyWith(color: ink)),
+                // A day with nothing spent keeps its light fill but no "0"; the
+                // spoken label still says UGX 0.
+                if (!future && mark.moneyOut > 0)
+                  Text(formatShort(mark.moneyOut), style: t.caption.copyWith(color: ink)),
+              ],
             ),
           ),
         ),

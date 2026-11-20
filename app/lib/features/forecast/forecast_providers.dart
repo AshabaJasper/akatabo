@@ -107,10 +107,14 @@ class MonthForecastView {
     required this.daysWithEntries,
     this.forecast,
     this.range,
+    this.failed = false,
   });
 
   /// Whether every input has loaded.
   final bool ready;
+
+  /// An input could not load, so the screen says so instead of waiting for good.
+  final bool failed;
 
   /// Days this month with at least one entry, for "4 more to go".
   final int daysWithEntries;
@@ -140,7 +144,13 @@ final monthForecastProvider = Provider.autoDispose<MonthForecastView>((ref) {
   // forecast saved for the day is never worked out from the wrong rows.
   bool fresh(AsyncValue<Object?> a) => a.hasValue && !a.isLoading;
   final ready = fresh(monthAsync) && fresh(windowAsync) && fresh(regularAsync);
-  if (!ready) return MonthForecastView(ready: false, daysWithEntries: daysWithEntries);
+  if (!ready) {
+    return MonthForecastView(
+      ready: false,
+      daysWithEntries: daysWithEntries,
+      failed: [monthAsync, windowAsync, regularAsync].any((a) => a.hasError && !a.isLoading),
+    );
+  }
 
   final forecast = forecastFor(
     month: month,

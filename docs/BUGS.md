@@ -222,6 +222,8 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ### [bug-review] Backup settings write errors are unhandled and leave the backup buttons stuck
 
+**Fixed in Phase 8 (20 November 2026):** `setWeekly` and `setProtect` catch the write and say "That could not be changed"; both `_run` methods reset `_working` in a `finally`.
+
 - **Where:** `app/lib/features/data/backup_actions.dart` (`setWeekly`, `setProtect`); called from `backup_section.dart` and `data_section.dart`
 - **What happens:** the settings writes in `setWeekly` and `setProtect` have no try/catch and their callers are not awaited, so a failed write is an unhandled async error. If it fails after `onWorking` set `_working`, "Save a backup file now" stays on "Saving the backup…" until the screen is left.
 - **How to trigger:** make the settings write fail (full disk, locked database), then switch on "Back up by itself every week" and pick a folder.
@@ -285,6 +287,8 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ### [bug-review] Looks regular: a failed Add or Dismiss save is swallowed and the card stays hidden
 
+**Fixed in Phase 8 (20 November 2026):** the save goes through `saveOrSay`, which reports it and tells the person; the card comes back.
+
 - **Where:** `app/lib/features/regular/looks_regular_section.dart` (`_save`)
 - **What happens:** the card is hidden before `addDetected` runs, and the returned Future is dropped. If the insert fails, nothing is saved, nothing is said, and the card stays hidden until the screen is reopened.
 - **How to trigger:** make `addDetected` throw (database locked or full), then tap Add on a "Looks regular" card.
@@ -300,3 +304,46 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 2 x severity 2 = 4
 - **Suggested fix:** keep running per-category and per-payee state as the loop goes, or cache results by id and score only new entries.
 - **Found:** 20 November 2026, Phase 7 checker
+
+### [bug-review] AkSegmented 44px minimum can drop a fitting proportional layout to an equal split
+
+- **Where:** `app/lib/widgets/ak_controls.dart` (`_flexes`)
+- **What happens:** every segment's measured width is raised to at least 44px before the fit test. With one long label beside short ones at a large text size, the raised total can exceed the room, so the control falls back to equal widths and the long label breaks onto two lines, though proportional widths would have fitted.
+- **How to trigger:** a 360dp phone at a large text size, a segmented control with one long label and two or three very short ones ("All").
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** test `total > room` with the raw text widths; apply the 44px floor only when sharing out the flexes.
+- **Found:** 20 November 2026, Phase 8 checker
+
+### [bug-review] Load-error note hides the current period when only the comparison period failed
+
+- **Where:** `app/lib/features/insights/insights_screen.dart`, `categories/categories_screen.dart`, `fees/fees_screen.dart`, `categories/category_detail_screen.dart`
+- **What happens:** `ready` needs both the current and the previous period. If only the previous-period stream fails, the screen says "This could not load" though this period's figures loaded.
+- **How to trigger:** make `previousSameDaysRowsProvider` (or Insights' previous period) throw while the current one succeeds.
+- **Score:** frequency 1 x severity 3 = 3
+- **Suggested fix:** when the current data loaded and only the comparison failed, show the current figures and drop the comparison line.
+- **Found:** 20 November 2026, Phase 8 checker
+
+### [bug-review] A secure-storage error hides every Privacy control
+
+- **Where:** `app/lib/features/privacy/privacy_section.dart`
+- **What happens:** if reading whether a PIN is set fails, the whole section becomes one note. Hide amounts and Blank the screen in the app switcher, which do not need the PIN, can no longer be changed, and "close and open again" does not help a broken keystore.
+- **How to trigger:** make the PIN store's check throw (Android keystore failure after a device restore), then open Privacy and data.
+- **Score:** frequency 1 x severity 4 = 4
+- **Suggested fix:** show the note only in place of the lock rows and keep the other switches working.
+- **Found:** 20 November 2026, Phase 8 checker
+
+### [states-audit] Add shows its problems in one list above Save, not on each field
+
+- **Where:** `app/lib/features/add/add_screen.dart` (problems list above Save)
+- **What happens:** a missing amount, account or category is listed above Save, far from the amount field at the top of a long form. New account and Edit a category put errors on the field itself.
+- **Score:** frequency 3 x severity 1 = 3
+- **Suggested fix:** put the amount problem in the amount field's `errorText` and the category problem under the category grid; keep the list for problems that belong to no one field.
+- **Found:** 20 November 2026, Phase 8 states audit
+
+### [states-audit] Budgets' empty state has no button
+
+- **Where:** `app/lib/features/budgets/budgets_screen.dart`
+- **What happens:** "No budgets yet. Set one for a category…" gives no way to start from there; the person must find Set a budget through a category.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** add "Set a budget", opening a category choice and then Set a budget.
+- **Found:** 20 November 2026, Phase 8 TalkBack tree check

@@ -18,6 +18,7 @@ import '../../domain/calendar.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../home/home_providers.dart';
 import '../insights/insights_text.dart';
@@ -128,7 +129,9 @@ class CategoryDetailScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AkSpace.s2),
-            if (!ready)
+            if (!ready && [rowsAsync, beforeAsync, catsAsync].any((a) => a.hasError))
+              const AkEmptyNote(loadFailedText)
+            else if (!ready)
               const SizedBox(height: AkSize.chart)
             else if (mine.isEmpty)
               AkEmptyNote(
@@ -166,13 +169,19 @@ class CategoryDetailScreen extends ConsumerWidget {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                Container(
-                                  height: biggestWeek == 0
-                                      ? 0
-                                      : AkSize.chart * 0.8 * (w.moneyOut / biggestWeek),
-                                  decoration: BoxDecoration(
-                                    color: colour,
-                                    borderRadius: BorderRadius.circular(AkRadiusTokens.xs),
+                                // The tallest bar fills what the day label leaves, so a large
+                                // text size shortens the bars instead of overflowing the chart.
+                                Flexible(
+                                  child: FractionallySizedBox(
+                                    heightFactor: biggestWeek == 0
+                                        ? 0
+                                        : (w.moneyOut / biggestWeek).clamp(0.0, 1.0),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: colour,
+                                        borderRadius: BorderRadius.circular(AkRadiusTokens.xs),
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: AkSpace.s1h),

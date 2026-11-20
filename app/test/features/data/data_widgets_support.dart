@@ -5,6 +5,7 @@ import 'package:akatabo/services/backup/backup_files.dart';
 import 'package:akatabo/services/backup/backup_service.dart';
 import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -22,6 +23,7 @@ Future<void> pumpData(
   Brightness brightness = Brightness.light,
   Size size = const Size(390, 844),
   MapSecureValues? secure,
+  List<Override> extra = const [],
 }) async {
   tester.view
     ..physicalSize = size
@@ -36,6 +38,7 @@ Future<void> pumpData(
         backupFilesProvider.overrideWithValue(files),
         backupServiceProvider.overrideWithValue(testBackupService(db)),
         ...securityOverrides(values: secure ?? MapSecureValues()),
+        ...extra,
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
