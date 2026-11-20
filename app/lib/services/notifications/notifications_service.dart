@@ -17,8 +17,12 @@ abstract interface class NotificationsService {
   /// the phone's settings after switching a reminder on.
   Future<bool> areAllowed();
 
-  /// Cancels every scheduled reminder, then schedules [reminders].
+  /// Cancels every scheduled reminder, then schedules [reminders]. Notifications already
+  /// shown, such as a budget warning, stay where they are.
   Future<void> replaceAll(List<PlannedReminder> reminders);
+
+  /// Shows a notification now. A later one with the same [id] replaces it.
+  Future<void> showNow(int id, String title, String body);
 }
 
 final notificationsServiceProvider = Provider<NotificationsService>(
@@ -45,6 +49,15 @@ class LocalNotificationsService implements NotificationsService {
       'reminders',
       'Reminders',
       channelDescription: 'Daily nudge, regular payments and the weekly summary',
+    ),
+    iOS: DarwinNotificationDetails(),
+  );
+
+  static const _budgetDetails = NotificationDetails(
+    android: AndroidNotificationDetails(
+      'budgets',
+      'Budget warnings',
+      channelDescription: 'When a budget is nearly used, and when it goes over',
     ),
     iOS: DarwinNotificationDetails(),
   );
@@ -110,7 +123,8 @@ class LocalNotificationsService implements NotificationsService {
   @override
   Future<void> replaceAll(List<PlannedReminder> reminders) async {
     await _init();
-    await _plugin.cancelAll();
+    // Only the scheduled ones: cancelAll would also clear a budget warning already shown.
+    await _plugin.cancelAllPendingNotifications();
     final now = DateTime.now();
     for (final r in reminders) {
       final (DateTime at, DateTimeComponents? repeat) = switch (r) {
@@ -135,5 +149,11 @@ class LocalNotificationsService implements NotificationsService {
         matchDateTimeComponents: repeat,
       );
     }
+  }
+
+  @override
+  Future<void> showNow(int id, String title, String body) async {
+    await _init();
+    await _plugin.show(id: id, title: title, body: body, notificationDetails: _budgetDetails);
   }
 }

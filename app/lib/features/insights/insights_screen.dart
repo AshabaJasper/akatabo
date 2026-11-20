@@ -14,6 +14,7 @@ import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/seed/default_data.dart';
+import '../../data/settings/setting_keys.dart';
 import '../../domain/insights.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
@@ -155,7 +156,11 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
             const AkEyebrow('Look closer'),
             _LinkRow(label: 'Categories', onTap: () => context.push(Routes.categories)),
             _LinkRow(label: 'Fees and tax', onTap: () => context.push(Routes.fees)),
-            _LinkRow(label: 'Forecast', onTap: () => context.push(Routes.forecast)),
+            // "Forecast the month" in Smart help switches the forecast off.
+            if (SettingKeys.forecastMonth.decode(
+              ref.watch(storedSettingsProvider).value?[SettingKeys.forecastMonth.name],
+            ))
+              _LinkRow(label: 'Forecast', onTap: () => context.push(Routes.forecast)),
             _LinkRow(label: 'Coming up', onTap: () => context.push(Routes.regular)),
           ],
         ),

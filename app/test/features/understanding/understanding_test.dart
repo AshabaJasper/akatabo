@@ -6,6 +6,7 @@ import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/data/seed/default_data.dart';
+import 'package:akatabo/data/settings/setting_keys.dart';
 import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/categories/categories_screen.dart';
 import 'package:akatabo/features/categories/category_detail_screen.dart';
@@ -51,6 +52,7 @@ Future<void> _pump(
   Widget screen, {
   List<Override> data = const [],
   Brightness brightness = Brightness.light,
+  Map<String, String> settings = const {},
 }) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -60,7 +62,7 @@ Future<void> _pump(
     ProviderScope(
       retry: (_, _) => null,
       overrides: [
-        storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+        storedSettingsProvider.overrideWith((ref) => Stream.value(settings)),
         appearanceProvider.overrideWithValue(const AkAppearance()),
         appNowProvider.overrideWithValue(_now),
         periodCalculatorProvider.overrideWithValue(const PeriodCalculator()),
@@ -114,6 +116,26 @@ void main() {
       await _pump(tester, const InsightsScreen(), data: _data(month: _tenDays()));
       expect(find.textContaining('Spent,'), findsOneWidget);
       expect(find.text('Cash flow'), findsOneWidget);
+    });
+
+    testWidgets('Forecast is offered while "Forecast the month" is on, the default', (
+      tester,
+    ) async {
+      await _pump(tester, const InsightsScreen(), data: _data());
+      await tester.scrollUntilVisible(find.text('Coming up'), 200);
+      expect(find.text('Forecast'), findsOneWidget);
+    });
+
+    testWidgets('with "Forecast the month" off, Insights offers no Forecast', (tester) async {
+      await _pump(
+        tester,
+        const InsightsScreen(),
+        data: _data(),
+        settings: {SettingKeys.forecastMonth.name: '0'},
+      );
+      await tester.scrollUntilVisible(find.text('Coming up'), 200);
+      expect(find.text('Forecast'), findsNothing);
+      expect(find.text('Fees and tax'), findsOneWidget);
     });
 
     testWidgets('insights chart, light', (tester) async {
