@@ -4,12 +4,12 @@ import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/data/seed/default_data.dart';
 import 'package:akatabo/data/settings/setting_keys.dart';
+import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/settings/appearance_settings_screen.dart';
 import 'package:akatabo/features/settings/categories_settings_screen.dart';
 import 'package:akatabo/features/settings/general_settings_screen.dart';
 import 'package:akatabo/features/settings/home_layout.dart';
-import 'package:akatabo/features/settings/new_account_screen.dart';
 import 'package:akatabo/features/settings/settings_screen.dart';
 import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:drift/native.dart';
@@ -26,6 +26,8 @@ Future<void> _until(bool Function() condition) async {
   }
 }
 
+final _accounts = [accountRow(id: DefaultIds.mtn, name: 'MTN MoMo', isDefault: true)];
+
 Future<void> _pump(WidgetTester tester, Widget screen, AppDatabase db) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -39,6 +41,8 @@ Future<void> _pump(WidgetTester tester, Widget screen, AppDatabase db) async {
         // A fixed, empty settings stream: the pages show their defaults. The saved value is
         // checked in the database instead, because a live drift stream does not settle here.
         storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+        // General names the account Add opens on; a live drift stream would not settle here.
+        enabledAccountsProvider.overrideWith((ref) => Stream.value(_accounts)),
       ],
       child: MaterialApp(theme: buildAkTheme(Brightness.light, const AkAppearance()), home: screen),
     ),
@@ -155,6 +159,7 @@ void main() {
           overrides: [
             appDatabaseProvider.overrideWithValue(db),
             storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+            enabledAccountsProvider.overrideWith((ref) => Stream.value(_accounts)),
           ],
           child: MaterialApp(
             theme: buildAkTheme(Brightness.light, const AkAppearance()),
@@ -263,27 +268,7 @@ void main() {
 
       await expectLater(repo.add(name: '   ', kind: AccountKind.bank), throwsArgumentError);
     });
-
-    testWidgets('the form asks for a name, then saves the account', (tester) async {
-      final db = AppDatabase(NativeDatabase.memory());
-      addTearDown(db.close);
-      await _pump(tester, const NewAccountScreen(), db);
-
-      await tester.tap(find.text('Save account'));
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Give the account a name.'), findsOneWidget);
-
-      await tester.enterText(find.byType(TextField), 'Airtel wallet');
-      await tester.tap(find.text('Airtel Money'));
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Save account'));
-      await _settle(tester);
-
-      final names = await tester.runAsync(
-        () async => (await db.select(db.accounts).get()).map((a) => a.name).toList(),
-      );
-      expect(names, contains('Airtel wallet'));
-    });
+    // The New account form itself is tested in new_account_test.dart.
   });
 
   group('categories', () {
@@ -349,39 +334,6 @@ void main() {
         )..where((c) => c.id.equals(DefaultIds.food))).getSingle()).hidden,
       );
       expect(hidden, isTrue);
-    });
-  });
-
-  group('new account, review fixes', () {
-    testWidgets('Done pressed twice saves one account', (tester) async {
-      final db = AppDatabase(NativeDatabase.memory());
-      addTearDown(db.close);
-      await _pump(tester, const NewAccountScreen(), db);
-
-      await tester.enterText(find.byType(TextField), 'Airtel wallet');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await _settle(tester);
-
-      final count = await tester.runAsync(
-        () async =>
-            (await db.select(db.accounts).get()).where((a) => a.name == 'Airtel wallet').length,
-      );
-      expect(count, 1);
-    });
-
-    testWidgets('typing a name clears the name message', (tester) async {
-      final db = AppDatabase(NativeDatabase.memory());
-      addTearDown(db.close);
-      await _pump(tester, const NewAccountScreen(), db);
-
-      await tester.tap(find.text('Save account'));
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Give the account a name.'), findsOneWidget);
-
-      await tester.enterText(find.byType(TextField), 'A');
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Give the account a name.'), findsNothing);
     });
   });
 

@@ -86,6 +86,9 @@ Future<void> insertDefaultData(AppDatabase db) async {
           sortOrder: Value(i),
           // "Picked first when you add: MTN MoMo" on Settings > General.
           isDefault: Value(id == DefaultIds.mtn),
+          // Add shows the fee box for accounts that charge to send or withdraw, as drawn
+          // with MTN MoMo; cash has no fee, so its fee box waits under "More details".
+          askFeeEachTime: Value(kind != AccountKind.cash),
           createdAt: now,
           updatedAt: now,
         ),

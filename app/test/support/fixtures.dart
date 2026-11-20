@@ -81,6 +81,10 @@ Account accountRow({
   bool isDefault = false,
   AccountKind kind = AccountKind.mtn,
   bool enabled = true,
+  // Mobile money asks for the fee on Add, as the default MTN MoMo does.
+  bool askFeeEachTime = true,
+  bool countInTotals = true,
+  int openingBalance = 0,
 }) {
   final now = DateTime(2026, 11);
   return Account(
@@ -90,9 +94,9 @@ Account accountRow({
     name: name,
     kind: kind,
     colourToken: colourToken,
-    openingBalance: 0,
-    askFeeEachTime: false,
-    countInTotals: true,
+    openingBalance: openingBalance,
+    askFeeEachTime: askFeeEachTime,
+    countInTotals: countInTotals,
     enabled: enabled,
     isDefault: isDefault,
     sortOrder: 0,
