@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/close_screen.dart';
@@ -114,6 +115,9 @@ class CategoryEditScreen extends ConsumerWidget {
               ? null
               : cats.where((c) => c.id == fallbackId).firstOrNull?.name ?? 'Other',
           backLabel: from.backLabel(category),
+          // From the category's own page, that page shows a deleted category as gone, so a
+          // delete closes it too and lands where the person opened the category from.
+          screensToCloseOnDelete: from == CategoryEditFrom.detail ? 2 : 1,
         );
       }
     }
@@ -131,7 +135,11 @@ class _CategoryForm extends ConsumerStatefulWidget {
     required this.kind,
     required this.fallbackName,
     required this.backLabel,
+    this.screensToCloseOnDelete = 1,
   });
+
+  /// How many screens a delete closes: this one, and the category's page when opened from it.
+  final int screensToCloseOnDelete;
 
   /// The stored category; null while making a new one.
   final Category? category;
@@ -291,6 +299,10 @@ class _CategoryFormState extends ConsumerState<_CategoryForm> {
   Future<void> _delete() async {
     final fallback = widget.fallbackName;
     if (_busy || _isNew || fallback == null) return;
+    // Taken now, before any wait: once the row is gone this form may be disposed before the
+    // delete returns, and a disposed form has no context to close the screen with.
+    final router = GoRouter.maybeOf(context);
+    final navigator = Navigator.of(context);
     setState(() {
       _busy = true;
       _problem = null;
@@ -324,7 +336,14 @@ class _CategoryFormState extends ConsumerState<_CategoryForm> {
       // A deleted category chosen in Filters would leave the list empty with no chip to
       // unselect, so it leaves the choice too.
       filter.removeCategory(id);
-      if (mounted) await closeScreen(context);
+      for (var i = 0; i < widget.screensToCloseOnDelete; i++) {
+        if (router != null) {
+          if (!router.canPop()) break;
+          router.pop();
+        } else {
+          await navigator.maybePop();
+        }
+      }
     } on Object {
       if (mounted) {
         setState(() {

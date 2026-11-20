@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:akatabo/app/routes.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/time/clock_provider.dart';
@@ -194,6 +196,62 @@ void main() {
         return (cats.any((c) => c.id == DefaultIds.transport), tx.categoryId);
       });
       expect(left, (false, DefaultIds.other));
+    });
+
+    testWidgets('a delete from the category page closes that page too', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final cats = await tester.runAsync(() => CategoryRepository(db).watchAll().first);
+      tester.view
+        ..physicalSize = const Size(390, 3000)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const Text('Where it started')),
+          GoRoute(path: '/page', builder: (_, _) => const Text('The category page')),
+          GoRoute(
+            path: '/edit',
+            builder: (_, _) => const CategoryEditScreen(
+              categoryId: DefaultIds.transport,
+              from: CategoryEditFrom.detail,
+            ),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: (_, _) => null,
+          overrides: [
+            appDatabaseProvider.overrideWithValue(db),
+            storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+            appNowProvider.overrideWithValue(testNow),
+            allCategoriesProvider.overrideWith((ref) => Stream.value(cats!)),
+          ],
+          child: MaterialApp.router(
+            theme: buildAkTheme(Brightness.light, const AkAppearance()),
+            routerConfig: router,
+          ),
+        ),
+      );
+      unawaited(router.push('/page'));
+      await tester.pumpAndSettle();
+      unawaited(router.push('/edit'));
+      await tester.pumpAndSettle();
+      expect(find.text('Save category'), findsOneWidget);
+
+      await tester.tap(find.text('Delete'));
+      await _settle(tester);
+      await tester.tap(find.widgetWithText(TextButton, 'Delete'));
+      await _settle(tester);
+      for (var i = 0; i < 4; i++) {
+        await _settle(tester);
+      }
+
+      // Not the category page, which would only say the category is gone.
+      expect(find.text('Where it started'), findsOneWidget);
+      expect(find.text('The category page'), findsNothing);
     });
 
     testWidgets('Other cannot be deleted and Fees and tax has no budget or Delete', (tester) async {
