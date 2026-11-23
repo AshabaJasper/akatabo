@@ -8,6 +8,7 @@ import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/data/seed/default_data.dart';
+import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/regular/looks_regular_section.dart';
 import 'package:akatabo/features/regular/regular_payments_screen.dart';
 import 'package:akatabo/features/regular/regular_providers.dart';
@@ -84,6 +85,7 @@ Future<_FakeRegular> _pump(
         appNowProvider.overrideWithValue(_now),
         regularPaymentRepositoryProvider.overrideWithValue(repo),
         activeRegularProvider.overrideWith((ref) => Stream.value(const [])),
+        allCategoriesProvider.overrideWith((ref) => Stream.value(const <Category>[])),
         allRegularProvider.overrideWith((ref) => Stream.value(saved)),
         allTransactionsProvider.overrideWith((ref) => Stream.value(_rows.reversed.toList())),
         regularParamsProvider.overrideWith((ref) async => params),

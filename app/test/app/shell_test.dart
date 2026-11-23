@@ -5,8 +5,12 @@ import 'package:akatabo/core/time/clock_provider.dart';
 import 'package:akatabo/core/time/period.dart';
 import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
+import 'package:akatabo/data/settings/setting_keys.dart';
 import 'package:akatabo/features/add/add_providers.dart';
+import 'package:akatabo/features/budgets/budgets_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
+import 'package:akatabo/features/home/home_screen.dart';
+import 'package:akatabo/features/insights/insights_screen.dart';
 import 'package:akatabo/features/onboarding/onboarding_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +21,8 @@ Future<void> _pumpApp(
   ThemeMode mode = ThemeMode.light,
   bool? onboardingDone,
   bool settingsSay = true,
+  Map<String, String> stored = const {},
+  AppOpensOn? opensOn,
 }) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -26,7 +32,7 @@ Future<void> _pumpApp(
     ProviderScope(
       retry: (_, _) => null,
       overrides: [
-        storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+        storedSettingsProvider.overrideWith((ref) => Stream.value(stored)),
         appearanceProvider.overrideWithValue(AkAppearance(themeMode: mode)),
         // Home reads the database; the shell test uses an empty, fixed Home instead.
         periodCalculatorProvider.overrideWithValue(const PeriodCalculator()),
@@ -37,10 +43,11 @@ Future<void> _pumpApp(
         latestRowsProvider.overrideWith((ref) => Stream.value(const <Transaction>[])),
         monthRowsProvider.overrideWith((ref) => Stream.value(const <Transaction>[])),
         previousSameDaysRowsProvider.overrideWith((ref) => Stream.value(const <Transaction>[])),
+        previousMonthRowsProvider.overrideWith((ref) => Stream.value(const <Transaction>[])),
         allCategoriesProvider.overrideWith((ref) => Stream.value(const <Category>[])),
         enabledAccountsProvider.overrideWith((ref) => Stream.value(const <Account>[])),
       ],
-      child: AkataboApp(onboardingDone: onboardingDone),
+      child: AkataboApp(onboardingDone: onboardingDone, opensOn: opensOn),
     ),
   );
   await tester.pumpAndSettle();
@@ -53,6 +60,29 @@ void main() {
     for (final label in ['Home', 'Insights', 'Add a transaction', 'Budgets', 'Settings']) {
       expect(find.bySemanticsLabel(label), findsWidgets, reason: label);
     }
+  });
+
+  testWidgets('"The app opens on: Insights" starts on Insights', (tester) async {
+    await _pumpApp(tester, opensOn: AppOpensOn.insights);
+    expect(find.byType(InsightsScreen), findsOneWidget);
+    expect(find.byType(HomeScreen), findsNothing);
+  });
+
+  testWidgets('"The app opens on: Add" starts on Add, with Home underneath it', (tester) async {
+    // As main.dart passes it: read from the database before the settings stream has loaded.
+    await _pumpApp(tester, opensOn: AppOpensOn.add);
+    expect(find.text('Save transaction'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Close'));
+    await tester.pumpAndSettle();
+    expect(find.text('Save transaction'), findsNothing);
+    expect(find.byType(HomeScreen), findsOneWidget);
+  });
+
+  testWidgets('a first launch opens on Onboarding whatever "The app opens on" says', (
+    tester,
+  ) async {
+    await _pumpApp(tester, onboardingDone: false, settingsSay: false, opensOn: AppOpensOn.add);
+    expect(find.text('Save transaction'), findsNothing);
   });
 
   testWidgets('the stored flag wins when settings have not loaded in time', (tester) async {

@@ -67,6 +67,9 @@ enum UnusualHowOften { rarely, balanced, often }
 /// each row, List only shows the rows alone.
 enum CategoryChart { pie, bars, listOnly }
 
+/// "The app opens on" in Home screen settings: the first screen after the app starts.
+enum AppOpensOn { home, add, insights }
+
 /// Every setting. Defaults are what the drawn Settings pages show.
 abstract final class SettingKeys {
   // Appearance
@@ -112,6 +115,7 @@ abstract final class SettingKeys {
 
   /// The three most used budgets on Home. Off until chosen, as drawn.
   static const homeShowBudgets = BoolSetting('home.showBudgets', false);
+  static const opensOn = EnumSetting('home.opensOn', AppOpensOn.home, AppOpensOn.values);
 
   // Smart help
   /// When "Forget everything it has learned" was last used, in milliseconds since the epoch.

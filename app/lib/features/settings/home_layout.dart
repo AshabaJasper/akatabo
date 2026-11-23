@@ -37,3 +37,9 @@ final homeLayoutProvider = Provider<HomeLayout>((ref) {
     budgets: read(SettingKeys.homeShowBudgets),
   );
 });
+
+/// "The app opens on", from storage. Home until the person picks another.
+final opensOnProvider = Provider<AppOpensOn>((ref) {
+  final s = ref.watch(storedSettingsProvider).value ?? const <String, String>{};
+  return SettingKeys.opensOn.decode(s[SettingKeys.opensOn.name]);
+});

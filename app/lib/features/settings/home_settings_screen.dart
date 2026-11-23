@@ -1,13 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/theme/ak_theme.dart';
 import '../../data/providers.dart';
 import '../../data/settings/setting_keys.dart';
+import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import 'home_layout.dart';
 import 'settings_page.dart';
 
-/// Chooses which sections Home shows. Each switch saves at once and Home redraws.
+/// Chooses which sections Home shows, and the screen the app opens on. Each choice saves at
+/// once and Home redraws.
 class HomeSettingsScreen extends ConsumerStatefulWidget {
   const HomeSettingsScreen({super.key});
 
@@ -18,10 +21,10 @@ class HomeSettingsScreen extends ConsumerStatefulWidget {
 class _HomeSettingsScreenState extends ConsumerState<HomeSettingsScreen> {
   String? _problem;
 
-  Future<void> _save(BoolSetting key, bool on) async {
+  Future<void> _save<T>(SettingKey<T> key, T value) async {
     setState(() => _problem = null);
     try {
-      await ref.read(settingsRepositoryProvider).write(key, on);
+      await ref.read(settingsRepositoryProvider).write(key, value);
     } on Object {
       if (mounted) setState(() => _problem = 'That could not be saved. Try again.');
     }
@@ -74,6 +77,34 @@ class _HomeSettingsScreenState extends ConsumerState<HomeSettingsScreen> {
               divider: true,
             ),
             _switchRow(context, 'Budgets at a glance', layout.budgets, SettingKeys.homeShowBudgets),
+          ],
+        ),
+        SettingsSection(
+          label: 'Start',
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(AkSpace.s3h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'The app opens on',
+                    style: context.type.bodyMd.copyWith(color: context.colors.ink),
+                  ),
+                  const SizedBox(height: AkSpace.s2),
+                  AkSegmented<AppOpensOn>(
+                    semanticLabel: 'The app opens on',
+                    segments: const [
+                      AkSegment(AppOpensOn.home, 'Home'),
+                      AkSegment(AppOpensOn.add, 'Add'),
+                      AkSegment(AppOpensOn.insights, 'Insights'),
+                    ],
+                    selected: ref.watch(opensOnProvider),
+                    onChanged: (v) => _save(SettingKeys.opensOn, v),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         if (_problem != null) AkEmptyNote(_problem!),

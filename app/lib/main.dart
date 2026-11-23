@@ -29,10 +29,11 @@ Future<void> main() async {
   // settings load above gives up after 3 seconds, and a returning person on a slow phone
   // must not be shown Onboarding again.
   var onboardingDone = false;
+  var opensOn = AppOpensOn.home;
   try {
-    onboardingDone = await container
-        .read(settingsRepositoryProvider)
-        .read(SettingKeys.onboardingDone);
+    final settings = container.read(settingsRepositoryProvider);
+    onboardingDone = await settings.read(SettingKeys.onboardingDone);
+    opensOn = await settings.read(SettingKeys.opensOn);
   } catch (error, stack) {
     FlutterError.reportError(
       FlutterErrorDetails(exception: error, stack: stack, library: 'akatabo startup'),
@@ -42,7 +43,7 @@ Future<void> main() async {
   runApp(
     UncontrolledProviderScope(
       container: container,
-      child: AkataboApp(onboardingDone: onboardingDone),
+      child: AkataboApp(onboardingDone: onboardingDone, opensOn: opensOn),
     ),
   );
   unawaited(rescheduleRemindersAtStart(container));
