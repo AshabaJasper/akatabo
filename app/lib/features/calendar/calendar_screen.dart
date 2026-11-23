@@ -9,6 +9,7 @@ import '../../app/routes.dart';
 import '../../core/format/money.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
+import '../../core/theme/token_colour.dart';
 import '../../core/time/clock_provider.dart';
 import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
@@ -311,13 +312,6 @@ class _StepButton extends StatelessWidget {
   }
 }
 
-Color _heatColour(AkColorTokens c, int step) => switch (step) {
-  0 => c.heat0,
-  1 => c.heat1,
-  2 => c.heat2,
-  _ => c.heat4,
-};
-
 /// Month: a heat grid of days with a legend.
 class _MonthView extends StatelessWidget {
   const _MonthView({
@@ -404,7 +398,7 @@ class _MonthView extends StatelessWidget {
                   width: AkSize.iconSm,
                   height: AkSpace.s3,
                   decoration: BoxDecoration(
-                    color: _heatColour(c, s),
+                    color: heatColour(c, s),
                     borderRadius: BorderRadius.circular(context.metrics.xs),
                   ),
                 ),
@@ -442,7 +436,7 @@ class _DayCell extends StatelessWidget {
     final c = context.colors;
     final t = context.type;
     final future = mark.state == MarkState.future;
-    final fill = future ? c.ground.withValues(alpha: 0) : _heatColour(c, step);
+    final fill = future ? c.ground.withValues(alpha: 0) : heatColour(c, step);
     final ink = !future && step == 3 ? c.onHeat4 : c.ink;
     final radius = BorderRadius.circular(context.metrics.md);
     final spoken = future

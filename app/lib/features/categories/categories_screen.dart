@@ -17,6 +17,7 @@ import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/seed/default_data.dart';
 import '../../data/settings/setting_keys.dart';
+import '../../domain/calendar.dart' show heatStep;
 import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
@@ -26,6 +27,7 @@ import '../../widgets/ak_surfaces.dart';
 import '../../widgets/charts/category_donut.dart';
 import '../home/home_providers.dart';
 import '../insights/insights_text.dart';
+import '../settings/settings_page.dart' show ordinalDay;
 
 /// Categories: this month's money out, split by category, with the change on last month.
 /// Fees and tax is listed last, built from the fee and tax fields.
@@ -126,10 +128,147 @@ class CategoriesScreen extends ConsumerWidget {
                   bar: chart == CategoryChart.bars,
                   onTap: () => context.push(Routes.fees),
                 ),
+              const SizedBox(height: AkSpace.s5),
+              _DayByDay(
+                month: month,
+                today: today,
+                rows: rows.value ?? const <Transaction>[],
+                weekStartsOn: calc.weekStartsOn,
+              ),
             ],
           ],
         ),
       ),
+    );
+  }
+}
+
+/// "Day by day", as Categories.html draws it: the month's days in weeks, each filled by how
+/// much went out that day against the other days so far, the same steps as Calendar's month.
+/// Days still to come are an empty outline.
+class _DayByDay extends StatelessWidget {
+  const _DayByDay({
+    required this.month,
+    required this.today,
+    required this.rows,
+    required this.weekStartsOn,
+  });
+
+  final Period month;
+  final DateTime today;
+  final List<Transaction> rows;
+
+  /// [DateTime.monday] to [DateTime.sunday].
+  final int weekStartsOn;
+
+  static const _letters = {
+    DateTime.monday: 'M',
+    DateTime.tuesday: 'T',
+    DateTime.wednesday: 'W',
+    DateTime.thursday: 'T',
+    DateTime.friday: 'F',
+    DateTime.saturday: 'S',
+    DateTime.sunday: 'S',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = context.type;
+    // Money out per day as Home and Calendar count it: amounts, fees and tax.
+    final grouped = <int, List<Transaction>>{};
+    for (final r in rows) {
+      (grouped[r.localDay] ??= []).add(r);
+    }
+    final byDay = {for (final e in grouped.entries) e.key: totalsOf(e.value).moneyOut};
+    final days = [for (var i = 0; i < month.lengthInDays; i++) addDays(month.start, i)];
+    final past = [
+      for (final d in days)
+        if (!d.isAfter(today)) byDay[toLocalDay(d)] ?? 0,
+    ];
+    final lead = (days.first.weekday - weekStartsOn + 7) % 7;
+    final weekdays = [for (var i = 0; i < 7; i++) (weekStartsOn - 1 + i) % 7 + 1];
+
+    // What it says aloud: the highest day, and from which day the grid is still empty.
+    var highest = days.first;
+    for (final d in days.where((d) => !d.isAfter(today))) {
+      if ((byDay[toLocalDay(d)] ?? 0) > (byDay[toLocalDay(highest)] ?? 0)) highest = d;
+    }
+    String nth(DateTime d) => ordinalDay(d.day).replaceFirst('The ', 'the ');
+    final name = DateFormat('MMMM').format(month.start);
+    final spoken = [
+      'Calendar of $name.',
+      if ((byDay[toLocalDay(highest)] ?? 0) > 0) 'Spending was highest on ${nth(highest)}.',
+      if (today.isBefore(month.lastDate)) 'Days after ${nth(today)} are still empty.',
+    ].join(' ');
+
+    Widget grid(List<Widget> cells) => GridView.count(
+      crossAxisCount: 7,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: AkSpace.s1,
+      crossAxisSpacing: AkSpace.s1,
+      childAspectRatio: 3,
+      padding: EdgeInsets.zero,
+      children: cells,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.end,
+          spacing: AkSpace.s3,
+          children: [
+            Semantics(
+              header: true,
+              child: Text('Day by day', style: t.title.copyWith(color: c.ink)),
+            ),
+            Text('darker means more spent', style: t.caption.copyWith(color: c.inkMuted)),
+          ],
+        ),
+        const SizedBox(height: AkSpace.s2),
+        Semantics(
+          image: true,
+          container: true,
+          excludeSemantics: true,
+          label: spoken,
+          child: grid([
+            for (var i = 0; i < lead; i++) const SizedBox.shrink(),
+            for (final d in days)
+              DecoratedBox(
+                key: ValueKey('day-${d.day}'),
+                decoration: d.isAfter(today)
+                    ? BoxDecoration(
+                        borderRadius: BorderRadius.circular(context.metrics.xs),
+                        border: Border.all(color: c.lineStrong),
+                      )
+                    : BoxDecoration(
+                        color: heatColour(c, heatStep(byDay[toLocalDay(d)] ?? 0, past)),
+                        borderRadius: BorderRadius.circular(context.metrics.xs),
+                      ),
+              ),
+          ]),
+        ),
+        const SizedBox(height: AkSpace.s1),
+        ExcludeSemantics(
+          child: Row(
+            children: [
+              for (final (i, w) in weekdays.indexed) ...[
+                if (i > 0) const SizedBox(width: AkSpace.s1),
+                Expanded(
+                  child: Text(
+                    _letters[w]!,
+                    textAlign: TextAlign.center,
+                    style: t.caption.copyWith(color: c.inkMuted),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

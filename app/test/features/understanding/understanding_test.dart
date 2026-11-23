@@ -221,6 +221,43 @@ void main() {
       expect(find.text('School fees'), findsOneWidget);
       expect(find.text('Food and shopping'), findsOneWidget);
     });
+
+    testWidgets('Day by day fills the days so far by spending and outlines the rest', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final month = [
+        txRow(id: 'a', amount: 5000, day: 20261103, at: DateTime(2026, 11, 3, 9)),
+        txRow(id: 'b', amount: 90000, day: 20261116, at: DateTime(2026, 11, 16, 9)),
+        txRow(id: 'c', amount: 12000, day: 20261119, at: _now),
+      ];
+      await _pump(tester, const CategoriesScreen(), data: _data(month: month));
+      await tester.dragUntilVisible(
+        find.text('Day by day'),
+        find.byType(ListView).first,
+        const Offset(0, -200),
+      );
+      final c = tester.element(find.byType(CategoriesScreen)).colors;
+      BoxDecoration box(int day) =>
+          tester.widget<DecoratedBox>(find.byKey(ValueKey('day-$day'))).decoration as BoxDecoration;
+
+      // The month's biggest day is the darkest, a day with nothing is the lightest, and the
+      // days after today are an outline with no fill.
+      expect(box(16).color, c.heat4);
+      expect(box(5).color, c.heat0);
+      expect(box(20).color, isNull);
+      expect(box(20).border, isNotNull);
+      expect(find.byKey(const ValueKey('day-30')), findsOneWidget);
+      expect(find.byKey(const ValueKey('day-31')), findsNothing);
+      expect(
+        find.bySemanticsLabel(
+          'Calendar of November. Spending was highest on the 16th. '
+          'Days after the 19th are still empty.',
+        ),
+        findsOneWidget,
+      );
+      semantics.dispose();
+    });
   });
 
   group('Category detail', () {

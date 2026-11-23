@@ -26,3 +26,12 @@ Color colourForToken(AkColorTokens c, String token) => switch (token) {
   'acct-bank' => c.acctBank,
   _ => c.catSlate,
 };
+
+/// A day's fill on a heat grid, for the step [heatStep] gives (0 to 3). The third step skips
+/// `heat-3`, as Calendar.html and Categories.html draw it.
+Color heatColour(AkColorTokens c, int step) => switch (step) {
+  0 => c.heat0,
+  1 => c.heat1,
+  2 => c.heat2,
+  _ => c.heat4,
+};
