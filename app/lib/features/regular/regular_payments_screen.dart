@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/close_screen.dart';
+import '../../app/formats.dart';
 import '../../app/routes.dart';
 import '../../core/format/money.dart';
 import '../../core/icons/ak_icon.dart';
@@ -20,6 +21,7 @@ import '../../domain/forecast.dart';
 import '../../services/notifications/reminder_switch.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_headline_amount.dart';
 import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
@@ -98,7 +100,7 @@ class RegularPaymentsScreen extends ConsumerWidget {
                 onAction: () => context.push(Routes.regularNew),
               )
             else ...[
-              Text(formatUgx(total), style: t.figureXl.copyWith(color: c.ink)),
+              AkHeadlineAmount(total, style: t.figureXl.copyWith(color: c.ink)),
               const SizedBox(height: AkSpace.s1),
               Text(
                 '${dueThisMonth.length} ${dueThisMonth.length == 1 ? 'payment' : 'payments'} '
@@ -152,7 +154,8 @@ class RegularPaymentsScreen extends ConsumerWidget {
               for (final e in laterDue.entries)
                 _PaymentRow(
                   payment: e.key,
-                  reading: 'Next ${DateFormat('d MMMM y').format(e.value)}',
+                  reading:
+                      'Next ${formatDate(e.value, ref.watch(dateStyleProvider), words: 'd MMMM y')}',
                   amount: e.key.typicalAmount,
                 ),
             ],

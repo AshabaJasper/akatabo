@@ -18,6 +18,7 @@ import '../../domain/budget.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_headline_amount.dart';
 import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../home/home_providers.dart';
@@ -243,8 +244,9 @@ class _Summary extends ConsumerWidget {
               style: t.bodySm.copyWith(color: c.inkMuted),
             ),
             const SizedBox(height: AkSpace.s1),
-            AkHiddenAmount(
-              over ? formatUgx(-totals.left) : formatUgx(totals.left),
+            AkHeadlineAmount(
+              over ? -totals.left : totals.left,
+              hideable: true,
               style: t.figureXl.copyWith(color: over ? c.moneyOut : c.ink),
             ),
             const SizedBox(height: AkSpace.s2),

@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/close_screen.dart';
+import '../../app/formats.dart';
 import '../../app/routes.dart';
 import '../../core/format/money.dart';
 import '../../core/icons/ak_icon.dart';
@@ -83,7 +83,7 @@ class TransactionDetailScreen extends ConsumerWidget {
     final sign = isTransfer ? '' : (isMoneyIn ? '+ ' : '- ');
     final amountLine = '${sign}UGX ${formatAmount(tx.amount)}';
     final unusual = ref.watch(unusualNoteProvider(tx.id));
-    final when = DateFormat('d MMMM yyyy').format(tx.occurredAt);
+    final when = formatDate(tx.occurredAt, ref.watch(dateStyleProvider), words: 'd MMMM yyyy');
     final whenLine =
         '${_capital(dayLabel(tx.occurredAt, now))}, $when, ${clockLabel(tx.occurredAt)}';
 

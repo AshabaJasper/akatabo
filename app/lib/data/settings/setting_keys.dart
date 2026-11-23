@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart' show ThemeMode;
 
+import '../../core/format/dates.dart';
+import '../../core/format/money.dart';
 import '../../core/theme/ak_appearance.dart';
 import '../db/tables.dart';
 
@@ -95,6 +97,12 @@ abstract final class SettingKeys {
   );
 
   // General
+  static const dateStyle = EnumSetting('general.dateStyle', DateStyle.words, DateStyle.values);
+  static const amountStyle = EnumSetting(
+    'general.amountStyle',
+    AmountStyle.full,
+    AmountStyle.values,
+  );
   static const monthStartsOn = IntSetting('general.monthStartsOn', 1, min: 1, max: 28);
 
   /// [DateTime.monday] (1) to [DateTime.sunday] (7). Drawn as Sunday.

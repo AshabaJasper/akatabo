@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../app/formats.dart';
 import '../../app/routes.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
@@ -45,7 +46,10 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
     final s = ref.watch(storedSettingsProvider).value ?? const <String, String>{};
     final protect = BackupKeys.protect.decode(s[BackupKeys.protect.name]);
     final weekly = BackupKeys.weekly.decode(s[BackupKeys.weekly.name]);
-    final last = formatBackupDay(BackupKeys.lastAt.decode(s[BackupKeys.lastAt.name]));
+    final last = formatBackupDay(
+      BackupKeys.lastAt.decode(s[BackupKeys.lastAt.name]),
+      ref.watch(dateStyleProvider),
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AkSpace.s6),

@@ -18,6 +18,7 @@ import '../../domain/calendar.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_headline_amount.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../home/home_providers.dart';
@@ -146,7 +147,7 @@ class CategoryDetailScreen extends ConsumerWidget {
                 style: t.bodySm.copyWith(color: c.inkMuted),
               ),
               const SizedBox(height: AkSpace.s1),
-              Text(formatUgx(total), style: t.figureXl.copyWith(color: c.ink)),
+              AkHeadlineAmount(total, style: t.figureXl.copyWith(color: c.ink)),
               const SizedBox(height: AkSpace.s1),
               Text(
                 comparison(total, previousTotal, against),

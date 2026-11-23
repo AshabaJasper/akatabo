@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../app/formats.dart';
 import '../../app/routes.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../data/providers.dart';
@@ -102,7 +103,10 @@ class _DataSectionState extends ConsumerState<DataSection> {
   Widget build(BuildContext context) {
     final s = ref.watch(storedSettingsProvider).value ?? const <String, String>{};
     final weekly = BackupKeys.weekly.decode(s[BackupKeys.weekly.name]);
-    final last = formatBackupDay(BackupKeys.lastAt.decode(s[BackupKeys.lastAt.name]));
+    final last = formatBackupDay(
+      BackupKeys.lastAt.decode(s[BackupKeys.lastAt.name]),
+      ref.watch(dateStyleProvider),
+    );
 
     return SettingsSection(
       label: 'Data and backup',

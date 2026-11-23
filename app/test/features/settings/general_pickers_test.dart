@@ -1,3 +1,4 @@
+import 'package:akatabo/app/formats.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
@@ -84,6 +85,24 @@ void main() {
 
     expect(find.byType(BottomSheet), findsNothing);
     expect(await _stored(tester, db, SettingKeys.weekStartsOn.name), '${DateTime.monday}');
+  });
+
+  testWidgets('Date style shows the style as a date, and a new choice is saved', (tester) async {
+    final db = await _pumpGeneral(tester);
+    await tester.tap(find.text('19 Nov 2026'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('2026-11-19'));
+    await tester.pumpAndSettle();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    expect(await _stored(tester, db, SettingKeys.dateStyle.name), DateStyle.yearFirst.name);
+  });
+
+  testWidgets('How amounts are written saves the short form', (tester) async {
+    final db = await _pumpGeneral(tester);
+    await tester.tap(find.text('1.28M'));
+    await tester.pumpAndSettle();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    expect(await _stored(tester, db, SettingKeys.amountStyle.name), AmountStyle.short.name);
   });
 
   testWidgets('dismissing the sheet saves nothing', (tester) async {

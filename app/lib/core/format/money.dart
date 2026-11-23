@@ -15,6 +15,14 @@ String formatUgx(int shillings) => 'UGX ${formatAmount(shillings)}';
 String formatSigned(int shillings, {required bool moneyIn}) =>
     '${moneyIn ? '+' : '-'} ${formatAmount(shillings.abs())}';
 
+/// "How amounts are written" in General settings: in full, or short like `1.28M`. Only the
+/// large main figure on a screen follows it; rows, receipts and exports stay in full.
+enum AmountStyle { full, short }
+
+/// A screen's main figure in [style]: `UGX 1,284,000` or `UGX 1.28M`.
+String formatHeadline(int shillings, AmountStyle style) =>
+    style == AmountStyle.short ? 'UGX ${formatShort(shillings)}' : formatUgx(shillings);
+
 /// Short form for chart labels and stat tiles only: `1.83M`, `298k`, `950`.
 String formatShort(int shillings) {
   final sign = shillings < 0 ? '-' : '';

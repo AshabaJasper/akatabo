@@ -18,6 +18,7 @@ import '../../domain/spending.dart';
 import '../../smart/forecast/forecast_range.dart';
 import '../../widgets/ak_dashed_box.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_headline_amount.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../../widgets/charts/cumulative_line.dart';
@@ -147,7 +148,7 @@ class _ForecastBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(formatUgx(forecast.point), style: t.figureXl.copyWith(color: c.ink)),
+        AkHeadlineAmount(forecast.point, style: t.figureXl.copyWith(color: c.ink)),
         const SizedBox(height: AkSpace.s1),
         Text(
           '${range == null ? '' : '${rangeInWords(range!, formatUgx)}. '}'

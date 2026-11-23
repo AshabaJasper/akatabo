@@ -8,6 +8,7 @@ import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/data/seed/default_data.dart';
+import 'package:akatabo/data/settings/setting_keys.dart';
 import 'package:akatabo/domain/transaction_filter.dart';
 import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/filters/transaction_filter_providers.dart';
@@ -94,6 +95,7 @@ Future<_FakeRepo> _pump(
   Brightness brightness = Brightness.light,
   Stream<List<Transaction>>? all,
   bool withRouter = false,
+  Map<String, String> settings = const {},
 }) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -104,7 +106,7 @@ Future<_FakeRepo> _pump(
     ProviderScope(
       retry: (_, _) => null,
       overrides: [
-        storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+        storedSettingsProvider.overrideWith((ref) => Stream.value(settings)),
         appearanceProvider.overrideWithValue(const AkAppearance()),
         appNowProvider.overrideWithValue(_now),
         transactionRepositoryProvider.overrideWithValue(repo),
@@ -175,6 +177,15 @@ void main() {
     expect(find.text('UGX 1,000'), findsOneWidget);
     expect(find.text('UGX 46,000'), findsOneWidget, reason: 'total cost to you');
     expect(find.text('Today, 19 November 2026, 09:14'), findsOneWidget);
+  });
+
+  testWidgets("the entry's date follows Date style", (tester) async {
+    await _pump(
+      tester,
+      const TransactionDetailScreen(id: 'groceries'),
+      settings: {SettingKeys.dateStyle.name: 'dayFirst'},
+    );
+    expect(find.text('Today, 19/11/2026, 09:14'), findsOneWidget);
   });
 
   testWidgets('Edit opens Add on this entry; Add one like this opens Add filled from it', (

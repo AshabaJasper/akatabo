@@ -20,6 +20,7 @@ import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_headline_amount.dart';
 import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
@@ -120,7 +121,11 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                 style: t.bodySm.copyWith(color: c.inkMuted),
               ),
               const SizedBox(height: AkSpace.s1),
-              AkHiddenAmount(formatUgx(totals.moneyOut), style: t.figureXl.copyWith(color: c.ink)),
+              AkHeadlineAmount(
+                totals.moneyOut,
+                hideable: true,
+                style: t.figureXl.copyWith(color: c.ink),
+              ),
               const SizedBox(height: AkSpace.s4),
               CumulativeLineChart(
                 summary: _chartSummary(totals.moneyOut, percent, against),

@@ -1,8 +1,8 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../app/formats.dart';
 import '../../data/providers.dart';
 import '../../services/backup/backup_files.dart';
 import '../../services/backup/backup_service.dart';
@@ -12,10 +12,9 @@ import '../../services/security/lock_controller.dart';
 import '../../widgets/ak_message.dart';
 import 'backup_password.dart';
 
-/// "19 Nov 2026", or "Never" before the first backup.
-String formatBackupDay(int millis) => millis <= 0
-    ? 'Never'
-    : DateFormat('d MMM y').format(DateTime.fromMillisecondsSinceEpoch(millis));
+/// "19 Nov 2026" in the chosen Date style, or "Never" before the first backup.
+String formatBackupDay(int millis, [DateStyle style = DateStyle.words]) =>
+    millis <= 0 ? 'Never' : formatDate(DateTime.fromMillisecondsSinceEpoch(millis), style);
 
 /// The backup actions shared by Export and back up, Privacy and data, and the weekly
 /// reminder at start-up. Each returns a sentence for the person, or null when they backed

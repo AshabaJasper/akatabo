@@ -1,9 +1,9 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/close_screen.dart';
+import '../../app/formats.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../core/time/period.dart';
@@ -134,7 +134,8 @@ class _RegularNewScreenState extends ConsumerState<RegularNewScreen> {
             ),
             const SizedBox(height: AkSpace.s4),
             AkOutlineButton(
-              label: 'Next due ${DateFormat('d MMMM y').format(next)}',
+              label:
+                  'Next due ${formatDate(next, ref.watch(dateStyleProvider), words: 'd MMMM y')}',
               icon: AkIcons.calendar,
               onPressed: _pickDate,
             ),

@@ -15,6 +15,7 @@ import '../../domain/budget.dart' show previousMonths;
 import '../../domain/fees.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_headline_amount.dart';
 import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
@@ -94,7 +95,7 @@ class FeesScreen extends ConsumerWidget {
                 style: t.bodySm.copyWith(color: c.inkMuted),
               ),
               const SizedBox(height: AkSpace.s1),
-              Text(formatUgx(split.total), style: t.figureXl.copyWith(color: c.ink)),
+              AkHeadlineAmount(split.total, style: t.figureXl.copyWith(color: c.ink)),
               const SizedBox(height: AkSpace.s1),
               Text(
                 '${formatPercent(shareOf(split.total, spent))} of everything you spent',

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../app/formats.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
@@ -11,7 +12,7 @@ import '../../widgets/ak_pickers.dart';
 import '../add/add_providers.dart';
 import 'settings_page.dart';
 
-/// Money and dates, and how a new entry starts. Each change is saved at once.
+/// Money and dates, how amounts are written and how a new entry starts. Each change is saved at once.
 class GeneralSettingsScreen extends ConsumerStatefulWidget {
   const GeneralSettingsScreen({super.key});
 
@@ -54,6 +55,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     final s = async.requireValue;
     final monthStart = SettingKeys.monthStartsOn.decode(s[SettingKeys.monthStartsOn.name]);
     final weekStart = SettingKeys.weekStartsOn.decode(s[SettingKeys.weekStartsOn.name]);
+    final dateStyle = SettingKeys.dateStyle.decode(s[SettingKeys.dateStyle.name]);
+    final amountStyle = SettingKeys.amountStyle.decode(s[SettingKeys.amountStyle.name]);
     final direction = SettingKeys.newEntryDirection.decode(s[SettingKeys.newEntryDirection.name]);
     // The accounts Add offers, and the one it opens on, worked out as Add does.
     final accounts = ref.watch(enabledAccountsProvider).value ?? const <Account>[];
@@ -99,6 +102,20 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                 if (picked != null) await _save(SettingKeys.weekStartsOn, picked);
               },
             ),
+            SettingsValueRow(
+              title: 'Date style',
+              value: dateStyle.example,
+              divider: true,
+              onTap: () async {
+                final picked = await showAkChoiceSheet<DateStyle>(
+                  context,
+                  title: 'Date style',
+                  selected: dateStyle,
+                  options: [for (final d in DateStyle.values) (d, d.example)],
+                );
+                if (picked != null) await _save(SettingKeys.dateStyle, picked);
+              },
+            ),
             // Fixed by the owner's plan: UGX only, and English until translations exist. The
             // rows carry no chevron and no tap, and the line below says why, rather than a
             // picker that offers a single choice.
@@ -124,6 +141,31 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
         SettingsSection(
           label: 'Numbers and entry',
           children: [
+            Container(
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: context.colors.line)),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: settingsRowSide,
+                vertical: AkSpace.s4,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('How amounts are written', style: context.type.bodyMd),
+                  const SizedBox(height: AkSpace.s2),
+                  AkSegmented<AmountStyle>(
+                    semanticLabel: 'How amounts are written',
+                    segments: const [
+                      AkSegment(AmountStyle.full, '1,284,000'),
+                      AkSegment(AmountStyle.short, '1.28M'),
+                    ],
+                    selected: amountStyle,
+                    onChanged: (v) => _save(SettingKeys.amountStyle, v),
+                  ),
+                ],
+              ),
+            ),
             Container(
               decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: context.colors.line)),

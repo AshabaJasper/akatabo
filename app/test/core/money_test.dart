@@ -1,3 +1,4 @@
+import 'package:akatabo/core/format/dates.dart';
 import 'package:akatabo/core/format/money.dart';
 import 'package:akatabo/smart/text_normaliser.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,5 +42,19 @@ void main() {
     expect(payeeKeyOf('Groceries, Nakasero  market'), 'groceries nakasero market');
     expect(payeeKeyOf('  YAKA electricity!'), 'yaka electricity');
     expect(payeeKeyOf(''), '');
+  });
+
+  test('a main figure is written in full or short, as How amounts are written says', () {
+    expect(formatHeadline(1284000, AmountStyle.full), 'UGX 1,284,000');
+    expect(formatHeadline(1284000, AmountStyle.short), 'UGX 1.28M');
+    expect(formatHeadline(45000, AmountStyle.short), 'UGX 45k');
+  });
+
+  test("Date style writes a full date three ways; in words keeps the screen's own pattern", () {
+    final d = DateTime(2026, 11, 9);
+    expect(formatDate(d, DateStyle.words), '9 Nov 2026');
+    expect(formatDate(d, DateStyle.words, words: 'd MMMM y'), '9 November 2026');
+    expect(formatDate(d, DateStyle.dayFirst, words: 'd MMMM y'), '09/11/2026');
+    expect(formatDate(d, DateStyle.yearFirst), '2026-11-09');
   });
 }

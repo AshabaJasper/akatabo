@@ -19,6 +19,7 @@ import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_dashed_box.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_headline_amount.dart';
 import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
@@ -86,7 +87,7 @@ class HomeScreen extends ConsumerWidget {
           _Header(
             monthName: monthName,
             caption: 'Money out, 1 to ${now.day} $monthName',
-            figure: formatUgx(totals.moneyOut),
+            figure: totals.moneyOut,
             comparison: change == null || previousOut == 0
                 ? null
                 : change >= 0
@@ -178,7 +179,7 @@ class _Header extends StatelessWidget {
 
   final String monthName;
   final String caption;
-  final String figure;
+  final int figure;
   final String? comparison;
   final List<Widget> tiles;
 
@@ -255,7 +256,11 @@ class _Header extends StatelessWidget {
                 const SizedBox(height: AkSpace.s3h),
                 Text(caption, style: t.bodySm.copyWith(color: c.onBrandMuted)),
                 const SizedBox(height: AkSpace.s1),
-                AkHiddenAmount(figure, style: t.figureXl.copyWith(color: c.onBrand)),
+                AkHeadlineAmount(
+                  figure,
+                  hideable: true,
+                  style: t.figureXl.copyWith(color: c.onBrand),
+                ),
                 if (comparison != null) ...[
                   const SizedBox(height: AkSpace.s1),
                   Text(comparison!, style: t.bodySm.copyWith(color: c.accent)),
@@ -549,7 +554,7 @@ class _FirstDay extends ConsumerWidget {
           _Header(
             monthName: monthName,
             caption: 'Money out this month',
-            figure: formatUgx(0),
+            figure: 0,
             comparison: null,
             tiles: const [],
           ),
