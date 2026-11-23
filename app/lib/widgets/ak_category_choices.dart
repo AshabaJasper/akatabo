@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../core/icons/ak_icon.dart';
 import '../core/theme/ak_theme.dart';
 import '../core/theme/token_colour.dart';
-import '../core/theme/tokens.g.dart' show akDarkTokens, akLightTokens;
+import '../core/theme/tokens.g.dart' show akLightTokens;
 import 'ak_surfaces.dart';
 
 /// The twelve category colours in the drawn order, with the names screen readers say.
@@ -210,7 +210,10 @@ class AkColourChoices extends StatelessWidget {
                     shape: BoxShape.circle,
                     // The real colour, even while Category colours is One colour or
                     // Greys, so the choice shows what Colourful will draw.
-                    color: colourForToken(_colourful(context), token),
+                    color: colourForToken(
+                      drawnCategoryColours(Theme.of(context).brightness),
+                      token,
+                    ),
                   ),
                 ),
               ),
@@ -220,11 +223,6 @@ class AkColourChoices extends StatelessWidget {
     );
   }
 }
-
-/// This theme's tokens before Category colours is applied: the `cat-` tokens are the same in
-/// every main colour, so the base tokens of the brightness are enough.
-AkColorTokens _colourful(BuildContext context) =>
-    Theme.of(context).brightness == Brightness.dark ? akDarkTokens : akLightTokens;
 
 /// The category icons as 44px tiles in six columns. The chosen tile is `surface-sunk` with a
 /// 2px `brand-bright` border on all sides; the rest are `surface` with a `line-strong` border.

@@ -272,6 +272,17 @@ void main() {
       expect(await db.select(db.accounts).get(), hasLength(1));
     });
 
+    test('the only account switched on is not deleted, even with others switched off', () async {
+      for (final id in [DefaultIds.mtn, DefaultIds.airtel, DefaultIds.bank]) {
+        await repo.setEnabled(id, enabled: false);
+      }
+      await expectLater(repo.delete(DefaultIds.cash), throwsStateError);
+      expect(await db.select(db.accounts).get(), hasLength(4));
+      // A switched-off one can still go.
+      await repo.delete(DefaultIds.bank);
+      expect(await db.select(db.accounts).get(), hasLength(3));
+    });
+
     testWidgets('Edit account is filled from the account and saves the change', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);

@@ -178,7 +178,8 @@ class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
   }
 
   /// Delete, as the rules say: refused while entries use the account (switching it off is
-  /// offered instead, so those entries keep it), refused for the only account, and otherwise
+  /// offered instead, so those entries keep it), refused for the only account switched on,
+  /// and otherwise
   /// asked first, because it cannot be undone.
   Future<void> _delete() async {
     final a = _original;
@@ -224,8 +225,11 @@ class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
       }
       return;
     }
-    final all = ref.read(allAccountsProvider).value ?? const <Account>[];
-    if (all.length <= 1) {
+    final others = [
+      for (final o in ref.read(allAccountsProvider).value ?? const <Account>[])
+        if (o.id != a.id) o,
+    ];
+    if (others.isEmpty || (a.enabled && !others.any((o) => o.enabled))) {
       setState(() => _problem = 'Akatabo needs one account to add to, so this one stays.');
       return;
     }

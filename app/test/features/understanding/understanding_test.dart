@@ -31,6 +31,7 @@ import 'package:akatabo/services/security/privacy_settings.dart';
 import 'package:akatabo/smart/forecast/forecast_range.dart';
 import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:akatabo/widgets/charts/cumulative_line.dart';
+import 'package:akatabo/widgets/charts/stacked_bars.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -67,6 +68,8 @@ Future<void> _pump(
   List<Override> data = const [],
   Brightness brightness = Brightness.light,
   Map<String, String> settings = const {},
+  PeriodCalculator calc = const PeriodCalculator(),
+  AkAppearance appearance = const AkAppearance(),
 }) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -77,15 +80,15 @@ Future<void> _pump(
       retry: (_, _) => null,
       overrides: [
         storedSettingsProvider.overrideWith((ref) => Stream.value(settings)),
-        appearanceProvider.overrideWithValue(const AkAppearance()),
+        appearanceProvider.overrideWithValue(appearance),
         appNowProvider.overrideWithValue(_now),
-        periodCalculatorProvider.overrideWithValue(const PeriodCalculator()),
+        periodCalculatorProvider.overrideWithValue(calc),
         allCategoriesProvider.overrideWith((ref) => Stream.value(_categories)),
         enabledAccountsProvider.overrideWith((ref) => Stream.value(_accounts)),
         allAccountsProvider.overrideWith((ref) => Stream.value(_allAccounts)),
         ...data,
       ],
-      child: MaterialApp(theme: buildAkTheme(brightness, const AkAppearance()), home: screen),
+      child: MaterialApp(theme: buildAkTheme(brightness, appearance), home: screen),
     ),
   );
   await tester.pumpAndSettle();
@@ -354,6 +357,20 @@ void main() {
       );
     });
 
+    testWidgets('under Category colours: One colour, the three fee parts stay apart', (
+      tester,
+    ) async {
+      final month = [txRow(id: 'a', amount: 45000, fee: 1000, tax: 500, day: 20261119, at: _now)];
+      await _pump(
+        tester,
+        const FeesScreen(),
+        data: _data(month: month),
+        appearance: const AkAppearance(categoryColours: AkCategoryColours.oneColour),
+      );
+      final parts = tester.widget<StackedBars>(find.byType(StackedBars)).parts;
+      expect(parts.map((p) => p.colour).toSet(), hasLength(3));
+    });
+
     testWidgets('an entry with a fee shows the split and the accounts', (tester) async {
       final month = [txRow(id: 'a', amount: 45000, fee: 1000, day: 20261119, at: _now)];
       await _pump(tester, const FeesScreen(), data: _data(month: month));
@@ -570,6 +587,27 @@ void main() {
         matchesGoldenFile('goldens/forecast_history_light.png'),
       );
       semantics.dispose();
+    });
+
+    testWidgets('with Month starts on the 25th, How close still names the calendar date', (
+      tester,
+    ) async {
+      final days = _tenDays();
+      const history = [
+        SnapshotPoint(periodStart: 20260925, dayInPeriod: 26, point: 1610000, actual: 1660000),
+      ];
+      await _pump(
+        tester,
+        const ForecastScreen(),
+        calc: const PeriodCalculator(monthStartsOn: 25),
+        data: _data(month: days, window: days, history: history),
+      );
+      await tester.dragUntilVisible(
+        find.textContaining('Dashed is what was forecast'),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+      expect(find.textContaining('forecast on the 19th.'), findsOneWidget);
     });
 
     testWidgets('a person with no saved forecast yet sees no history at all', (tester) async {

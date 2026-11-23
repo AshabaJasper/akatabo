@@ -57,6 +57,12 @@ AkColorTokens applyCategoryColours(AkColorTokens c, AkCategoryColours mode) {
   );
 }
 
+/// The `cat-` colours as drawn, before "Category colours" changes them. They are the same in
+/// every main colour, so the base tokens of the brightness are enough. For the colour picker
+/// and for charts whose parts are not categories (the Fees parts), which must stay apart.
+AkColorTokens drawnCategoryColours(Brightness brightness) =>
+    brightness == Brightness.dark ? akDarkTokens : akLightTokens;
+
 AkPalette paletteById(String id) =>
     akPalettes.firstWhere((p) => p.id == id, orElse: () => akPalettes.first);
 

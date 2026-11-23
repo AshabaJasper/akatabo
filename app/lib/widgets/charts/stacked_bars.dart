@@ -153,6 +153,12 @@ class _Bar extends StatelessWidget {
         if (i < column.values.length && column.values[i] > 0)
           (part: parts[i], value: column.values[i]),
     ];
+    // The whole bar, gaps included, is to scale with the largest total; the parts share what
+    // is left after the gaps. So two months with the same total stand the same height however
+    // many parts each has. A part too small to see keeps 1px.
+    final total = shown.fold(0, (sum, s) => sum + s.value);
+    final bar = largest == 0 ? 0.0 : area * total / largest;
+    final usable = math.max(0.0, bar - AkSpace.s0h * (shown.length - 1));
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -170,7 +176,7 @@ class _Bar extends StatelessWidget {
           if (i > 0) const SizedBox(height: AkSpace.s0h),
           Container(
             key: ValueKey('${column.label}-${s.part.name}'),
-            height: largest == 0 ? 0 : math.max(1, area * s.value / largest),
+            height: total == 0 ? 0 : math.max(1, usable * s.value / total),
             decoration: BoxDecoration(
               color: s.part.colour,
               borderRadius: i == 0 ? BorderRadius.vertical(top: radius) : null,

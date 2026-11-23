@@ -58,9 +58,12 @@ class BudgetWarner {
 
   /// Checks the saved entry [transactionId]. Never throws: a failure is reported and the
   /// entry stays saved.
-  Future<void> afterSave(String transactionId) async {
+  ///
+  /// For an edit, [previous] is the entry as it was: it counts as "before", so changing only
+  /// the note of an entry that already crossed a line does not warn again.
+  Future<void> afterSave(String transactionId, {Transaction? previous}) async {
     try {
-      await _check(transactionId);
+      await _check(transactionId, previous);
     } catch (error, stack) {
       FlutterError.reportError(
         FlutterErrorDetails(exception: error, stack: stack, library: 'akatabo budget warning'),
@@ -68,7 +71,7 @@ class BudgetWarner {
     }
   }
 
-  Future<void> _check(String transactionId) async {
+  Future<void> _check(String transactionId, Transaction? wasBefore) async {
     final settings = await _ref.read(storedSettingsProvider.future);
     if (!SettingKeys.budgetWarn.decode(settings[SettingKeys.budgetWarn.name])) return;
 
@@ -92,7 +95,12 @@ class BudgetWarner {
     final rows = await transactions.watchIn(month).first;
     final previous = await transactions.watchIn(calc.previous(month)).first;
     final after = moneyOutByCategory(rows)[cat.id] ?? 0;
-    final before = moneyOutByCategory(rows.where((t) => t.id != entry.id))[cat.id] ?? 0;
+    final before =
+        moneyOutByCategory([
+          ...rows.where((t) => t.id != entry.id),
+          if (wasBefore != null && month.containsDay(wasBefore.localDay)) wasBefore,
+        ])[cat.id] ??
+        0;
     final budget = effectiveBudget(
       base: base,
       carriesOver:

@@ -514,8 +514,8 @@ class AccountRepository {
   }
 
   /// Deletes account [id] for good. Refused with a [StateError], and nothing changes, while
-  /// any entry uses it (switch it off instead, so those entries keep it) or when it is the only
-  /// account, since Add needs one. If it was the account Add opens on, the next account
+  /// any entry uses it (switch it off instead, so those entries keep it), or when it is the
+  /// only account switched on (or the only one at all), since Add needs one to offer. If it was the account Add opens on, the next account
   /// switched on takes that over.
   Future<void> delete(String id) => _db.transaction(() async {
     final row = await (_db.select(_db.accounts)..where((a) => a.id.equals(id))).getSingleOrNull();
@@ -527,6 +527,9 @@ class AccountRepository {
               ..orderBy([(a) => OrderingTerm.asc(a.sortOrder)]))
             .get();
     if (others.isEmpty) throw StateError('Account $id is the only account');
+    if (row.enabled && !others.any((a) => a.enabled)) {
+      throw StateError('Account $id is the only account switched on');
+    }
     await (_db.delete(_db.accounts)..where((a) => a.id.equals(id))).go();
     if (row.isDefault) {
       final next = others.where((a) => a.enabled).firstOrNull;

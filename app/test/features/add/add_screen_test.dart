@@ -74,7 +74,8 @@ class RecordingBudgetWarner extends BudgetWarner {
   final List<String> checked;
 
   @override
-  Future<void> afterSave(String transactionId) async => checked.add(transactionId);
+  Future<void> afterSave(String transactionId, {Transaction? previous}) async =>
+      checked.add(transactionId);
 }
 
 final _now = DateTime(2026, 11, 19, 9, 14);

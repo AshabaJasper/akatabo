@@ -186,7 +186,7 @@ class _ForecastBody extends StatelessWidget {
           sign: '+ ',
         ),
         _SumRow(title: 'Regular bills due', amount: forecast.regularDue, sign: '+ '),
-        _HowClose(dayInMonth: daysBetween(month.start, today) + 1),
+        _HowClose(dayOfMonth: today.day),
         const SizedBox(height: AkSpace.s4),
         Text(
           'Worked out on this phone from your last $historyDays days. One-off payments such as '
@@ -203,9 +203,12 @@ class _ForecastBody extends StatelessWidget {
 /// forecast made on this day of the month (dashed) beside what was really spent (solid).
 /// A month with no saved forecast is left out; with none at all the section is not shown.
 class _HowClose extends ConsumerWidget {
-  const _HowClose({required this.dayInMonth});
+  const _HowClose({required this.dayOfMonth});
 
-  final int dayInMonth;
+  /// Today's date in the calendar month. Every budget month starts on the same date, so the
+  /// earlier forecasts were made on (or nearest to) this date too, whatever "Month starts on"
+  /// says; the day within the budget month would name the wrong date.
+  final int dayOfMonth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -218,7 +221,7 @@ class _HowClose extends ConsumerWidget {
     final within = history.fold(0.0, (sum, s) => sum + ((s.actual - s.point) / s.point).abs());
     final percent = math.max(1, (within / history.length * 100).round());
     // "The 19th" in a settings row; here it sits inside a sentence.
-    final day = ordinalDay(dayInMonth).replaceFirst('The ', '');
+    final day = ordinalDay(dayOfMonth).replaceFirst('The ', '');
     String month(SnapshotPoint s) => DateFormat('MMMM').format(fromLocalDay(s.periodStart));
     String short(SnapshotPoint s) => DateFormat('MMM').format(fromLocalDay(s.periodStart));
     final spoken = [

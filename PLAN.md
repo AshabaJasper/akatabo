@@ -399,3 +399,20 @@ After the owner tried the app on a Pixel 8 Pro. Owner decisions: a new private G
 - **Every empty note that something can fill has one action** (`DESIGN_SYSTEM.md` rule).
 - **App lock page** (`/settings/lock`, undrawn around SetPrivacy.html's rows): the PIN row always shows. With the lock off it reads "Set a PIN" and runs the same flow as the switch, so a PIN never exists with the lock off; a PIN left behind by a failed clear is replaced, never asked for. The rows wait for the PIN check, so a stored PIN cannot be replaced unasked while it loads.
 - **Back links name where the person came from** on Restore (Home), App lock (Privacy and data) and New regular payment (Home).
+
+### Polish round, stage 4: the drawn pieces (22 to 23 November 2026)
+
+- **Edit reuses Add** (`/add?edit=id`, `/add?like=id`). Editing keeps the id and the moment; "Add one like this" copies the entry with today's time. The repository's `update` moves `updatedAt`.
+- **Home tiles open their pages**: Left in budgets (or Over budget) goes to Budgets, Fees to Fees. Budgets at a glance shows the top three budgets and is off by default, as drawn.
+- **Fees by month is a stacked bar chart** (`StackedBars`), with fees, tax and withdrawing cash as the three parts.
+- **Forecast "How close it has been"** uses the best snapshot of each of the last three months. A month with no snapshot is left out, not shown as zero.
+- **The today point pulses once** (`AkMotion.pulse`, 1,200ms), and not at all under reduced motion.
+- **Coming up draws bubbles by area**: the radius follows the square root of the amount, so a payment twice as big looks twice as big. "Remind me the day before" is the same setting as the reminder in Smart help, through one shared `switchReminder`.
+- **Day by day** reuses Calendar's `heatStep` and the shared `heatColour`, so both grids agree.
+- **Category colours is a theme swap**, not a data change. One colour sets every `cat-` token to the main colour, and Greys sets them to slate. Stored colours stay, so Colourful brings them back. The icon ink follows the drawn fill, not the stored name. The colour picker in Edit a category still shows the real colours. The `-past` tints are unused and left alone.
+- **"The app opens on" is read at start-up**, like the onboarding flag, because the settings stream has not loaded before the first frame. Add opens over Home (pushed after the first frame), so closing or saving it lands on Home rather than an empty stack. The choice sits on the Home screen settings page, where SetAppearance.html draws it.
+- **Date style** has three options: in words (each screen keeps its own wording, so the default changes nothing), 19/11/2026, and 2026-11-19. It applies to full dates on screens (entry detail, regular payments, backup dates). Exports keep their own fixed formats, because a CSV must sort.
+- **How amounts are written** changes only a screen's main figure (`AkHeadlineAmount`). Rows, receipts and exports stay in full. A screen reader always hears the full figure, because "1.28M" read aloud loses the amount.
+- **Edit account reuses New account** (`/settings/accounts/edit/:id`) without the balance field, which the Accounts page sets. MTN and Airtel show as Mobile and keep their own kind unless another is picked. Delete asks first. It is refused while any entry uses the account, paid from it or moved to it, and offers "Switch it off" instead. The only account is never deleted. If the default account is deleted, the default passes to the next account that is switched on.
+- **The "later update" note under Smart help is removed, not reworded.** The features work, and SetSmart.html draws no note there. `PlaceholderScreen` was dead code and is deleted.
+- **Tests stay hermetic:** app-level tests override every provider that reaches the database (`previousMonthRowsProvider`, `allCategoriesProvider`, `allAccountsProvider`). A live drift stream never settles under the test clock.

@@ -1,3 +1,4 @@
+import 'package:akatabo/core/time/period.dart';
 import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
@@ -114,6 +115,41 @@ void main() {
       expect(fake.shown, hasLength(2));
       expect(fake.asks, 0, reason: 'never asks for permission itself');
     });
+
+    test(
+      'editing an entry that already crossed the line warns again only if it goes further',
+      () async {
+        await warnOn();
+        await spend(70000);
+        await spend(15000); // 85%: Nearly used, warned once
+        expect(fake.shown, hasLength(1));
+        final repo = container.read(transactionRepositoryProvider);
+        final rows = await repo.watchIn(const PeriodCalculator().month(_now)).first;
+        final crossing = rows.firstWhere((t) => t.amount == 15000);
+
+        Future<void> edit(int amount, {String? note}) => withClock(Clock.fixed(_now), () async {
+          await repo.update(
+            crossing.id,
+            TransactionDraft(
+              direction: Direction.moneyOut,
+              amount: amount,
+              categoryId: DefaultIds.food,
+              accountId: DefaultIds.mtn,
+              occurredAt: _now,
+              note: note,
+            ),
+          );
+          final before = rows.firstWhere((t) => t.id == crossing.id);
+          await container.read(budgetWarnerProvider).afterSave(crossing.id, previous: before);
+        });
+
+        await edit(15000, note: 'only the note changed');
+        expect(fake.shown, hasLength(1), reason: 'no new line was crossed');
+        await edit(40000); // 110%: over now
+        expect(fake.shown, hasLength(2));
+        expect(fake.shown.last.title, 'Over budget in Food and shopping');
+      },
+    );
 
     test('nothing when the switch is off', () async {
       await spend(95000);

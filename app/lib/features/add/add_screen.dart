@@ -287,7 +287,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
       return;
     }
     // Runs on after Add closes; it reports its own failures and never undoes the save.
-    unawaited(warner.afterSave(savedId));
+    unawaited(warner.afterSave(savedId, previous: original));
     if (mounted) await closeScreen(context);
   }
 

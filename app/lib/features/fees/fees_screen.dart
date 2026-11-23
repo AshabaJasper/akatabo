@@ -125,7 +125,7 @@ class FeesScreen extends ConsumerWidget {
                 ),
               if (split.withdrawing > 0)
                 _PartRow(
-                  colour: c.catPink,
+                  colour: drawnCategoryColours(Theme.of(context).brightness).catPink,
                   title: 'Withdrawing cash',
                   detail:
                       '${split.withdrawingCount} '
@@ -135,7 +135,7 @@ class FeesScreen extends ConsumerWidget {
                 ),
               if (split.tax > 0)
                 _PartRow(
-                  colour: c.catAmber,
+                  colour: drawnCategoryColours(Theme.of(context).brightness).catAmber,
                   title: split.taxIsAllFromWithdrawals ? 'Tax on withdrawals' : 'Tax',
                   detail: split.taxOnWithdrawals > 0 && !split.taxIsAllFromWithdrawals
                       ? 'Including ${formatUgx(split.taxOnWithdrawals)} on withdrawals'
@@ -186,6 +186,8 @@ class _SixMonths extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    // Fee kinds, not categories: they keep their drawn colours under "Category colours".
+    final drawn = drawnCategoryColours(Theme.of(context).brightness);
     final spoken = [
       for (final (i, s) in splits.indexed)
         '${DateFormat('MMMM').format(months[i].start)} '
@@ -195,8 +197,8 @@ class _SixMonths extends StatelessWidget {
     return StackedBars(
       parts: [
         StackPart(name: 'Sending', colour: c.brand),
-        StackPart(name: 'Withdrawing', colour: c.catPink),
-        StackPart(name: 'Tax', colour: c.catAmber),
+        StackPart(name: 'Withdrawing', colour: drawn.catPink),
+        StackPart(name: 'Tax', colour: drawn.catAmber),
       ],
       columns: [
         for (final (i, s) in splits.indexed)

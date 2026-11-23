@@ -318,3 +318,38 @@ Four builders worked in separate git worktrees (Smart help and Reminders, the pi
 | 4 | A PIN left behind with the lock off showed Change PIN and asked for it | 6 | Fixed: Set a PIN replaces it; tested |
 | 5 | The regular payment date ignored "Week starts on" | 6 | Fixed |
 | 6 | Header hairline on when not scrolled; no year jump in the date dialog; segmented thumb right to left | 3 to 4 | Filed in `docs/BUGS.md` |
+
+## Polish round, stage 4: the drawn pieces (23 November 2026)
+
+- **Works:**
+  - Edit a transaction, and "Add one like this".
+  - Home: "Left in budgets" and Fees tiles that open their pages, "See all", and Forecast and Budgets at a glance switches.
+  - Fees: six months as stacked bars.
+  - Forecast: "How close it has been", and a one-time pulse on today's point.
+  - Coming up: the bubble timeline and "Remind me the day before".
+  - Categories: Day by day.
+  - Appearance: Category colours. Home screen settings: The app opens on.
+  - General: Date style and How amounts are written.
+  - Accounts: Edit account and Delete (asks first, refused while entries use the account, offers to switch it off).
+  - Removed: the dead `PlaceholderScreen` and the wrong "later update" note under Smart help.
+- **Tested:** `flutter analyze` is clean and `flutter test` passes 1,126 tests. New tests cover each piece, plus:
+  - start-up on Insights and Add
+  - the full figure spoken under short amounts
+  - the account delete rules
+  - category colours in the theme and icon ink
+  - Day by day fills and outlines
+  - hermetic overrides for the shell and looks-regular tests
+
+  Goldens were regenerated on purpose: appearance, categories_pie, smart_help, fees, forecast_history and regular. One bug review: 6 fixed with tests, 2 filed.
+- **Not tested:** any of this on the Pixel 8 Pro or the emulator. The journey test was not rerun.
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | Editing an entry that already crossed a budget line warned again | 3 x 2 = 6 | Fixed: the warner counts the old entry as "before"; tested |
+| 2 | "How close it has been" named the day within the budget month, not the date, when the month starts after the 1st | 4 x 2 = 8 | Fixed; tested with a month starting on the 25th |
+| 3 | Under One colour or Greys, the three Fees parts turned the same colour | 2 x 3 = 6 | Fixed: fee parts keep their drawn colours; tested |
+| 4 | Deleting the only account switched on left Add with nothing to offer | 2 x 3 = 6 | Fixed in the repository and on the screen; tested |
+| 5 | Payments on near days wrote their figures and day numbers over each other | 4 x 2 = 8 | Fixed: a label that would overlap is left out; tested |
+| 6 | Bars with more parts stood taller than a bar with the same total | 6 x 1 = 6 | Fixed: the whole bar is to scale, and the parts share it; tested |
+| 7 | Edit account shows "Pick this first" off for the account Add falls back to | 2 x 2 = 4 | Filed in `docs/BUGS.md` |
+| 8 | Typing in Add before an edited entry loads is overwritten | 1 x 2 = 2 | Filed in `docs/BUGS.md` |

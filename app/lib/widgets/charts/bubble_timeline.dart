@@ -74,6 +74,17 @@ class BubbleTimeline extends StatelessWidget {
   }
 }
 
+/// Adds [wanted] to [taken] and returns true when it keeps [AkSpace.s1] clear of every rect
+/// already taken; otherwise leaves [taken] as it was and returns false. Labels are placed in
+/// order of importance, so the first to ask keeps its place.
+@visibleForTesting
+bool claimSpace(List<Rect> taken, Rect wanted) {
+  final padded = wanted.inflate(AkSpace.s1 / 2);
+  if (taken.any((r) => r.inflate(AkSpace.s1 / 2).overlaps(padded))) return false;
+  taken.add(wanted);
+  return true;
+}
+
 class _TimelinePainter extends CustomPainter {
   _TimelinePainter({
     required this.from,
@@ -132,7 +143,14 @@ class _TimelinePainter extends CustomPainter {
 
     final end = text(endLabel, label);
     final largest = bubbles.fold(0, (m, b) => math.max(m, b.amount));
-    // Largest first, so a small payment on a near day is drawn over a big one, not hidden.
+    // "Today" and the month's end already name their days; nothing is written over them.
+    final taken = <Rect>[
+      Offset(0, size.height - under.height) & under.size,
+      Offset(size.width - end.width, size.height - end.height) & end.size,
+    ];
+    // Largest first: its circle is drawn under the smaller ones, and its figure and day get
+    // their place first. A label that would land on one already written is left out (the
+    // spoken summary still names every payment).
     final order = [...bubbles]..sort((a, b) => b.amount.compareTo(a.amount));
     for (final b in order) {
       final r = largest == 0
@@ -142,15 +160,12 @@ class _TimelinePainter extends CustomPainter {
       canvas.drawCircle(Offset(x, lineY), r, Paint()..color = b.colour);
       if (!hidden) {
         final f = text(formatShort(b.amount), figure);
-        f.paint(canvas, Offset(x - f.width / 2, lineY - r - f.height - 1));
+        final at = Offset(x - f.width / 2, lineY - r - f.height - 1) & f.size;
+        if (claimSpace(taken, at)) f.paint(canvas, at.topLeft);
       }
-      // The day under it, unless it would sit on "Today" or the month's end, which already
-      // name that day.
       final d = text('${b.day.day}', label);
-      final dx = x - d.width / 2;
-      if (dx > under.width + AkSpace.s1 && dx + d.width < size.width - end.width - AkSpace.s1) {
-        d.paint(canvas, Offset(dx, size.height - d.height));
-      }
+      final at = Offset(x - d.width / 2, size.height - d.height) & d.size;
+      if (claimSpace(taken, at)) d.paint(canvas, at.topLeft);
     }
     under.paint(canvas, Offset(0, size.height - under.height));
     end.paint(canvas, Offset(size.width - end.width, size.height - end.height));

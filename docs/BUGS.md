@@ -4,6 +4,24 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
+### [bug-review] Edit account shows "Pick this first" off for the account Add opens on
+
+- **Where:** `app/lib/features/settings/new_account_screen.dart` (`_fill`, and the "Now it is" detail)
+- **What happens:** when no account is marked default, Add opens on the first account switched on. Editing that account shows "Pick this first when I add" as off, and the "Now it is X" line is hidden because X is this account.
+- **How to trigger:** switch off "Pick this first" on the default account, then open Edit on the first account switched on.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** start with `_makeDefault = a.isDefault || firstPickAccount(enabled)?.id == a.id`, and treat it as unchanged when nothing was touched.
+- **Found:** 23 November 2026, polish round stage 4 review
+
+### [bug-review] Add (edit or copy) replaces what was typed if the entry loads late
+
+- **Where:** `app/lib/features/add/add_screen.dart` (`_fillFrom` while `_filling`)
+- **What happens:** while the entry is loading, the fields can be typed in; when it arrives, the loaded values replace what was typed.
+- **How to trigger:** on a slow database, open Edit and type an amount before the form fills.
+- **Score:** frequency 1 x severity 2 = 2
+- **Suggested fix:** keep the form from taking input while `_filling` (`IgnorePointer`), or skip a field the person has already changed.
+- **Found:** 23 November 2026, polish round stage 4 review
+
 ### [bug-review] formatShort has no billions step
 
 - **Where:** `app/lib/core/format/money.dart`, `formatShort`
