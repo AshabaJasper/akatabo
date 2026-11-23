@@ -570,7 +570,7 @@ void main() {
       test('every disc is at least 3:1 against the ground, by fill or edge, in $name', () {
         for (final token in AccountRepository.accountColourTokens) {
           final fill = contrastRatio(colourForToken(c, token), c.ground);
-          if (AccountColourChoices.needsEdge(c, token)) {
+          if (AccountColourChoices.needsEdge(colourForToken(c, token), c.ground)) {
             expect(contrastRatio(c.inkMuted, c.ground), greaterThanOrEqualTo(3), reason: token);
           } else {
             expect(fill, greaterThanOrEqualTo(3), reason: token);

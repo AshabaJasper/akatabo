@@ -814,7 +814,6 @@ class _AccountChoices extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
     return Wrap(
       spacing: AkSpace.s2,
       runSpacing: AkSpace.s2,
@@ -823,7 +822,7 @@ class _AccountChoices extends StatelessWidget {
           AkChip(
             label: a.name,
             selected: a.id == selectedId,
-            dot: colourForToken(c, a.colourToken),
+            dot: accountColour(context, a.colourToken),
             onTap: () => onChanged(a.id),
           ),
       ],

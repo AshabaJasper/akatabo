@@ -261,6 +261,37 @@ void main() {
       );
       semantics.dispose();
     });
+
+    testWidgets('the Day by day legend matches the way the heat runs in each theme', (
+      tester,
+    ) async {
+      final month = [txRow(id: 'a', amount: 5000, day: 20261103, at: DateTime(2026, 11, 3, 9))];
+      Future<void> legendIn(Brightness b, String words) async {
+        await _pump(
+          tester,
+          const CategoriesScreen(),
+          data: _data(month: month),
+          brightness: b,
+        );
+        await tester.dragUntilVisible(
+          find.text('Day by day'),
+          find.byType(ListView).first,
+          const Offset(0, -200),
+        );
+        expect(find.text(words), findsOneWidget, reason: '$b');
+      }
+
+      // Seen on the Pixel: in dark the busiest days are the lightest cells.
+      await legendIn(Brightness.light, 'darker means more spent');
+      await legendIn(Brightness.dark, 'brighter means more spent');
+    });
+
+    testWidgets('a row with nothing to compare with shows its share alone', (tester) async {
+      final month = [txRow(id: 'a', amount: 5000, day: 20261103, at: DateTime(2026, 11, 3, 9))];
+      await _pump(tester, const CategoriesScreen(), data: _data(month: month));
+      expect(find.textContaining('to compare with'), findsNothing);
+      expect(find.text('100%'), findsWidgets);
+    });
   });
 
   group('Category detail', () {
@@ -693,6 +724,11 @@ void main() {
           'Nothing repeating yet. Add a bill you pay every week or month, and it comes up here.',
         ),
         findsOneWidget,
+      );
+      expect(
+        find.textContaining('Add a regular payment'),
+        findsOneWidget,
+        reason: 'one way to add, not a link and a button that do the same',
       );
     });
 

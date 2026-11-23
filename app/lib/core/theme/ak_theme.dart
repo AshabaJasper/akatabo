@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'ak_appearance.dart';
 import 'still_transitions.dart';
+import 'token_colour.dart';
 import 'tokens.g.dart';
 
 export 'ak_appearance.dart';
@@ -62,6 +63,14 @@ AkColorTokens applyCategoryColours(AkColorTokens c, AkCategoryColours mode) {
 /// and for charts whose parts are not categories (the Fees parts), which must stay apart.
 AkColorTokens drawnCategoryColours(Brightness brightness) =>
     brightness == Brightness.dark ? akDarkTokens : akLightTokens;
+
+/// An account's colour. Two account colours borrow `cat-` tokens (purple and teal), and
+/// "Category colours" is about categories: under Greys they would both turn slate, so accounts
+/// read the drawn `cat-` colours instead.
+Color accountColour(BuildContext context, String token) => colourForToken(
+  token.startsWith('cat-') ? drawnCategoryColours(Theme.of(context).brightness) : context.colors,
+  token,
+);
 
 AkPalette paletteById(String id) =>
     akPalettes.firstWhere((p) => p.id == id, orElse: () => akPalettes.first);

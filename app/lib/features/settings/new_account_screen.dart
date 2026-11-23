@@ -6,7 +6,6 @@ import '../../app/close_screen.dart';
 import '../../app/routes.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../core/theme/contrast.dart';
-import '../../core/theme/token_colour.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/repositories.dart';
@@ -409,9 +408,8 @@ class AccountColourChoices extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onChanged;
 
-  /// Whether [token]'s disc needs an edge to stand 3:1 against the ground.
-  static bool needsEdge(AkColorTokens c, String token) =>
-      contrastRatio(colourForToken(c, token), c.ground) < 3;
+  /// Whether a disc of [fill] needs an edge to stand 3:1 against [ground].
+  static bool needsEdge(Color fill, Color ground) => contrastRatio(fill, ground) < 3;
 
   @override
   Widget build(BuildContext context) {
@@ -426,8 +424,8 @@ class AccountColourChoices extends StatelessWidget {
           for (final token in AccountRepository.accountColourTokens)
             _Disc(
               name: accountColourNames[token]!,
-              fill: colourForToken(c, token),
-              edge: needsEdge(c, token) ? c.inkMuted : null,
+              fill: accountColour(context, token),
+              edge: needsEdge(accountColour(context, token), c.ground) ? c.inkMuted : null,
               selected: token == selected,
               onTap: () => onChanged(token),
             ),

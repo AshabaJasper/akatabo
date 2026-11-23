@@ -87,12 +87,21 @@ class BudgetsScreen extends ConsumerWidget {
               const AkEmptyNote('Budgets could not load. Close Akatabo and open it again.')
             else if (!ready)
               const SizedBox(height: AkSize.chart)
-            else if (lines.isEmpty && unbudgeted.isEmpty)
+            else if (lines.isEmpty)
+              // With no budget set, every spending category is offered, the ones with the most
+              // spent this month first. Seen on the Pixel: one "has no budget" line alone left
+              // the tab looking empty once anything had been spent.
               _NoBudgetsYet(
-                categories: [
-                  for (final cat in cats)
-                    if (!cat.isSystem && !cat.hidden && cat.kind == CategoryKind.spending) cat,
-                ],
+                spent: spentNow,
+                categories:
+                    [
+                      for (final cat in cats)
+                        if (!cat.isSystem && !cat.hidden && cat.kind == CategoryKind.spending) cat,
+                    ]..sort((a, b) {
+                      // Ties keep the Settings order: List.sort is not stable past 32 items.
+                      final bySpend = (spentNow[b.id] ?? 0).compareTo(spentNow[a.id] ?? 0);
+                      return bySpend != 0 ? bySpend : a.sortOrder.compareTo(b.sortOrder);
+                    }),
               )
             else ...[
               if (lines.isNotEmpty) ...[
@@ -456,12 +465,14 @@ class BudgetBar extends StatelessWidget {
   }
 }
 
-/// No budget and no spending yet: the sentence, then every spending category with a way
-/// straight into its Set a budget screen, so the tab is never a lone line on an empty page.
+/// No budget yet: the sentence, then every spending category with a way straight into its
+/// Set a budget screen, so the tab is never a lone line on an empty page. A category with
+/// spending this month says how much.
 class _NoBudgetsYet extends StatelessWidget {
-  const _NoBudgetsYet({required this.categories});
+  const _NoBudgetsYet({required this.categories, required this.spent});
 
   final List<Category> categories;
+  final Map<String, int> spent;
 
   @override
   Widget build(BuildContext context) {
@@ -486,7 +497,10 @@ class _NoBudgetsYet extends StatelessWidget {
                     button: true,
                     container: true,
                     excludeSemantics: true,
-                    label: 'Set a budget for ${cat.name}',
+                    label: (spent[cat.id] ?? 0) > 0
+                        ? 'Set a budget for ${cat.name}. '
+                              'Spent ${formatAmount(spent[cat.id]!)} this month'
+                        : 'Set a budget for ${cat.name}',
                     onTap: () => context.push(Routes.budget(cat.id)),
                     child: AkListRow(
                       divider: i < categories.length - 1,
@@ -497,6 +511,9 @@ class _NoBudgetsYet extends StatelessWidget {
                         size: AkSize.tileSm,
                       ),
                       title: cat.name,
+                      subtitle: (spent[cat.id] ?? 0) > 0
+                          ? 'Spent ${formatAmount(spent[cat.id]!)} this month'
+                          : null,
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

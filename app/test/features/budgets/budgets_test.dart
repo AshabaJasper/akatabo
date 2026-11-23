@@ -203,6 +203,33 @@ void main() {
       expect(find.text('Set one'), findsOneWidget);
     });
 
+    testWidgets('with spending but no budget, every category is offered, most spent first', (
+      tester,
+    ) async {
+      // Seen on the Pixel: a lone "School fees has no budget" line on an empty tab.
+      final month = [
+        txRow(id: 'a', amount: 9000, day: 20261118, at: _now),
+        txRow(id: 'b', amount: 40000, categoryId: DefaultIds.transport, day: 20261118, at: _now),
+      ];
+      await _pump(
+        tester,
+        const BudgetsScreen(),
+        data: _rows(month: month),
+        categories: [
+          categoryRow(id: DefaultIds.food, name: 'Food'),
+          categoryRow(id: DefaultIds.transport, name: 'Transport'),
+          categoryRow(id: DefaultIds.bills, name: 'Bills'),
+        ],
+      );
+      expect(find.text('Set a budget'), findsNWidgets(3));
+      expect(find.textContaining('has no budget'), findsNothing, reason: 'the list says it');
+      expect(find.text('Spent 40,000 this month'), findsOneWidget);
+      final y = [
+        for (final name in ['Transport', 'Food', 'Bills']) tester.getTopLeft(find.text(name)).dy,
+      ];
+      expect(y, orderedEquals([...y]..sort()), reason: 'most spent first');
+    });
+
     testWidgets('fees and tax are never offered as a budget', (tester) async {
       final month = [txRow(id: 'fee', amount: 45000, fee: 1000, day: 20261118, at: _now)];
       await _pump(tester, const BudgetsScreen(), data: _rows(month: month));

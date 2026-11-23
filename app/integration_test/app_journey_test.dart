@@ -1,7 +1,7 @@
 // The whole app on a real Android device or emulator: unlock with the PIN, first launch,
 // three entries, a budget, a backup, delete everything, then restore that backup.
 //
-// Run on the emulator only: flutter test integration_test -d emulator-5554
+// Run on the emulator or a phone: flutter test integration_test -d <device id>
 //
 // The database is in memory and the file dialogs are faked, so nothing is left on the
 // device and no system dialog needs a tap. Everything else is the real app.
@@ -37,7 +37,21 @@ Future<void> _settle(WidgetTester tester, {int rounds = 12}) async {
   }
 }
 
+/// A long screen builds only the rows in view, so a button further down is not there to find
+/// until the list scrolls to it, as a person would. Drags the screen's main list until
+/// [finder] is built, or until it cannot move further.
+Future<void> _reveal(WidgetTester tester, Finder finder) async {
+  if (finder.evaluate().isNotEmpty) return;
+  final lists = find.byType(ListView);
+  if (lists.evaluate().isEmpty) return;
+  for (var i = 0; i < 30 && finder.evaluate().isEmpty; i++) {
+    await tester.drag(lists.last, const Offset(0, -240));
+    await tester.pump(const Duration(milliseconds: 120));
+  }
+}
+
 Future<void> _tap(WidgetTester tester, Finder finder) async {
+  await _reveal(tester, finder);
   if (finder.evaluate().isEmpty) {
     final shown = [
       for (final t in tester.widgetList<Text>(find.byType(Text)))

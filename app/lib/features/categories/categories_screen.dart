@@ -115,7 +115,7 @@ class CategoriesScreen extends ConsumerWidget {
                   category: names[id],
                   amount: current[id]!,
                   share: shareOf(current[id]!, total),
-                  change: comparison(current[id]!, previous[id] ?? 0, against),
+                  change: rowChange(current[id]!, previous[id] ?? 0, against),
                   bar: chart == CategoryChart.bars,
                   onTap: () => context.push(Routes.category(id)),
                 ),
@@ -124,7 +124,7 @@ class CategoriesScreen extends ConsumerWidget {
                   category: names[DefaultIds.fees],
                   amount: feesAmount,
                   share: shareOf(feesAmount, total),
-                  change: comparison(feesAmount, previous[DefaultIds.fees] ?? 0, against),
+                  change: rowChange(feesAmount, previous[DefaultIds.fees] ?? 0, against),
                   bar: chart == CategoryChart.bars,
                   onTap: () => context.push(Routes.fees),
                 ),
@@ -225,7 +225,13 @@ class _DayByDay extends StatelessWidget {
               header: true,
               child: Text('Day by day', style: t.title.copyWith(color: c.ink)),
             ),
-            Text('darker means more spent', style: t.caption.copyWith(color: c.inkMuted)),
+            // The heat scale runs light to dark in light, and dark to light in dark.
+            Text(
+              Theme.of(context).brightness == Brightness.dark
+                  ? 'brighter means more spent'
+                  : 'darker means more spent',
+              style: t.caption.copyWith(color: c.inkMuted),
+            ),
           ],
         ),
         const SizedBox(height: AkSpace.s2),
@@ -347,10 +353,19 @@ class _PieHeader extends StatelessWidget {
   }
 }
 
-/// "Up 4% on October", or a sentence that there is nothing to compare with.
+/// The change on a category row, or null when there is nothing to compare with: said once
+/// per row it would repeat down the whole list, so the row then shows its share alone.
+String? rowChange(int current, int previous, String against) =>
+    percentChange(current: current, previous: previous) == null
+    ? null
+    : comparison(current, previous, against);
+
+/// "Up 4% on October", or a sentence that there is nothing to compare with. [previous] is the
+/// same days of [against], not all of it, so the empty sentence says "by this day": October
+/// may well have fees after the 23rd.
 String comparison(int current, int previous, String against) {
   final percent = percentChange(current: current, previous: previous);
-  if (percent == null) return 'Nothing in $against to compare with.';
+  if (percent == null) return 'Nothing by this day in $against to compare with.';
   if (percent == 0) return 'Level with $against';
   final word = percent > 0 ? 'Up' : 'Down';
   return '$word ${formatPercent(percent.abs().toDouble())} on $against';
@@ -369,7 +384,7 @@ class _CategoryRow extends StatelessWidget {
   final Category? category;
   final int amount;
   final double share;
-  final String change;
+  final String? change;
 
   /// A share bar under the name, when "Category chart" is Bars.
   final bool bar;
@@ -386,7 +401,8 @@ class _CategoryRow extends StatelessWidget {
       button: true,
       container: true,
       excludeSemantics: true,
-      label: '$name, ${formatUgx(amount)}, ${formatPercent(share)} of money out. $change',
+      label:
+          '$name, ${formatUgx(amount)}, ${formatPercent(share)} of money out.${change == null ? '' : ' $change'}',
       onTap: onTap,
       child: InkWell(
         onTap: onTap,
@@ -425,7 +441,7 @@ class _CategoryRow extends StatelessWidget {
                     ],
                     const SizedBox(height: AkSpace.s1),
                     Text(
-                      '${formatPercent(share)} · $change',
+                      change == null ? formatPercent(share) : '${formatPercent(share)} · $change',
                       style: t.caption.copyWith(color: c.inkMuted),
                     ),
                   ],

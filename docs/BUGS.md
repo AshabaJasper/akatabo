@@ -4,6 +4,15 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
+### [device check] Back links name a fixed screen, not the one you came from
+
+- **Where:** `app/lib/features/fees/fees_screen.dart`, `app/lib/features/forecast/forecast_screen.dart`, `app/lib/features/transactions/transaction_detail_screen.dart` (`AkBackLink` labels)
+- **What happens:** Fees and Forecast always say "Insights" and transaction detail always says "Transactions", even when opened from Home. Tapping still goes back to Home; only the label is wrong.
+- **How to trigger:** on Home, tap the Fees and tax tile, the forecast card or a Latest entry.
+- **Score:** frequency 4 x severity 1 = 4
+- **Suggested fix:** pass a `from` query parameter as Restore does (`from=home`) and pick the label from it.
+- **Found:** 23 November 2026, Pixel 8 Pro check
+
 ### [bug-review] Edit account shows "Pick this first" off for the account Add opens on
 
 - **Where:** `app/lib/features/settings/new_account_screen.dart` (`_fill`, and the "Now it is" detail)

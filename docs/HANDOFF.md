@@ -32,21 +32,7 @@ Tests enforce these rules:
 
 ## Next
 
-1. **See it on a device.** Nothing from the polish round has been seen on the Pixel 8 Pro (`3B161FDJG002MD`) yet. Check in light and dark:
-   - Home's first day and its tiles
-   - empty Budgets
-   - Settings and App lock
-   - the PIN keypad
-   - Add: scrolled, Move money, Edit and "Add one like this"
-   - the date dialog and the segmented controls
-   - Fees by month and Forecast history
-   - Coming up's timeline
-   - Day by day
-   - Category colours
-   - The app opens on: Add
-   - Edit account and Delete
-
-   Rerun the journey test on the emulator.
+1. **Light mode on the device.** The Pixel 8 Pro (`3B161FDJG002MD`) check on 23 November covered every stage 4 screen in dark, but only Home, Fees and Categories in light. Still to see in light: settings screens, Add, Budgets, Coming up and the PIN keypad. The journey test passes on the Pixel: `flutter test integration_test -d 3B161FDJG002MD`.
 2. **Design check** for the undrawn pieces: Edit account and Delete, the "Start" card on Home screen settings, and the Date style choice list.
 3. **Small filed bugs** in `docs/BUGS.md`.
 

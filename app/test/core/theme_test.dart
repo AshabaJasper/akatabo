@@ -49,6 +49,30 @@ void main() {
       expect(c.catTeal, akLightTokens.catSlate);
     });
 
+    testWidgets('account colours keep their own colour under Greys', (tester) async {
+      // Seen on the Pixel: under Greys the purple and teal account discs were the same slate.
+      late Color purple, teal, cash;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildAkTheme(
+            Brightness.dark,
+            const AkAppearance(categoryColours: AkCategoryColours.greys),
+          ),
+          home: Builder(
+            builder: (context) {
+              purple = accountColour(context, 'cat-purple');
+              teal = accountColour(context, 'cat-teal');
+              cash = accountColour(context, 'acct-cash');
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      expect(purple, akDarkTokens.catPurple);
+      expect(teal, akDarkTokens.catTeal);
+      expect(cash, akDarkTokens.acctCash);
+    });
+
     test('an amber category takes the light icon once it is drawn in another colour', () {
       expect(categoryIconColour(akLightTokens, 'cat-amber'), akLightTokens.onLightFill);
       expect(categoryIconColour(akLightTokens, 'cat-blue'), akLightTokens.onBrand);

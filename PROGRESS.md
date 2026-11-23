@@ -353,3 +353,27 @@ Four builders worked in separate git worktrees (Smart help and Reminders, the pi
 | 6 | Bars with more parts stood taller than a bar with the same total | 6 x 1 = 6 | Fixed: the whole bar is to scale, and the parts share it; tested |
 | 7 | Edit account shows "Pick this first" off for the account Add falls back to | 2 x 2 = 4 | Filed in `docs/BUGS.md` |
 | 8 | Typing in Add before an edited entry loads is overwritten | 1 x 2 = 2 | Filed in `docs/BUGS.md` |
+
+## Pixel 8 Pro check (23 November 2026)
+
+- **Seen on the phone** (debug build with demo data), dark: onboarding, Home, Fees, Insights, Forecast, Coming up, Categories with Day by day, Budgets, Settings, Appearance (Category colours set to Greys and back), Home screen (The app opens on), General (Date style, amounts), transaction detail, Edit, Add one like this (sticky amount), Accounts, Edit account, the Delete dialog (cancelled), App lock and the PIN keypad. Light: Home, Fees and Categories.
+- **Fixed from what the phone showed**, each with a test:
+  - Fees said "Nothing in October to compare with" beside a chart with October fees. Comparisons are the same days, so the sentence now says "by this day"; Categories rows with nothing to compare show their share alone instead of repeating it.
+  - Day by day said "darker means more spent" in dark, where the busiest days are the lightest. Dark now says "brighter".
+  - Coming up's empty note and the button under it did the same thing; the note lost its link.
+  - Budgets with spending but no budget showed one "has no budget" line on an empty tab. It now lists every spending category, most spent first, with what was spent.
+  - Under Greys or One colour, the purple and teal account colours turned the same slate. Account colours now keep their drawn colours (`accountColour`).
+- **Journey test:** passes on the Pixel. It now scrolls a lazy list until the next control is built (`_reveal`).
+- **Tested:** `flutter analyze` clean, `flutter test` 1,132 passing. Goldens regenerated on purpose: fees (light, dark) and categories_pie (light, dark).
+- **Not seen in light:** the settings screens, Add, Budgets, Coming up and the PIN keypad.
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | Fees comparison sentence contradicted its chart | 6 x 2 = 12 | Fixed; tested |
+| 2 | Day by day legend wrong in dark | 5 x 2 = 10 | Fixed; tested |
+| 3 | Budgets looked empty once anything was spent | 8 x 2 = 16 | Fixed; tested |
+| 4 | Two account colours identical under Greys or One colour | 2 x 3 = 6 | Fixed; tested |
+| 5 | Coming up empty state offered the same action twice | 4 x 1 = 4 | Fixed anyway (one line) |
+| 6 | No-budget category list could shuffle ties past 32 categories | 1 x 2 = 2 | Fixed anyway (tie-break by Settings order) |
+| 7 | Back links name a fixed screen when opened from Home | 4 x 1 = 4 | Filed in `docs/BUGS.md` |
+
