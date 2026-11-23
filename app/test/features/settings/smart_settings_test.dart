@@ -115,10 +115,11 @@ void main() {
         'Tell me before a regular payment',
         'Weekly summary',
         'Sunday evening',
-        laterNote,
       ]) {
         expect(find.text(text), findsOneWidget, reason: text);
       }
+      // The smart features work now; no "later update" note is left under them.
+      expect(find.textContaining('later update'), findsNothing);
       for (final label in ['Rarely', 'Balanced', 'Often']) {
         expect(find.text(label), findsOneWidget, reason: label);
       }

@@ -246,7 +246,6 @@ void main() {
               id: 'moved',
               direction: Direction.transfer,
               categoryId: null,
-              accountId: DefaultIds.mtn,
               toAccountId: DefaultIds.bank,
             ),
           );

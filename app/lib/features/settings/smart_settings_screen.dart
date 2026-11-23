@@ -34,13 +34,6 @@ const notificationsBlockedMessage =
     "Notifications are off for Akatabo in your phone's settings, so reminders cannot "
     'arrive. Allow them there for Akatabo.';
 
-/// Under the Smart help switches whose models arrive in a later phase. Their choices are
-/// stored now and take effect then.
-const laterNote =
-    'Suggesting a category, pointing out unusual payments and noticing regular payments '
-    'start working when Smart help arrives in a later update. Your choices here are kept '
-    'until then.';
-
 const forgotMessage = 'Smart help has forgotten what it learned. Your entries are unchanged.';
 
 class _SmartSettingsScreenState extends ConsumerState<SmartSettingsScreen> {
@@ -240,7 +233,6 @@ class _SmartSettingsScreenState extends ConsumerState<SmartSettingsScreen> {
               value: read(SettingKeys.noticeRegular),
               onChanged: (v) => _save(SettingKeys.noticeRegular, v),
             ),
-            const _NoteRow(laterNote),
             _ActionRow(label: 'Forget everything it has learned', onTap: _confirmForget),
           ],
         ),
@@ -367,26 +359,6 @@ class _SegmentRow extends StatelessWidget {
           child,
         ],
       ),
-    );
-  }
-}
-
-/// A plain muted sentence inside a card, with a line under it.
-class _NoteRow extends StatelessWidget {
-  const _NoteRow(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: c.line)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: settingsRowSide, vertical: AkSpace.s3),
-      child: Text(text, style: context.type.bodySm.copyWith(color: c.inkMuted)),
     );
   }
 }
