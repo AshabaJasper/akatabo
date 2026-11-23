@@ -1,3 +1,4 @@
+import '../core/time/period.dart';
 import '../data/db/app_database.dart';
 
 /// Fees and tax for a set of entries, split three ways (DESIGN_SYSTEM.md "Fees and tax", and
@@ -90,3 +91,13 @@ FeeSplit feeSplitOf(Iterable<Transaction> rows, {required Set<String> cashAccoun
     byAccount: byAccount,
   );
 }
+
+/// The fee split of each month in [months] (oldest first), for the six-month chart on Fees.
+List<FeeSplit> feeSplitsByMonth(
+  Iterable<Transaction> rows, {
+  required List<Period> months,
+  required Set<String> cashAccountIds,
+}) => [
+  for (final m in months)
+    feeSplitOf(rows.where((t) => m.containsDay(t.localDay)), cashAccountIds: cashAccountIds),
+];

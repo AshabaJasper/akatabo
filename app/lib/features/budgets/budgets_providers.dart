@@ -16,10 +16,13 @@ final previousMonthRowsProvider = StreamProvider<List<Transaction>>((ref) {
   return ref.watch(transactionRepositoryProvider).watchIn(calc.previous(month));
 });
 
+/// One budgeted category this month: its effective budget and what was spent.
+typedef BudgetSource = ({Category category, int budget, int spent});
+
 /// Effective budget against money out this month, for each visible budgeted category: the
 /// same lines Budgets draws, before it sorts them. Null until the month, last month and the
 /// categories have all loaded.
-final budgetLinesProvider = Provider<List<({Category category, int budget, int spent})>?>((ref) {
+final budgetLinesProvider = Provider<List<BudgetSource>?>((ref) {
   final rows = ref.watch(monthRowsProvider).value;
   final previous = ref.watch(previousMonthRowsProvider).value;
   final cats = ref.watch(allCategoriesProvider).value;

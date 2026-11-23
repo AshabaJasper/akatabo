@@ -50,7 +50,7 @@ class BudgetsScreen extends ConsumerWidget {
 
     // The same lines Home's "Left in budgets" tile sums, so the two never disagree.
     final lines = [
-      for (final l in ref.watch(budgetLinesProvider) ?? const [])
+      for (final l in ref.watch(budgetLinesProvider) ?? const <BudgetSource>[])
         _lineFor(
           l.category,
           spent: l.spent,

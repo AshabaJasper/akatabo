@@ -11,6 +11,7 @@ import 'package:akatabo/data/seed/default_data.dart';
 import 'package:akatabo/data/settings/setting_keys.dart';
 import 'package:akatabo/domain/forecast.dart';
 import 'package:akatabo/features/add/add_providers.dart';
+import 'package:akatabo/features/budgets/budgets_providers.dart';
 import 'package:akatabo/features/categories/categories_screen.dart';
 import 'package:akatabo/features/categories/category_detail_screen.dart';
 import 'package:akatabo/features/fees/fees_screen.dart';
@@ -93,8 +94,10 @@ List<Override> _data({
   List<Override> extra = const [],
   List<double> snapshotErrors = const [],
   ForecastSnapshotSaver? saver,
+  List<Transaction> older = const [],
 }) => [
   monthRowsProvider.overrideWith((ref) => Stream.value(month)),
+  budgetHistoryRowsProvider.overrideWith((ref) => Stream.value(older)),
   previousSameDaysRowsProvider.overrideWith((ref) => Stream.value(previous)),
   forecastWindowRowsProvider.overrideWith((ref) => Stream.value(window)),
   activeRegularProvider.overrideWith((ref) => Stream.value(regular)),
@@ -312,6 +315,61 @@ void main() {
       expect(find.text('Sending money'), findsOneWidget);
       expect(find.text('BY ACCOUNT'), findsOneWidget);
     });
+
+    // October: a 2,000 sending fee. August: a 4,000 sending fee. November: 1,000.
+    final older = [
+      txRow(id: 'o', amount: 30000, fee: 2000, day: 20261012, at: DateTime(2026, 10, 12)),
+      txRow(id: 'g', amount: 30000, fee: 4000, day: 20260803, at: DateTime(2026, 8, 3)),
+    ];
+    final thisMonth = [txRow(id: 'a', amount: 45000, fee: 1000, day: 20261119, at: _now)];
+
+    testWidgets('six months of fees stand as bars, June to this month', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await _pump(
+        tester,
+        const FeesScreen(),
+        data: _data(month: thisMonth, older: older),
+      );
+      for (final m in ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov']) {
+        expect(find.text(m), findsOneWidget, reason: m);
+      }
+      expect(find.text('4k'), findsOneWidget, reason: 'August over its bar');
+      expect(
+        find.bySemanticsLabel(
+          'Fees and tax for six months. June 0, July 0, August 4,000, September 0, '
+          'October 2,000, November 1,000 so far.',
+        ),
+        findsOneWidget,
+      );
+      // Heights follow the amounts: August is the tallest, twice October.
+      final aug = tester.getSize(find.byKey(const ValueKey('Aug-Sending'))).height;
+      final oct = tester.getSize(find.byKey(const ValueKey('Oct-Sending'))).height;
+      expect(aug, closeTo(oct * 2, 0.5));
+      semantics.dispose();
+    });
+
+    testWidgets('with Hide amounts on, the bars stay and their figures do not', (tester) async {
+      await _pump(
+        tester,
+        const FeesScreen(),
+        data: _data(month: thisMonth, older: older),
+        settings: {PrivacyKeys.hideAmounts.name: '1'},
+      );
+      expect(find.text('4k'), findsNothing);
+      expect(find.byKey(const ValueKey('Aug-Sending')), findsOneWidget);
+    });
+
+    for (final b in Brightness.values) {
+      testWidgets('fees golden, ${b.name}', (tester) async {
+        await _pump(
+          tester,
+          const FeesScreen(),
+          data: _data(month: thisMonth, older: older),
+          brightness: b,
+        );
+        await expectLater(find.byType(FeesScreen), matchesGoldenFile('goldens/fees_${b.name}.png'));
+      });
+    }
   });
 
   testWidgets('a cash-out to a switched-off Cash account is still withdrawing cash', (

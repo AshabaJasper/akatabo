@@ -11,12 +11,16 @@ import '../../core/time/clock_provider.dart';
 import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
+import '../../domain/budget.dart' show previousMonths;
 import '../../domain/fees.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
+import '../../widgets/charts/stacked_bars.dart';
 import '../add/add_providers.dart';
+import '../budgets/budgets_providers.dart';
 import '../categories/categories_screen.dart';
 import '../home/home_providers.dart';
 import '../insights/insights_text.dart';
@@ -52,6 +56,14 @@ class FeesScreen extends ConsumerWidget {
     );
     final spent = totalsOf(rows).moneyOut;
     final against = DateFormat('MMMM').format(calc.previous(month).start);
+    final hidden = ref.watch(amountsHiddenProvider);
+    // Five months before this one and this one, oldest first. Until the older months load,
+    // the chart waits; the rest of the page does not.
+    final months = [...previousMonths(calc, month, count: 5), month];
+    final older = ref.watch(budgetHistoryRowsProvider).value;
+    final history = older == null
+        ? null
+        : feeSplitsByMonth([...older, ...rows], months: months, cashAccountIds: cashIds);
 
     return Scaffold(
       backgroundColor: c.ground,
@@ -93,10 +105,17 @@ class FeesScreen extends ConsumerWidget {
                 comparison(split.total, previous.total, against),
                 style: t.bodySm.copyWith(color: c.inkMuted),
               ),
+              if (history != null) ...[
+                const SizedBox(height: AkSpace.s4),
+                AkCard(
+                  child: _SixMonths(months: months, splits: history, hidden: hidden),
+                ),
+              ],
               const SizedBox(height: AkSpace.s5),
               const AkEyebrow('What you paid for'),
               if (split.sending > 0)
                 _PartRow(
+                  colour: c.brand,
                   title: 'Sending money',
                   detail:
                       '${split.sendingCount} ${split.sendingCount == 1 ? 'payment' : 'payments'}, '
@@ -105,6 +124,7 @@ class FeesScreen extends ConsumerWidget {
                 ),
               if (split.withdrawing > 0)
                 _PartRow(
+                  colour: c.catPink,
                   title: 'Withdrawing cash',
                   detail:
                       '${split.withdrawingCount} '
@@ -114,6 +134,7 @@ class FeesScreen extends ConsumerWidget {
                 ),
               if (split.tax > 0)
                 _PartRow(
+                  colour: c.catAmber,
                   title: split.taxIsAllFromWithdrawals ? 'Tax on withdrawals' : 'Tax',
                   detail: split.taxOnWithdrawals > 0 && !split.taxIsAllFromWithdrawals
                       ? 'Including ${formatUgx(split.taxOnWithdrawals)} on withdrawals'
@@ -152,9 +173,54 @@ class FeesScreen extends ConsumerWidget {
   }
 }
 
-class _PartRow extends StatelessWidget {
-  const _PartRow({required this.title, required this.detail, required this.amount});
+/// Six months of fees and tax as stacked bars: sending at the bottom, then withdrawing, then
+/// tax, as Fees.html draws them. This month's bar says "so far" to a screen reader.
+class _SixMonths extends StatelessWidget {
+  const _SixMonths({required this.months, required this.splits, required this.hidden});
 
+  final List<Period> months;
+  final List<FeeSplit> splits;
+  final bool hidden;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final spoken = [
+      for (final (i, s) in splits.indexed)
+        '${DateFormat('MMMM').format(months[i].start)} '
+            '${hidden ? hiddenFigureLabel : formatAmount(s.total)}'
+            '${i == splits.length - 1 ? ' so far' : ''}',
+    ].join(', ');
+    return StackedBars(
+      parts: [
+        StackPart(name: 'Sending', colour: c.brand),
+        StackPart(name: 'Withdrawing', colour: c.catPink),
+        StackPart(name: 'Tax', colour: c.catAmber),
+      ],
+      columns: [
+        for (final (i, s) in splits.indexed)
+          StackColumn(
+            values: [s.sending, s.withdrawing, s.tax],
+            figure: hidden ? hiddenFigure : formatShort(s.total),
+            label: DateFormat('MMM').format(months[i].start),
+            current: i == splits.length - 1,
+          ),
+      ],
+      semanticLabel: 'Fees and tax for six months. $spoken.',
+    );
+  }
+}
+
+class _PartRow extends StatelessWidget {
+  const _PartRow({
+    required this.colour,
+    required this.title,
+    required this.detail,
+    required this.amount,
+  });
+
+  /// Its colour in the chart, as a small square beside it.
+  final Color colour;
   final String title;
   final String detail;
   final int amount;
@@ -167,6 +233,15 @@ class _PartRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AkSpace.s3),
       child: Row(
         children: [
+          Container(
+            width: AkSize.dot,
+            height: AkSize.dot,
+            decoration: BoxDecoration(
+              color: colour,
+              borderRadius: BorderRadius.circular(context.metrics.xs),
+            ),
+          ),
+          const SizedBox(width: AkSpace.s2h),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
