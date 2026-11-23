@@ -32,7 +32,7 @@ Tests enforce these rules:
 
 ## Next
 
-1. **Light mode on the device.** The Pixel 8 Pro (`3B161FDJG002MD`) check on 23 November covered every stage 4 screen in dark, but only Home, Fees and Categories in light. Still to see in light: settings screens, Add, Budgets, Coming up and the PIN keypad. The journey test passes on the Pixel: `flutter test integration_test -d 3B161FDJG002MD`.
+1. **Light mode on the device: done** (23 November). Every screen on the list was checked on the Pixel 8 Pro with no faults found. Still unseen in light: the populated Coming up timeline, because the demo data has no regular payments. The journey test passes on the Pixel: `flutter test integration_test -d 3B161FDJG002MD`.
 2. **Design check** for the undrawn pieces: Edit account and Delete, the "Start" card on Home screen settings, and the Date style choice list.
 3. **Small filed bugs** in `docs/BUGS.md`.
 

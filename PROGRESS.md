@@ -365,7 +365,12 @@ Four builders worked in separate git worktrees (Smart help and Reminders, the pi
   - Under Greys or One colour, the purple and teal account colours turned the same slate. Account colours now keep their drawn colours (`accountColour`).
 - **Journey test:** passes on the Pixel. It now scrolls a lazy list until the next control is built (`_reveal`).
 - **Tested:** `flutter analyze` clean, `flutter test` 1,132 passing. Goldens regenerated on purpose: fees (light, dark) and categories_pie (light, dark).
-- **Not seen in light:** the settings screens, Add, Budgets, Coming up and the PIN keypad.
+- **Light mode, every screen on the list (23 November, same Pixel, demo data):** no faults found, so no code changed in this pass.
+  - Budgets, Settings hub, Appearance, Home screen, General, Accounts and Edit account: checked earlier in the pass; fine.
+  - Accounts' delete dialog ("Bank is used by 4 entries"): correct; Cancel left the account untouched.
+  - App lock: toggle, "Set a PIN" and the reset warning read clearly. The PIN keypad uses the dark green lock screen in light mode too; this is deliberate, not a theme fault. Cancelled without setting a PIN.
+  - Home, transaction detail, Edit transaction and "Add one like this" (pre-filled, sticky amount and direction on scroll, date dialog with Cancel and OK): all fine. Every form was closed without saving.
+  - Coming up: checked in its empty state only. The populated timeline has not been seen in light, because the demo data has no regular payments.
 
 | # | Bug | Score | Action |
 |---|---|---|---|
