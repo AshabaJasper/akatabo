@@ -112,6 +112,19 @@ void main() {
     });
   });
 
+  testWidgets('each account has an Edit link named for it, at least 44px', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    await _pump(tester, db, const AccountsSettingsScreen(), all: [_cash, _mtn]);
+    for (final name in ['Cash', 'MTN MoMo']) {
+      final link = find.bySemanticsLabel('Edit $name');
+      expect(link, findsOneWidget, reason: name);
+      expect(tester.getSize(link).height, greaterThanOrEqualTo(AkSize.target));
+    }
+    semantics.dispose();
+  });
+
   group('What is in them today, on Accounts', () {
     testWidgets('an account not counted keeps its line but leaves the total', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());

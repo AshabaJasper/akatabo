@@ -42,8 +42,10 @@ class _FailingAccounts extends AccountRepository {
   }) => Future.error(StateError('database is locked'));
 }
 
-List<Override> _overrides(AppDatabase db, {AccountRepository? accounts}) => [
+List<Override> _overrides(AppDatabase db, {AccountRepository? accounts, List<Account>? all}) => [
   appDatabaseProvider.overrideWithValue(db),
+  // Edit account reads every account; a live drift stream would not settle here.
+  if (all != null) allAccountsProvider.overrideWith((ref) => Stream.value(all)),
   storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
   enabledAccountsProvider.overrideWith((ref) => Stream.value(_enabled)),
   if (accounts != null) accountRepositoryProvider.overrideWithValue(accounts),
@@ -56,6 +58,8 @@ Future<void> _pump(
   double width = 390,
   double height = 1200,
   AccountRepository? accounts,
+  Widget screen = const NewAccountScreen(),
+  List<Account>? all,
 }) async {
   tester.view
     ..physicalSize = Size(width, height)
@@ -64,11 +68,8 @@ Future<void> _pump(
   await tester.pumpWidget(
     ProviderScope(
       retry: (_, _) => null,
-      overrides: _overrides(db, accounts: accounts),
-      child: MaterialApp(
-        theme: buildAkTheme(brightness, const AkAppearance()),
-        home: const NewAccountScreen(),
-      ),
+      overrides: _overrides(db, accounts: accounts, all: all),
+      child: MaterialApp(theme: buildAkTheme(brightness, const AkAppearance()), home: screen),
     ),
   );
   await tester.pump(const Duration(milliseconds: 300));
@@ -187,6 +188,165 @@ void main() {
         DefaultIds.airtel: true,
         DefaultIds.bank: true,
       });
+    });
+  });
+
+  group('editing and deleting an account', () {
+    late AppDatabase db;
+    late AccountRepository repo;
+    setUp(() {
+      db = AppDatabase(NativeDatabase.memory());
+      repo = AccountRepository(db);
+    });
+    tearDown(() => db.close());
+
+    Future<Account> one(String id) =>
+        (db.select(db.accounts)..where((r) => r.id.equals(id))).getSingle();
+
+    test('an edit changes the fields and keeps the id', () async {
+      await repo.update(
+        DefaultIds.cash,
+        name: ' Pocket ',
+        kind: AccountKind.other,
+        colourToken: 'cat-teal',
+        askFeeEachTime: true,
+        countInTotals: false,
+        makeDefault: true,
+      );
+      final a = await one(DefaultIds.cash);
+      expect(a.name, 'Pocket');
+      expect(a.kind, AccountKind.other);
+      expect(a.colourToken, 'cat-teal');
+      expect(a.askFeeEachTime, isTrue);
+      expect(a.countInTotals, isFalse);
+      expect(a.isDefault, isTrue);
+      expect((await one(DefaultIds.mtn)).isDefault, isFalse, reason: 'only one default');
+    });
+
+    test('an empty name or a colour that is not an account colour is refused', () async {
+      Future<void> edit(String name, String colour) => repo.update(
+        DefaultIds.cash,
+        name: name,
+        kind: AccountKind.cash,
+        colourToken: colour,
+        askFeeEachTime: false,
+        countInTotals: true,
+      );
+      await expectLater(edit('  ', 'acct-cash'), throwsArgumentError);
+      await expectLater(edit('Cash', 'cat-green'), throwsArgumentError);
+      expect((await one(DefaultIds.cash)).name, 'Cash');
+    });
+
+    test('an account with entries, paid from or moved to, is not deleted', () async {
+      await db.into(db.transactions).insert(txRow(id: 'paid', accountId: DefaultIds.airtel));
+      await db
+          .into(db.transactions)
+          .insert(
+            txRow(
+              id: 'moved',
+              direction: Direction.transfer,
+              categoryId: null,
+              accountId: DefaultIds.mtn,
+              toAccountId: DefaultIds.bank,
+            ),
+          );
+      expect(await repo.usedBy(DefaultIds.airtel), 1);
+      expect(await repo.usedBy(DefaultIds.bank), 1);
+      expect(await repo.usedBy(DefaultIds.cash), 0);
+      await expectLater(repo.delete(DefaultIds.bank), throwsStateError);
+      expect(await db.select(db.accounts).get(), hasLength(4));
+    });
+
+    test('deleting the account Add opens on hands that to the next one switched on', () async {
+      await repo.setEnabled(DefaultIds.cash, enabled: false);
+      await repo.delete(DefaultIds.mtn);
+      final left = await db.select(db.accounts).get();
+      expect(left.map((a) => a.id), isNot(contains(DefaultIds.mtn)));
+      expect(left.where((a) => a.isDefault).map((a) => a.id), [DefaultIds.airtel]);
+    });
+
+    test('the only account left is not deleted', () async {
+      await repo.delete(DefaultIds.cash);
+      await repo.delete(DefaultIds.airtel);
+      await repo.delete(DefaultIds.bank);
+      await expectLater(repo.delete(DefaultIds.mtn), throwsStateError);
+      expect(await db.select(db.accounts).get(), hasLength(1));
+    });
+
+    testWidgets('Edit account is filled from the account and saves the change', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(
+        tester,
+        db,
+        screen: const NewAccountScreen(editId: DefaultIds.mtn),
+        all: await _accounts(tester, db),
+      );
+      await _settle(tester);
+
+      expect(find.text('Edit account'), findsOneWidget);
+      expect(find.text('MTN MoMo'), findsOneWidget);
+      expect(find.text('WHAT IS IN IT TODAY, UGX (OPTIONAL)'), findsNothing);
+      expect(find.text('Now it is MTN MoMo'), findsNothing, reason: 'it is this account');
+      await tester.enterText(_field('Name'), 'MoMo');
+      await tester.tap(find.text('Save changes'));
+      await _settle(tester);
+
+      final a = (await _accounts(tester, db)).singleWhere((r) => r.id == DefaultIds.mtn);
+      expect(a.name, 'MoMo');
+      expect(a.kind, AccountKind.mtn, reason: 'shown as Mobile, kept as its own kind');
+      expect(a.isDefault, isTrue);
+    });
+
+    testWidgets('Delete on an account with entries offers to switch it off instead', (
+      tester,
+    ) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await tester.runAsync(
+        () => db.into(db.transactions).insert(txRow(id: 'paid', accountId: DefaultIds.airtel)),
+      );
+      await _pump(
+        tester,
+        db,
+        screen: const NewAccountScreen(editId: DefaultIds.airtel),
+        all: await _accounts(tester, db),
+      );
+      await _settle(tester);
+
+      await tester.tap(find.text('Delete this account'));
+      await _settle(tester);
+      expect(find.text('Airtel Money is used by 1 entry'), findsOneWidget);
+      await tester.tap(find.text('Switch it off'));
+      await _settle(tester);
+
+      final a = (await _accounts(tester, db)).singleWhere((r) => r.id == DefaultIds.airtel);
+      expect(a.enabled, isFalse);
+    });
+
+    testWidgets('Delete on an unused account asks first, then deletes it', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(
+        tester,
+        db,
+        screen: const NewAccountScreen(editId: DefaultIds.bank),
+        all: await _accounts(tester, db),
+      );
+      await _settle(tester);
+
+      await tester.tap(find.text('Delete this account'));
+      await _settle(tester);
+      expect(find.text('No entries use it. Deleting it cannot be undone.'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await _settle(tester);
+      expect(await _accounts(tester, db), hasLength(4), reason: 'Cancel keeps it');
+
+      await tester.tap(find.text('Delete this account'));
+      await _settle(tester);
+      await tester.tap(find.text('Delete'));
+      await _settle(tester);
+      expect((await _accounts(tester, db)).map((a) => a.id), isNot(contains(DefaultIds.bank)));
     });
   });
 

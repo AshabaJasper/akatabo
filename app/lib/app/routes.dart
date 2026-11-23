@@ -10,6 +10,8 @@ abstract final class Routes {
   static const settingsAccounts = '/settings/accounts';
   static const settingsHome = '/settings/home';
   static const settingsAccountNew = '/settings/accounts/new';
+  static const settingsAccountEditPattern = '/settings/accounts/edit/:id';
+  static String settingsAccountEdit(String id) => '/settings/accounts/edit/$id';
   static const settingsCategories = '/settings/categories';
 
   /// Edit a category in its "new" mode, for money out.

@@ -462,6 +462,78 @@ class AccountRepository {
     return id;
   });
 
+  /// Changes what Edit account asks: name, kind, colour and the two switches. [makeDefault]
+  /// true makes it the account Add opens on; false takes that away if it had it (Add then
+  /// opens on the first account switched on); null leaves it. The balance is not here: it is
+  /// set on the Accounts page. The same checks as [add] apply, and an unknown id is refused.
+  Future<void> update(
+    String id, {
+    required String name,
+    required AccountKind kind,
+    required String colourToken,
+    required bool askFeeEachTime,
+    required bool countInTotals,
+    bool? makeDefault,
+  }) => _db.transaction(() async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) throw ArgumentError.value(name, 'name', 'must not be empty');
+    if (!accountColourTokens.contains(colourToken)) {
+      throw ArgumentError.value(colourToken, 'colourToken', 'must be an account colour');
+    }
+    final now = clock.now();
+    final changed = await (_db.update(_db.accounts)..where((a) => a.id.equals(id))).write(
+      AccountsCompanion(
+        name: Value(trimmed),
+        kind: Value(kind),
+        colourToken: Value(colourToken),
+        askFeeEachTime: Value(askFeeEachTime),
+        countInTotals: Value(countInTotals),
+        updatedAt: Value(now),
+      ),
+    );
+    if (changed == 0) throw StateError('No account $id');
+    if (makeDefault == true) await _moveDefaultTo(id, now);
+    if (makeDefault == false) {
+      await (_db.update(_db.accounts)..where((a) => a.id.equals(id))).write(
+        AccountsCompanion(isDefault: const Value(false), updatedAt: Value(now)),
+      );
+    }
+  });
+
+  /// How many entries use account [id], paid from it or moved to it.
+  Future<int> usedBy(String id) async {
+    final count = _db.transactions.id.count();
+    final row =
+        await (_db.selectOnly(_db.transactions)
+              ..addColumns([count])
+              ..where(
+                _db.transactions.accountId.equals(id) | _db.transactions.toAccountId.equals(id),
+              ))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Deletes account [id] for good. Refused with a [StateError], and nothing changes, while
+  /// any entry uses it (switch it off instead, so those entries keep it) or when it is the only
+  /// account, since Add needs one. If it was the account Add opens on, the next account
+  /// switched on takes that over.
+  Future<void> delete(String id) => _db.transaction(() async {
+    final row = await (_db.select(_db.accounts)..where((a) => a.id.equals(id))).getSingleOrNull();
+    if (row == null) throw StateError('No account $id');
+    if (await usedBy(id) > 0) throw StateError('Account $id is used by entries');
+    final others =
+        await (_db.select(_db.accounts)
+              ..where((a) => a.id.equals(id).not())
+              ..orderBy([(a) => OrderingTerm.asc(a.sortOrder)]))
+            .get();
+    if (others.isEmpty) throw StateError('Account $id is the only account');
+    await (_db.delete(_db.accounts)..where((a) => a.id.equals(id))).go();
+    if (row.isDefault) {
+      final next = others.where((a) => a.enabled).firstOrNull;
+      if (next != null) await _moveDefaultTo(next.id, clock.now());
+    }
+  });
+
   /// Says what is in account [id] now: its balance becomes [amount], and from now on each
   /// entry dated from this moment changes it. Entries dated earlier were already in it. An
   /// amount below zero or an unknown id is refused and nothing changes.

@@ -11,6 +11,8 @@ import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/repositories.dart';
 import '../../widgets/ak_controls.dart';
+import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/add_providers.dart';
 import '../add/amount_text.dart';
@@ -38,8 +40,14 @@ const Map<String, String> accountColourNames = {
 /// Adds an account the person pays from, with everything drawn on New account: name, kind,
 /// colour, what is in it today, and the three switches. Saved accounts appear on the Accounts
 /// page and on Add.
+///
+/// With [editId] it is Edit account: the same form filled from that account, without "What
+/// is in it today" (the Accounts page sets that), and with Delete under it. Delete asks first,
+/// and while entries use the account it offers to switch it off instead.
 class NewAccountScreen extends ConsumerStatefulWidget {
-  const NewAccountScreen({super.key});
+  const NewAccountScreen({super.key, this.editId});
+
+  final String? editId;
 
   @override
   ConsumerState<NewAccountScreen> createState() => _NewAccountScreenState();
@@ -63,6 +71,34 @@ class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
   bool _saving = false;
 
   String get _colour => _pickedColour ?? AccountRepository.colourForKind(_kind);
+
+  /// The account being edited, once its values are in the form.
+  Account? _original;
+  bool get _editing => widget.editId != null;
+
+  /// Fills the form from [a] once. The two default mobile money accounts have kinds of their
+  /// own that the form shows as Mobile; saving keeps theirs unless another kind is picked.
+  void _fill(Account a) {
+    _original = a;
+    _name.text = a.name;
+    _kind = switch (a.kind) {
+      AccountKind.mtn || AccountKind.airtel => AccountKind.mobile,
+      final k => k,
+    };
+    _pickedColour = AccountRepository.accountColourTokens.contains(a.colourToken)
+        ? a.colourToken
+        : null;
+    _askFee = a.askFeeEachTime;
+    _countInTotals = a.countInTotals;
+    _makeDefault = a.isDefault;
+  }
+
+  AccountKind get _kindToSave {
+    final before = _original?.kind;
+    final keepOwn =
+        _kind == AccountKind.mobile && (before == AccountKind.mtn || before == AccountKind.airtel);
+    return keepOwn ? before! : _kind;
+  }
 
   @override
   void dispose() {
@@ -88,6 +124,22 @@ class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
       _saving = true;
     });
     try {
+      final original = _original;
+      if (original != null) {
+        await ref
+            .read(accountRepositoryProvider)
+            .update(
+              original.id,
+              name: name,
+              kind: _kindToSave,
+              colourToken: _colour,
+              askFeeEachTime: _askFee,
+              countInTotals: _countInTotals,
+              makeDefault: _makeDefault == original.isDefault ? null : _makeDefault,
+            );
+        if (mounted) await _leave();
+        return;
+      }
       await ref
           .read(accountRepositoryProvider)
           .add(
@@ -104,7 +156,9 @@ class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _problem = 'The account could not be saved. Try again.';
+          _problem = _editing
+              ? 'The changes could not be saved. Try again.'
+              : 'The account could not be saved. Try again.';
         });
       }
       return;
@@ -123,12 +177,113 @@ class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
     await closeScreen(context);
   }
 
+  /// Delete, as the rules say: refused while entries use the account (switching it off is
+  /// offered instead, so those entries keep it), refused for the only account, and otherwise
+  /// asked first, because it cannot be undone.
+  Future<void> _delete() async {
+    final a = _original;
+    if (a == null || _saving) return;
+    setState(() => _problem = null);
+    final repo = ref.read(accountRepositoryProvider);
+    final int used;
+    try {
+      used = await repo.usedBy(a.id);
+    } on Object {
+      if (mounted) setState(() => _problem = '${a.name} could not be deleted. Try again.');
+      return;
+    }
+    if (!mounted) return;
+    if (used > 0) {
+      final off = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('${a.name} is used by $used ${used == 1 ? 'entry' : 'entries'}'),
+          content: const Text(
+            'An account with entries cannot be deleted. Switch it off instead: Add stops '
+            'offering it, and its entries keep it.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+            if (a.enabled)
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Switch it off'),
+              ),
+          ],
+        ),
+      );
+      if (off != true || !mounted) return;
+      final done = await saveOrSay(
+        context,
+        () => repo.setEnabled(a.id, enabled: false),
+        failed: '${a.name} could not be switched off. Try again.',
+      );
+      if (done && mounted) {
+        showAkMessage(context, '${a.name} switched off.');
+        await _leave();
+      }
+      return;
+    }
+    final all = ref.read(allAccountsProvider).value ?? const <Account>[];
+    if (all.length <= 1) {
+      setState(() => _problem = 'Akatabo needs one account to add to, so this one stays.');
+      return;
+    }
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete ${a.name}?'),
+        content: const Text('No entries use it. Deleting it cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (yes != true || !mounted) return;
+    final done = await saveOrSay(
+      context,
+      () => repo.delete(a.id),
+      failed: '${a.name} could not be deleted. Try again.',
+    );
+    if (done && mounted) {
+      showAkMessage(context, '${a.name} deleted.');
+      await _leave();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = context.type;
     final enabled = ref.watch(enabledAccountsProvider).value ?? const <Account>[];
     final firstNow = firstPickAccount(enabled);
+    if (_editing && _original == null) {
+      final all = ref.watch(allAccountsProvider);
+      final found = all.value?.where((a) => a.id == widget.editId).firstOrNull;
+      if (found != null) {
+        _fill(found);
+      } else {
+        return Scaffold(
+          body: SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
+              children: [
+                AkBackLink('Accounts', onTap: _leave),
+                if (all.hasError || all.hasValue) ...[
+                  const SizedBox(height: AkSpace.s4),
+                  AkEmptyNote(
+                    all.hasError
+                        ? 'This account could not load. Go back and try again.'
+                        : 'This account is no longer here.',
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      }
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -137,7 +292,10 @@ class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
           children: [
             AkBackLink('Accounts', onTap: _leave),
             const SizedBox(height: AkSpace.s1),
-            Semantics(header: true, child: Text('New account', style: t.displayLg)),
+            Semantics(
+              header: true,
+              child: Text(_editing ? 'Edit account' : 'New account', style: t.displayLg),
+            ),
             const SizedBox(height: AkSpace.s2),
             Text(
               'An account is anywhere you keep money. Akatabo never connects to it; you just '
@@ -172,15 +330,17 @@ class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
               selected: _colour,
               onChanged: (token) => setState(() => _pickedColour = token),
             ),
-            const SizedBox(height: AkSpace.s4),
-            AkTextField(
-              label: 'What is in it today, UGX (optional)',
-              controller: _opening,
-              hint: 'Leave empty to skip',
-              keyboardType: TextInputType.number,
-              inputFormatters: const [ThousandsFormatter()],
-              figures: true,
-            ),
+            if (!_editing) ...[
+              const SizedBox(height: AkSpace.s4),
+              AkTextField(
+                label: 'What is in it today, UGX (optional)',
+                controller: _opening,
+                hint: 'Leave empty to skip',
+                keyboardType: TextInputType.number,
+                inputFormatters: const [ThousandsFormatter()],
+                figures: true,
+              ),
+            ],
             const SizedBox(height: AkSpace.s4),
             AkCard(
               padding: EdgeInsets.zero,
@@ -195,7 +355,9 @@ class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
                   ),
                   SettingsSwitchRow(
                     label: 'Pick this first when I add',
-                    detail: firstNow == null ? null : 'Now it is ${firstNow.name}',
+                    detail: firstNow == null || firstNow.id == _original?.id
+                        ? null
+                        : 'Now it is ${firstNow.name}',
                     value: _makeDefault,
                     divider: true,
                     onChanged: (v) => setState(() => _makeDefault = v),
@@ -210,10 +372,21 @@ class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
               ),
             ),
             const SizedBox(height: AkSpace.s6),
-            AkPrimaryButton(label: 'Save account', onPressed: _saving ? null : _save),
+            AkPrimaryButton(
+              label: _editing ? 'Save changes' : 'Save account',
+              onPressed: _saving ? null : _save,
+            ),
             if (_problem != null) ...[
               const SizedBox(height: AkSpace.s3),
               Text(_problem!, style: t.bodySm.copyWith(color: c.moneyOut)),
+            ],
+            if (_editing) ...[
+              const SizedBox(height: AkSpace.s3),
+              AkOutlineButton(
+                label: 'Delete this account',
+                ink: c.moneyOut,
+                onPressed: _saving ? null : _delete,
+              ),
             ],
           ],
         ),

@@ -135,6 +135,10 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       GoRoute(path: Routes.settingsHome, builder: (_, _) => const HomeSettingsScreen()),
       GoRoute(path: Routes.settingsAccountNew, builder: (_, _) => const NewAccountScreen()),
       GoRoute(
+        path: Routes.settingsAccountEditPattern,
+        builder: (_, state) => NewAccountScreen(editId: state.pathParameters['id']),
+      ),
+      GoRoute(
         path: Routes.settingsCategories,
         builder: (_, state) => CategoriesSettingsScreen(
           backLabel: switch (state.uri.queryParameters['from']) {

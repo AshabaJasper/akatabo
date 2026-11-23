@@ -132,12 +132,16 @@ class SettingsSwitchRow extends StatelessWidget {
     required this.onChanged,
     this.divider = false,
     this.detail,
+    this.action,
   });
 
   final String label;
   final bool value;
   final ValueChanged<bool> onChanged;
   final bool divider;
+
+  /// A link before the switch, such as Edit on an account.
+  final Widget? action;
 
   /// A line under the label in `ink-muted`, saying what the switch does. Screen readers read
   /// it as text before the switch.
@@ -168,6 +172,7 @@ class SettingsSwitchRow extends StatelessWidget {
                     ],
                   ),
           ),
+          if (action != null) ...[const SizedBox(width: AkSpace.s2), action!],
           const SizedBox(width: AkSpace.s3),
           AkSwitch(label: label, value: value, onChanged: onChanged),
         ],

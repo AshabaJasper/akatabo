@@ -18,7 +18,7 @@ import '../transactions/transactions_providers.dart';
 import 'settings_page.dart';
 
 /// The accounts the person pays from. A switched-off account stops being offered on Add;
-/// entries already made keep it.
+/// entries already made keep it. Edit opens Edit account, where it can also be deleted.
 class AccountsSettingsScreen extends ConsumerStatefulWidget {
   const AccountsSettingsScreen({super.key});
 
@@ -80,6 +80,16 @@ class _AccountsSettingsScreenState extends ConsumerState<AccountsSettingsScreen>
                 value: a.enabled,
                 divider: i < list.length - 1,
                 onChanged: (v) => _setEnabled(a.id, enabled: v),
+                action: Semantics(
+                  button: true,
+                  label: 'Edit ${a.name}',
+                  excludeSemantics: true,
+                  onTap: () => context.push(Routes.settingsAccountEdit(a.id)),
+                  child: AkTextLink(
+                    'Edit',
+                    onTap: () => context.push(Routes.settingsAccountEdit(a.id)),
+                  ),
+                ),
               ),
           ],
         ),
