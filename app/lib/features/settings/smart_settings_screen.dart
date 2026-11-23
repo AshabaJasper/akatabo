@@ -7,6 +7,7 @@ import '../../data/providers.dart';
 import '../../data/settings/setting_keys.dart';
 import '../../services/notifications/notifications_service.dart';
 import '../../services/notifications/reminder_scheduler.dart';
+import '../../services/notifications/reminder_switch.dart' show notificationsRefusedMessage;
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_pickers.dart';
@@ -27,11 +28,6 @@ class SmartSettingsScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<SmartSettingsScreen> createState() => _SmartSettingsScreenState();
 }
-
-/// Shown when the phone refuses notifications, so the switch stays off.
-const notificationsRefusedMessage =
-    'Notifications are off for Akatabo, so this reminder stays off. Allow them in your '
-    "phone's settings for Akatabo, then switch it on again.";
 
 /// Shown when a reminder is on but the phone no longer allows notifications.
 const notificationsBlockedMessage =

@@ -7,6 +7,7 @@ import 'package:akatabo/data/settings/setting_keys.dart';
 import 'package:akatabo/features/settings/settings_page.dart';
 import 'package:akatabo/features/settings/smart_settings_screen.dart';
 import 'package:akatabo/services/notifications/notifications_service.dart';
+import 'package:akatabo/services/notifications/reminder_switch.dart';
 import 'package:akatabo/services/notifications/reminder_plan.dart';
 import 'package:akatabo/services/notifications/reminder_scheduler.dart';
 import 'package:akatabo/widgets/ak_controls.dart';

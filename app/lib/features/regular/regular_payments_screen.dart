@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -8,15 +10,22 @@ import '../../app/routes.dart';
 import '../../core/format/money.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
+import '../../core/theme/token_colour.dart';
 import '../../core/time/clock_provider.dart';
 import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
+import '../../data/settings/setting_keys.dart';
 import '../../domain/forecast.dart';
+import '../../services/notifications/reminder_switch.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
+import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
+import '../../widgets/charts/bubble_timeline.dart';
+import '../home/home_providers.dart';
+import '../settings/settings_page.dart' show SettingsSwitchRow, ordinalDay;
 import 'looks_regular_section.dart';
 import 'regular_providers.dart';
 
@@ -54,6 +63,10 @@ class RegularPaymentsScreen extends ConsumerWidget {
       (sum, e) => sum + e.key.typicalAmount * e.value.length,
     );
     final ended = DateFormat('d MMMM').format(month.lastDate);
+    final hidden = ref.watch(amountsHiddenProvider);
+    final categories = {
+      for (final cat in ref.watch(allCategoriesProvider).value ?? const <Category>[]) cat.id: cat,
+    };
 
     return Scaffold(
       backgroundColor: c.ground,
@@ -92,6 +105,42 @@ class RegularPaymentsScreen extends ConsumerWidget {
                 'this month.${payments.every((p) => p.source == RegularSource.manual) ? ' You added these by hand.' : ''}',
                 style: t.bodySm.copyWith(color: c.inkMuted),
               ),
+              if (dueThisMonth.isNotEmpty) ...[
+                const SizedBox(height: AkSpace.s4),
+                AkCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      BubbleTimeline(
+                        from: today,
+                        through: month.lastDate,
+                        hidden: hidden,
+                        endLabel: DateFormat('d MMM').format(month.lastDate),
+                        bubbles: [
+                          for (final e in dueThisMonth.entries)
+                            for (final d in e.value)
+                              TimelineBubble(
+                                day: d,
+                                amount: e.key.typicalAmount,
+                                colour: colourForToken(
+                                  c,
+                                  categories[e.key.categoryId]?.colourToken ?? 'cat-slate',
+                                ),
+                              ),
+                        ],
+                        semanticLabel:
+                            'Timeline from ${today.day} to $ended. ${[for (final e in dueThisMonth.entries)
+                              for (final d in e.value) '${e.key.label} ${hidden ? hiddenFigureLabel : formatUgx(e.key.typicalAmount)} on the ${ordinalDay(d.day).replaceFirst('The ', '')}'].join(', ')}.',
+                      ),
+                      const SizedBox(height: AkSpace.s1),
+                      Text(
+                        'A bigger circle is a bigger payment.',
+                        style: t.caption.copyWith(color: c.inkMuted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: AkSpace.s4),
               for (final e in dueThisMonth.entries)
                 _PaymentRow(
@@ -108,6 +157,10 @@ class RegularPaymentsScreen extends ConsumerWidget {
                 ),
             ],
             const LooksRegularSection(),
+            if (payments.isNotEmpty) ...[
+              const SizedBox(height: AkSpace.s4),
+              const _RemindDayBefore(),
+            ],
             const SizedBox(height: AkSpace.s4),
             AkOutlineButton(
               label: 'Add a regular payment yourself',
@@ -117,6 +170,58 @@ class RegularPaymentsScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// "Remind me the day before": the same setting as "Tell me before a regular payment" in
+/// Smart help and reminders. Switching it on asks the phone first; a refusal leaves it off
+/// and says why.
+class _RemindDayBefore extends ConsumerStatefulWidget {
+  const _RemindDayBefore();
+
+  @override
+  ConsumerState<_RemindDayBefore> createState() => _RemindDayBeforeState();
+}
+
+class _RemindDayBeforeState extends ConsumerState<_RemindDayBefore> {
+  bool _asking = false;
+  String? _problem;
+
+  Future<void> _switch(bool on) async {
+    if (_asking) return;
+    setState(() {
+      _asking = true;
+      _problem = null;
+    });
+    final problem = await switchReminder(ref, SettingKeys.regularReminder, on: on);
+    if (!mounted) return;
+    setState(() {
+      _asking = false;
+      _problem = problem;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final stored = ref.watch(storedSettingsProvider).value;
+    final on = SettingKeys.regularReminder.decode(stored?[SettingKeys.regularReminder.name]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AkCard(
+          padding: EdgeInsets.zero,
+          child: SettingsSwitchRow(
+            label: 'Remind me the day before',
+            detail: 'One notification, in the morning',
+            value: on,
+            onChanged: (v) {
+              if (stored != null && !_asking) unawaited(_switch(v));
+            },
+          ),
+        ),
+        if (_problem != null) ...[const SizedBox(height: AkSpace.s2), AkEmptyNote(_problem!)],
+      ],
     );
   }
 }

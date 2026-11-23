@@ -24,7 +24,11 @@ import 'package:akatabo/features/regular/regular_new_screen.dart';
 import 'package:akatabo/features/regular/regular_payments_screen.dart';
 import 'package:akatabo/features/regular/regular_providers.dart';
 import 'package:akatabo/features/settings/category_edit_screen.dart';
+import 'package:akatabo/features/settings/settings_page.dart';
+import 'package:akatabo/services/notifications/notifications_service.dart';
+import 'package:akatabo/services/notifications/reminder_switch.dart';
 import 'package:akatabo/services/security/privacy_settings.dart';
+import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:akatabo/widgets/charts/cumulative_line.dart';
 import 'package:akatabo/smart/forecast/forecast_range.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,6 +38,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../support/fake_notifications.dart';
 import '../../support/fixtures.dart';
 
 final _now = DateTime(2026, 11, 19, 9, 14);
@@ -628,6 +633,117 @@ void main() {
       );
       expect(find.text('Data bundle'), findsOneWidget);
       expect(find.text('UGX 10,000'), findsOneWidget);
+    });
+
+    testWidgets('the timeline says what is due on which day, from today to the month end', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await _pump(
+        tester,
+        const RegularPaymentsScreen(),
+        data: _data(
+          regular: [regularRow(id: 'r1', nextDueOn: 20261125)],
+          extra: [regularRepoOverride(_MockRegularRepo())],
+        ),
+      );
+      expect(find.text('A bigger circle is a bigger payment.'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'Timeline from 19 to 30 November. Data bundle UGX 10,000 on the 25th.',
+        ),
+        findsOneWidget,
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('regular payments golden, light', (tester) async {
+      await _pump(
+        tester,
+        const RegularPaymentsScreen(),
+        data: _data(
+          regular: [
+            regularRow(id: 'r1', nextDueOn: 20261121),
+            regularRow(
+              id: 'r2',
+              label: 'Yaka electricity',
+              typicalAmount: 30000,
+              nextDueOn: 20261124,
+              intervalDays: 30,
+            ),
+            regularRow(
+              id: 'r3',
+              label: 'Water bill',
+              typicalAmount: 46000,
+              nextDueOn: 20261126,
+              intervalDays: 30,
+            ),
+          ],
+          extra: [
+            regularRepoOverride(_MockRegularRepo()),
+            // Smart help's own reading reaches for the database; nothing looks regular here.
+            looksRegularProvider.overrideWith((ref) => const []),
+          ],
+        ),
+      );
+      await expectLater(
+        find.byType(RegularPaymentsScreen),
+        matchesGoldenFile('goldens/regular_light.png'),
+      );
+    });
+
+    testWidgets('Remind me the day before shows the stored choice', (tester) async {
+      await _pump(
+        tester,
+        const RegularPaymentsScreen(),
+        data: _data(
+          regular: [regularRow(id: 'r1', nextDueOn: 20261125)],
+          extra: [regularRepoOverride(_MockRegularRepo())],
+        ),
+        settings: {SettingKeys.regularReminder.name: '1'},
+      );
+      await tester.dragUntilVisible(
+        find.text('Remind me the day before'),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+      final row = find.ancestor(
+        of: find.text('Remind me the day before'),
+        matching: find.byType(SettingsSwitchRow),
+      );
+      expect(tester.widget<SettingsSwitchRow>(row).value, isTrue);
+    });
+
+    testWidgets('a refused permission leaves the reminder off and says why', (tester) async {
+      final fake = FakeNotifications(allow: false);
+      await _pump(
+        tester,
+        const RegularPaymentsScreen(),
+        data: _data(
+          regular: [regularRow(id: 'r1', nextDueOn: 20261125)],
+          extra: [
+            regularRepoOverride(_MockRegularRepo()),
+            notificationsServiceProvider.overrideWithValue(fake),
+          ],
+        ),
+      );
+      await tester.dragUntilVisible(
+        find.text('Remind me the day before'),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+      await tester.tap(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Remind me the day before'),
+            matching: find.byType(SettingsSwitchRow),
+          ),
+          matching: find.byType(AkSwitch),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(fake.asks, 1);
+      expect(find.text(notificationsRefusedMessage), findsOneWidget);
     });
 
     testWidgets('removing a payment asks first, then dismisses it', (tester) async {
