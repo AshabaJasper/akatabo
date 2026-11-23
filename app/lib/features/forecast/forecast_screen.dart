@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -14,11 +16,13 @@ import '../../domain/forecast.dart';
 import '../../domain/insights.dart';
 import '../../domain/spending.dart';
 import '../../smart/forecast/forecast_range.dart';
+import '../../widgets/ak_dashed_box.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../../widgets/charts/cumulative_line.dart';
 import '../home/home_providers.dart';
+import '../settings/settings_page.dart' show ordinalDay;
 import 'forecast_providers.dart';
 import 'forecast_words.dart';
 
@@ -181,6 +185,7 @@ class _ForecastBody extends StatelessWidget {
           sign: '+ ',
         ),
         _SumRow(title: 'Regular bills due', amount: forecast.regularDue, sign: '+ '),
+        _HowClose(dayInMonth: daysBetween(month.start, today) + 1),
         const SizedBox(height: AkSpace.s4),
         Text(
           'Worked out on this phone from your last $historyDays days. One-off payments such as '
@@ -189,6 +194,128 @@ class _ForecastBody extends StatelessWidget {
           style: t.caption.copyWith(color: c.inkMuted),
         ),
       ],
+    );
+  }
+}
+
+/// "How close it has been", as Forecast.html draws it: for up to three earlier months, the
+/// forecast made on this day of the month (dashed) beside what was really spent (solid).
+/// A month with no saved forecast is left out; with none at all the section is not shown.
+class _HowClose extends ConsumerWidget {
+  const _HowClose({required this.dayInMonth});
+
+  final int dayInMonth;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final t = context.type;
+    final history = ref.watch(forecastHistoryProvider);
+    if (history == null || history.isEmpty) return const SizedBox.shrink();
+
+    final largest = history.fold(0, (m, s) => math.max(m, math.max(s.point, s.actual)));
+    final within = history.fold(0.0, (sum, s) => sum + ((s.actual - s.point) / s.point).abs());
+    final percent = math.max(1, (within / history.length * 100).round());
+    // "The 19th" in a settings row; here it sits inside a sentence.
+    final day = ordinalDay(dayInMonth).replaceFirst('The ', '');
+    String month(SnapshotPoint s) => DateFormat('MMMM').format(fromLocalDay(s.periodStart));
+    String short(SnapshotPoint s) => DateFormat('MMM').format(fromLocalDay(s.periodStart));
+    final spoken = [
+      for (final s in history)
+        '${month(s)}: forecast ${formatUgx(s.point)}, actual ${formatUgx(s.actual)}',
+    ].join('. ');
+    final count = history.length == 1 ? 'last month' : 'the last ${history.length} months';
+    double height(int v) => largest == 0 ? 0 : math.max(2, AkSize.barChartSm * v / largest);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AkSpace.s5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.end,
+            spacing: AkSpace.s3,
+            children: [
+              Semantics(
+                header: true,
+                child: Text('How close it has been', style: t.title.copyWith(color: c.ink)),
+              ),
+              Text('within about $percent%', style: t.caption.copyWith(color: c.inkMuted)),
+            ],
+          ),
+          const SizedBox(height: AkSpace.s3),
+          Semantics(
+            image: true,
+            container: true,
+            excludeSemantics: true,
+            label:
+                'For $count, the forecast made on the $day against what was actually '
+                'spent. $spoken.',
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (final (i, s) in history.indexed) ...[
+                  if (i > 0) const SizedBox(width: AkSpace.s4),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: AkSize.barChartSm,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  key: ValueKey('forecast-${s.periodStart}'),
+                                  height: height(s.point),
+                                  child: AkDashedBox(
+                                    color: c.switchOff,
+                                    radius: context.metrics.sm,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: AkSpace.s1),
+                              Expanded(
+                                child: Container(
+                                  key: ValueKey('actual-${s.periodStart}'),
+                                  height: height(s.actual),
+                                  decoration: BoxDecoration(
+                                    color: c.brand,
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(context.metrics.sm),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AkSpace.s1),
+                        Text(
+                          '${short(s)} ${formatShort(s.point)} / ${formatShort(s.actual)}',
+                          style: t.caption.copyWith(color: c.inkMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                // Fewer than three months keep the drawn width per month.
+                for (var k = history.length; k < 3; k++) ...[
+                  const SizedBox(width: AkSpace.s4),
+                  const Expanded(child: SizedBox.shrink()),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: AkSpace.s2),
+          Text(
+            'Dashed is what was forecast on the $day. Solid is what you actually spent.',
+            style: t.caption.copyWith(color: c.inkMuted),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show PathMetric;
 
 import 'package:flutter/widgets.dart';
 
 import '../../core/format/money.dart';
+import '../../core/theme/ak_motion.dart';
 import '../../core/theme/ak_theme.dart';
 
 /// The colours a running-total chart draws with. Screens pass theme tokens; nothing here
@@ -44,7 +46,8 @@ class CumulativeLinePainter extends CustomPainter {
     this.previous,
     this.forecast,
     this.forecastBand,
-  });
+    this.pulse,
+  }) : super(repaint: pulse);
 
   final List<double?> actual;
   final List<double>? previous;
@@ -52,6 +55,9 @@ class CumulativeLinePainter extends CustomPainter {
   final (double, double)? forecastBand;
   final CumulativeColours colours;
   final TextStyle labelStyle;
+
+  /// 0 to 1 over the today point's one pulse; null on charts with no forecast.
+  final Animation<double>? pulse;
 
   static const _gridLines = 3;
 
@@ -163,11 +169,21 @@ class CumulativeLinePainter extends CustomPainter {
     }
 
     if (lastActual >= 0 && actual[lastActual] != null) {
-      canvas.drawCircle(
-        Offset(x(lastActual), y(actual[lastActual]!)),
-        4,
-        Paint()..color = colours.line,
-      );
+      final today = Offset(x(lastActual), y(actual[lastActual]!));
+      // The pulse: a ring that grows from the dot and fades, once. At 0 and at 1 it draws
+      // nothing, so a still chart and a finished pulse look the same.
+      final p = pulse?.value ?? 0;
+      if (p > 0 && p < 1) {
+        canvas.drawCircle(
+          today,
+          4 + 10 * p,
+          Paint()
+            ..color = colours.line.withValues(alpha: 0.35 * (1 - p))
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2,
+        );
+      }
+      canvas.drawCircle(today, 4, Paint()..color = colours.line);
     }
   }
 
@@ -189,11 +205,14 @@ class CumulativeLinePainter extends CustomPainter {
       old.previous != previous ||
       old.forecast != forecast ||
       old.forecastBand != forecastBand ||
-      old.colours != colours;
+      old.colours != colours ||
+      old.pulse != pulse;
 }
 
 /// The chart box: the painter at the chart height, with a sentence that says what it shows.
-class CumulativeLineChart extends StatelessWidget {
+/// With a [forecast], today's point pulses once when the chart first shows, and stays still
+/// when the person has asked for less motion.
+class CumulativeLineChart extends StatefulWidget {
   const CumulativeLineChart({
     super.key,
     required this.summary,
@@ -213,22 +232,53 @@ class CumulativeLineChart extends StatelessWidget {
   final CumulativeColours colours;
 
   @override
+  State<CumulativeLineChart> createState() => _CumulativeLineChartState();
+}
+
+class _CumulativeLineChartState extends State<CumulativeLineChart>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: AkMotion.pulse,
+  );
+  late final CurvedAnimation _eased = CurvedAnimation(parent: _pulse, curve: AkMotion.settle);
+  bool _played = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Once per chart, and never under reduced motion: the dot then simply stays.
+    if (!_played && widget.forecast != null && !MediaQuery.disableAnimationsOf(context)) {
+      _played = true;
+      unawaited(_pulse.forward());
+    }
+  }
+
+  @override
+  void dispose() {
+    _eased.dispose();
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final t = context.type;
     return Semantics(
-      label: summary,
+      label: widget.summary,
       image: true,
       child: SizedBox(
         height: AkSize.chart,
         width: double.infinity,
         child: CustomPaint(
           painter: CumulativeLinePainter(
-            actual: actual,
-            previous: previous,
-            forecast: forecast,
-            forecastBand: forecastBand,
-            colours: colours,
+            actual: widget.actual,
+            previous: widget.previous,
+            forecast: widget.forecast,
+            forecastBand: widget.forecastBand,
+            colours: widget.colours,
             labelStyle: t.caption,
+            pulse: widget.forecast == null ? null : _eased,
           ),
         ),
       ),

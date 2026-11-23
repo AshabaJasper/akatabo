@@ -7,6 +7,9 @@ abstract final class AkMotion {
   /// A control changing state.
   static const fast = Duration(milliseconds: 160);
 
+  /// The one pulse on a forecast's "today" point (DESIGN_SYSTEM.md, Motion). It plays once.
+  static const pulse = Duration(milliseconds: 1200);
+
   /// Starts quickly and settles: things arrive rather than bounce.
   static const Curve settle = Curves.easeOutCubic;
 

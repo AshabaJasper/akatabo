@@ -75,6 +75,25 @@ final forecastSnapshotErrorsProvider = Provider.autoDispose<List<double>?>((ref)
   );
 });
 
+/// "How close it has been": the last three earlier months that have a saved forecast, oldest
+/// first, each the forecast made nearest today's day of the month against what was spent.
+/// Empty when none has one; null while loading.
+final forecastHistoryProvider = Provider.autoDispose<List<SnapshotPoint>?>((ref) {
+  final snapsAsync = ref.watch(forecastPastSnapshotsProvider);
+  final rowsAsync = ref.watch(forecastPastRowsProvider);
+  if (snapsAsync.hasError || rowsAsync.hasError) return const [];
+  final snaps = snapsAsync.value;
+  final rows = rowsAsync.value;
+  if (snaps == null || rows == null) return null;
+  final current = ref.watch(currentMonthProvider);
+  final today = dateOnly(ref.watch(appNowProvider));
+  final best = bestSnapshots(
+    pastSnapshotPoints(snaps, rows, ref.watch(forecastPastMonthsProvider)),
+    dayInPeriod: daysBetween(current.start, today) + 1,
+  );
+  return best.take(3).toList().reversed.toList();
+});
+
 /// Each saved forecast of an earlier month next to what that month really came to. A snapshot
 /// whose month no longer lines up with a month (after "Month starts on" changed) is left out.
 List<SnapshotPoint> pastSnapshotPoints(

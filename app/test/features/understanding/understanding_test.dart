@@ -25,6 +25,7 @@ import 'package:akatabo/features/regular/regular_payments_screen.dart';
 import 'package:akatabo/features/regular/regular_providers.dart';
 import 'package:akatabo/features/settings/category_edit_screen.dart';
 import 'package:akatabo/services/security/privacy_settings.dart';
+import 'package:akatabo/widgets/charts/cumulative_line.dart';
 import 'package:akatabo/smart/forecast/forecast_range.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -95,7 +96,9 @@ List<Override> _data({
   List<double> snapshotErrors = const [],
   ForecastSnapshotSaver? saver,
   List<Transaction> older = const [],
+  List<SnapshotPoint> history = const [],
 }) => [
+  forecastHistoryProvider.overrideWithValue(history),
   monthRowsProvider.overrideWith((ref) => Stream.value(month)),
   budgetHistoryRowsProvider.overrideWith((ref) => Stream.value(older)),
   previousSameDaysRowsProvider.overrideWith((ref) => Stream.value(previous)),
@@ -478,6 +481,99 @@ void main() {
         find.textContaining('how far your forecasts were out in 2 earlier months'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('How close it has been sets each earlier forecast beside what was spent', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final days = _tenDays();
+      const history = [
+        SnapshotPoint(periodStart: 20260801, dayInPeriod: 19, point: 1520000, actual: 1490000),
+        SnapshotPoint(periodStart: 20260901, dayInPeriod: 19, point: 1610000, actual: 1660000),
+        SnapshotPoint(periodStart: 20261001, dayInPeriod: 19, point: 1710000, actual: 1690000),
+      ];
+      await _pump(
+        tester,
+        const ForecastScreen(),
+        data: _data(month: days, window: days, history: history),
+      );
+      await tester.dragUntilVisible(
+        find.textContaining('Dashed is what was forecast'),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+      expect(find.text('within about 2%'), findsOneWidget, reason: '(2.0 + 3.1 + 1.2) / 3');
+      expect(find.text('Aug 1.52M / 1.49M'), findsOneWidget);
+      expect(find.text('Oct 1.71M / 1.69M'), findsOneWidget);
+      expect(
+        find.text('Dashed is what was forecast on the 19th. Solid is what you actually spent.'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          RegExp(r'^For the last 3 months, the forecast made on the 19th against what was'),
+        ),
+        findsOneWidget,
+      );
+      // The tallest of all six bars is October's forecast; the others scale to it.
+      final oct = tester.getSize(find.byKey(const ValueKey('forecast-20261001'))).height;
+      final sep = tester.getSize(find.byKey(const ValueKey('actual-20260901'))).height;
+      final aug = tester.getSize(find.byKey(const ValueKey('forecast-20260801'))).height;
+      expect(oct, AkSize.barChartSm);
+      expect(sep, closeTo(AkSize.barChartSm * 1660000 / 1710000, 0.5));
+      expect(aug, closeTo(AkSize.barChartSm * 1520000 / 1710000, 0.5));
+      await expectLater(
+        find.byType(ForecastScreen),
+        matchesGoldenFile('goldens/forecast_history_light.png'),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('a person with no saved forecast yet sees no history at all', (tester) async {
+      final days = _tenDays();
+      await _pump(
+        tester,
+        const ForecastScreen(),
+        data: _data(month: days, window: days),
+      );
+      expect(find.text('How close it has been'), findsNothing);
+    });
+
+    testWidgets("today's point pulses once, and not at all under reduced motion", (tester) async {
+      double pulseAfterLoad() =>
+          (tester
+                      .widget<CustomPaint>(
+                        find.descendant(
+                          of: find.byType(CumulativeLineChart),
+                          matching: find.byType(CustomPaint),
+                        ),
+                      )
+                      .painter!
+                  as CumulativeLinePainter)
+              .pulse!
+              .value;
+
+      final days = _tenDays();
+      await _pump(
+        tester,
+        const ForecastScreen(),
+        data: _data(month: days, window: days),
+      );
+      // pumpAndSettle returned, so it did not loop; it ran to the end.
+      expect(pulseAfterLoad(), 1);
+
+      await tester.pumpWidget(const SizedBox());
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+        disableAnimations: true,
+      );
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await _pump(
+        tester,
+        const ForecastScreen(),
+        data: _data(month: days, window: days),
+      );
+      expect(pulseAfterLoad(), 0, reason: 'never started');
     });
 
     testWidgets('with "Forecast the month" off, the point shows without a range', (tester) async {

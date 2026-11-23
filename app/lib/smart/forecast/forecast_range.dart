@@ -230,7 +230,15 @@ class SnapshotPoint {
 ///
 /// Each month uses its snapshot taken nearest [dayInPeriod] (the earlier day on a tie). A
 /// snapshot with a point of 0 or less says nothing about relative error and is skipped.
-List<double> snapshotErrors(List<SnapshotPoint> snapshots, {required int dayInPeriod}) {
+List<double> snapshotErrors(List<SnapshotPoint> snapshots, {required int dayInPeriod}) => [
+  for (final s in bestSnapshots(snapshots, dayInPeriod: dayInPeriod))
+    (s.actual - s.point) / s.point,
+];
+
+/// For each earlier month, newest first, its snapshot taken nearest [dayInPeriod] (the earlier
+/// day on a tie): the forecasts [snapshotErrors] measures, and the ones "How close it has
+/// been" draws. A month with no snapshot is absent, never zero.
+List<SnapshotPoint> bestSnapshots(List<SnapshotPoint> snapshots, {required int dayInPeriod}) {
   final best = <int, SnapshotPoint>{};
   for (final s in snapshots) {
     if (s.point <= 0) continue;
@@ -238,10 +246,7 @@ List<double> snapshotErrors(List<SnapshotPoint> snapshots, {required int dayInPe
     if (cur == null || _nearer(s, cur, dayInPeriod)) best[s.periodStart] = s;
   }
   final months = best.keys.toList()..sort((a, b) => b.compareTo(a));
-  return [
-    for (final m in months.take(forecastMaxMonths))
-      (best[m]!.actual - best[m]!.point) / best[m]!.point,
-  ];
+  return [for (final m in months.take(forecastMaxMonths)) best[m]!];
 }
 
 bool _nearer(SnapshotPoint a, SnapshotPoint b, int day) {
