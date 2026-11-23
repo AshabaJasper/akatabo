@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/close_screen.dart';
+import '../../app/routes.dart';
 import '../../core/format/money.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
@@ -14,6 +16,7 @@ import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
+import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
@@ -24,8 +27,8 @@ import 'transactions_providers.dart';
 import 'unusual_card.dart';
 import 'unusual_providers.dart';
 
-/// One entry: what it was, where and when, what it cost in total, and a delete that asks
-/// first. Editing comes with the Add screen's edit mode in a later step.
+/// One entry: what it was, where and when, what it cost in total, Edit (Add in edit mode),
+/// "Add one like this", and a delete that asks first.
 class TransactionDetailScreen extends ConsumerWidget {
   const TransactionDetailScreen({super.key, required this.id});
 
@@ -90,7 +93,12 @@ class TransactionDetailScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
           children: [
-            AkBackLink('Transactions', onTap: () => closeScreen(context)),
+            Row(
+              children: [
+                Expanded(child: AkBackLink('Transactions', onTap: () => closeScreen(context))),
+                AkPillButton(label: 'Edit', onTap: () => context.push(Routes.addEdit(tx.id))),
+              ],
+            ),
             const SizedBox(height: AkSpace.s5),
             Row(
               children: [
@@ -158,18 +166,45 @@ class TransactionDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AkSpace.s5),
-            _DeleteButton(
-              what: [
-                if (tx.description.trim().isNotEmpty) tx.description.trim(),
-                formatUgx(tx.amount),
-              ].join(', '),
-              onConfirmed: () async {
-                final deleted = await saveOrSay(
-                  context,
-                  () => ref.read(transactionRepositoryProvider).delete(tx.id),
-                  failed: 'This entry could not be deleted. It is still in your totals. Try again.',
+            // Side by side, as drawn. At large text sizes they stack, so neither label clips.
+            Builder(
+              builder: (context) {
+                final like = AkOutlineButton(
+                  label: 'Add one like this',
+                  onPressed: () => context.push(Routes.addLike(tx.id)),
                 );
-                if (deleted && context.mounted) await closeScreen(context);
+                final delete = _DeleteButton(
+                  what: [
+                    if (tx.description.trim().isNotEmpty) tx.description.trim(),
+                    formatUgx(tx.amount),
+                  ].join(', '),
+                  onConfirmed: () async {
+                    final deleted = await saveOrSay(
+                      context,
+                      () => ref.read(transactionRepositoryProvider).delete(tx.id),
+                      failed:
+                          'This entry could not be deleted. It is still in your totals. Try again.',
+                    );
+                    if (deleted && context.mounted) await closeScreen(context);
+                  },
+                );
+                if (MediaQuery.textScalerOf(context).scale(1) > 1.3) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      like,
+                      const SizedBox(height: AkSpace.s3),
+                      delete,
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: like),
+                    const SizedBox(width: AkSpace.s3),
+                    Expanded(child: delete),
+                  ],
+                );
               },
             ),
           ],
@@ -235,26 +270,18 @@ class _DeleteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
-    final t = context.type;
+    // The same outline button as "Add one like this" beside it, so the pair match in
+    // height and border; only the ink says it removes something.
     return Semantics(
       button: true,
       label: 'Delete this entry',
       container: true,
       excludeSemantics: true,
       onTap: () => _confirm(context),
-      child: InkWell(
-        onTap: () => _confirm(context),
-        borderRadius: BorderRadius.circular(context.metrics.lg),
-        child: Container(
-          height: AkSize.button,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(context.metrics.lg),
-            border: Border.all(color: c.moneyOut),
-          ),
-          child: Text('Delete', style: t.button.copyWith(color: c.moneyOut)),
-        ),
+      child: AkOutlineButton(
+        label: 'Delete',
+        ink: context.colors.moneyOut,
+        onPressed: () => _confirm(context),
       ),
     );
   }

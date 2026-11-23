@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/close_screen.dart';
+import '../../core/format/money.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../core/theme/token_colour.dart';
@@ -31,8 +32,15 @@ import 'when_text.dart';
 /// Top to bottom, as the design orders it: the kind, the amount, a few words, the category
 /// grid, the account, then the optional fee and the extra details. Only the amount and a
 /// category are needed to save (validation comes from [TransactionDraft.problems]).
+///
+/// With [editId] it edits that entry in place (TransactionDetail.html's Edit); with [likeId]
+/// it starts a new entry filled from that one, dated now ("Add one like this").
 class AddScreen extends ConsumerStatefulWidget {
-  const AddScreen({super.key});
+  const AddScreen({super.key, this.editId, this.likeId})
+    : assert(editId == null || likeId == null, 'Edit or copy, not both');
+
+  final String? editId;
+  final String? likeId;
 
   @override
   ConsumerState<AddScreen> createState() => _AddScreenState();
@@ -66,6 +74,18 @@ class _AddScreenState extends ConsumerState<AddScreen> {
   final _amountFocus = FocusNode(debugLabel: 'amount');
   List<String> _problems = const [];
 
+  /// The entry being edited, once read. Its suggestion is kept on save, so an edit does not
+  /// erase what the category suggester learnt from it.
+  Transaction? _original;
+
+  /// Editing or copying waits for the entry before the form can be saved.
+  bool _filling = false;
+
+  /// The entry could not be read (deleted meanwhile, or the database failed).
+  bool _fillFailed = false;
+
+  bool get _editing => widget.editId != null;
+
   /// The time now, for the "When" label until the person chooses a moment. A timer keeps it
   /// to the minute, so Add left open does not show a stale time, or yesterday after midnight.
   late DateTime _shownNow;
@@ -84,6 +104,47 @@ class _AddScreenState extends ConsumerState<AddScreen> {
       if (n.minute != _shownNow.minute || n.hour != _shownNow.hour || n.day != _shownNow.day) {
         setState(() => _shownNow = n);
       }
+    });
+    final sourceId = widget.editId ?? widget.likeId;
+    if (sourceId != null) {
+      _filling = true;
+      unawaited(_fillFrom(sourceId));
+    }
+  }
+
+  /// Fills the form from an existing entry. A copy keeps everything but the moment, which
+  /// becomes the moment of saving, and starts with nothing to correct.
+  Future<void> _fillFrom(String id) async {
+    Transaction? tx;
+    try {
+      tx = await ref.read(transactionRepositoryProvider).byId(id);
+    } on Object catch (error, stack) {
+      FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stack));
+    }
+    if (!mounted) return;
+    setState(() {
+      _filling = false;
+      if (tx == null) {
+        _fillFailed = true;
+        return;
+      }
+      if (_editing) {
+        _original = tx;
+        _when = tx.occurredAt;
+      }
+      _chosenDirection = tx.direction;
+      _amount.text = formatAmount(tx.amount);
+      _what.text = tx.description;
+      _categoryId = tx.categoryId;
+      _fromId = tx.accountId;
+      _toId = tx.toAccountId;
+      if (tx.fee > 0) {
+        _fee.text = formatAmount(tx.fee);
+        _feeTypedUpFront = true;
+      }
+      if (tx.tax > 0) _tax.text = formatAmount(tx.tax);
+      _note.text = tx.note ?? '';
+      _showMore = tx.tax > 0 || (tx.note ?? '').trim().isNotEmpty;
     });
   }
 
@@ -185,26 +246,35 @@ class _AddScreenState extends ConsumerState<AddScreen> {
     // Read before the save: if Add is closed while saving, ref can no longer be used.
     final warner = ref.read(budgetWarnerProvider);
     final String savedId;
+    final original = _original;
+    final draft = TransactionDraft(
+      direction: direction,
+      amount: parseAmount(_amount.text),
+      description: _what.text.trim(),
+      categoryId: isTransfer ? null : categoryId,
+      accountId: from!,
+      toAccountId: isTransfer ? to : null,
+      fee: isMoneyIn ? 0 : parseAmount(_fee.text),
+      tax: isMoneyIn ? 0 : parseAmount(_tax.text),
+      note: note.isEmpty ? null : note,
+      occurredAt: occurredAt,
+      // What was suggested, so a different pick is stored as a correction. An edit keeps
+      // the suggestion made when the entry was first added.
+      suggestedCategoryId: isTransfer
+          ? null
+          : (original != null ? original.suggestedCategoryId : suggestion?.categoryId),
+      suggestionConfidence: isTransfer
+          ? null
+          : (original != null ? original.suggestionConfidence : suggestion?.probability),
+    );
     try {
-      savedId = await ref
-          .read(transactionRepositoryProvider)
-          .add(
-            TransactionDraft(
-              direction: direction,
-              amount: parseAmount(_amount.text),
-              description: _what.text.trim(),
-              categoryId: isTransfer ? null : categoryId,
-              accountId: from!,
-              toAccountId: isTransfer ? to : null,
-              fee: isMoneyIn ? 0 : parseAmount(_fee.text),
-              tax: isMoneyIn ? 0 : parseAmount(_tax.text),
-              note: note.isEmpty ? null : note,
-              occurredAt: occurredAt,
-              // What was suggested, so a different pick is stored as a correction.
-              suggestedCategoryId: isTransfer ? null : suggestion?.categoryId,
-              suggestionConfidence: isTransfer ? null : suggestion?.probability,
-            ),
-          );
+      final repo = ref.read(transactionRepositoryProvider);
+      if (original != null) {
+        await repo.update(original.id, draft);
+        savedId = original.id;
+      } else {
+        savedId = await repo.add(draft);
+      }
     } on Object catch (error, stack) {
       // Keep what the person typed and let them try again; never leave the button stuck.
       FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stack));
@@ -521,9 +591,19 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                         ),
                     ],
                     const SizedBox(height: AkSpace.s5),
+                    if (_fillFailed) ...[
+                      Text(
+                        'That entry could not be opened. It may have been deleted.',
+                        style: t.bodySm.copyWith(color: c.moneyOut),
+                      ),
+                      const SizedBox(height: AkSpace.s3),
+                    ],
                     AkPrimaryButton(
-                      label: _saving ? 'Saving' : 'Save transaction',
-                      onPressed: _saving ? null : () => _save(defaultAccount, accounts, suggestion),
+                      label: _saving ? 'Saving' : (_editing ? 'Save changes' : 'Save transaction'),
+                      // An edit that could not be read must not save a new entry instead.
+                      onPressed: _saving || _filling || (_editing && _fillFailed)
+                          ? null
+                          : () => _save(defaultAccount, accounts, suggestion),
                     ),
                   ],
                 ),

@@ -16,6 +16,7 @@ import 'package:akatabo/services/notifications/budget_warning.dart';
 import 'package:akatabo/widgets/ak_month_grid.dart';
 import 'package:akatabo/widgets/ak_pickers.dart';
 import 'package:clock/clock.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,11 +32,23 @@ class RecordingTransactionRepository extends TransactionRepository {
 
   final drafts = <TransactionDraft>[];
 
+  /// Entries Add can open for editing or copying.
+  final stored = <String, Transaction>{};
+
+  /// Edits, as (id, draft).
+  final updates = <(String, TransactionDraft)>[];
+
   @override
   Future<String> add(TransactionDraft draft) async {
     drafts.add(draft);
     return 'saved-${drafts.length}';
   }
+
+  @override
+  Future<Transaction?> byId(String id) async => stored[id];
+
+  @override
+  Future<void> update(String id, TransactionDraft draft) async => updates.add((id, draft));
 }
 
 /// A database that refuses every insert, as a full disk would.
@@ -100,6 +113,7 @@ Future<RecordingTransactionRepository> _pumpAdd(
   double height = 844,
   Clock? clock,
   List<String>? warned,
+  AddScreen screen = const AddScreen(),
 }) async {
   tester.view
     ..physicalSize = Size(390, height)
@@ -127,8 +141,7 @@ Future<RecordingTransactionRepository> _pumpAdd(
             body: Center(
               child: TextButton(
                 onPressed: () =>
-                    Navigator.of(context)
-                        .push(MaterialPageRoute<void>(builder: (_) => const AddScreen())),
+                    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen)),
                 child: const Text('open add'),
               ),
             ),
@@ -320,6 +333,102 @@ void main() {
       await tester.tap(find.text('Cash').first);
       await tester.pump();
       expect(find.text('FEE TO MOVE IT'), findsOneWidget, reason: 'from Cash too');
+    });
+
+    testWidgets('Edit fills the form and saves over the same entry, keeping its suggestion', (
+      tester,
+    ) async {
+      final at = DateTime(2026, 11, 17, 18, 30);
+      final repo = RecordingTransactionRepository()
+        ..stored['t1'] =
+            txRow(
+              id: 't1',
+              amount: 45000,
+              description: 'Groceries',
+              categoryId: DefaultIds.transport,
+              fee: 500,
+              note: 'Weekly shop',
+              at: at,
+            ).copyWith(
+              suggestedCategoryId: const Value(DefaultIds.food),
+              suggestionConfidence: const Value(0.8),
+            );
+      await _pumpAdd(
+        tester,
+        repository: repo,
+        height: 1600,
+        screen: const AddScreen(editId: 't1'),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('45,000'), findsOneWidget);
+      expect(find.text('Groceries'), findsOneWidget);
+      expect(find.text('Save changes'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField).at(0), '46,000');
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+      expect(repo.drafts, isEmpty, reason: 'no new entry');
+      expect(repo.updates, hasLength(1));
+      final (id, draft) = repo.updates.single;
+      expect(id, 't1');
+      expect(draft.amount, 46000);
+      expect(draft.occurredAt, at, reason: 'the moment stays');
+      expect(draft.categoryId, DefaultIds.transport);
+      expect(draft.fee, 500);
+      expect(draft.note, 'Weekly shop');
+      expect(draft.suggestedCategoryId, DefaultIds.food, reason: 'the first suggestion is kept');
+    });
+
+    testWidgets('Add one like this starts a new entry from it, dated when it is saved', (
+      tester,
+    ) async {
+      final repo = RecordingTransactionRepository()
+        ..stored['t1'] = txRow(
+          id: 't1',
+          amount: 2000,
+          description: 'Boda to work',
+          categoryId: DefaultIds.transport,
+          at: DateTime(2026, 11, 10, 8),
+        );
+      await _pumpAdd(
+        tester,
+        repository: repo,
+        height: 1600,
+        screen: const AddScreen(likeId: 't1'),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Boda to work'), findsOneWidget);
+      expect(find.text('Save transaction'), findsOneWidget);
+      await withClock(Clock.fixed(_now), () async {
+        await tester.tap(find.text('Save transaction'));
+        await tester.pumpAndSettle();
+      });
+      expect(repo.updates, isEmpty);
+      expect(repo.drafts.single.amount, 2000);
+      expect(repo.drafts.single.categoryId, DefaultIds.transport);
+      expect(repo.drafts.single.occurredAt, _now);
+    });
+
+    testWidgets('an entry that cannot be opened for editing is never saved as a new one', (
+      tester,
+    ) async {
+      final repo = RecordingTransactionRepository();
+      await _pumpAdd(
+        tester,
+        repository: repo,
+        height: 1600,
+        screen: const AddScreen(editId: 'gone'),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text('That entry could not be opened. It may have been deleted.'),
+        findsOneWidget,
+      );
+      await tester.enterText(find.byType(TextField).at(0), '5,000');
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+      expect(repo.drafts, isEmpty);
+      expect(repo.updates, isEmpty);
     });
 
     testWidgets('the keyboard moving the amount keeps the same focused field', (tester) async {

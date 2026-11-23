@@ -71,7 +71,12 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
         pageBuilder: (_, state) => MaterialPage<void>(
           key: state.pageKey,
           fullscreenDialog: true,
-          child: const AddScreen(),
+          child: AddScreen(
+            editId: state.uri.queryParameters['edit'],
+            likeId: state.uri.queryParameters['edit'] == null
+                ? state.uri.queryParameters['like']
+                : null,
+          ),
         ),
       ),
       GoRoute(

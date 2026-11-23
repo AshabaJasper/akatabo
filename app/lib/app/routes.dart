@@ -57,6 +57,10 @@ abstract final class Routes {
   /// Add a transaction. Sits on the root navigator, above the tabs.
   static const add = '/add';
 
+  /// Add in edit mode for one entry, and Add filled from one ("Add one like this").
+  static String addEdit(String id) => '$add?edit=$id';
+  static String addLike(String id) => '$add?like=$id';
+
   /// Every transaction, newest first. Pushed over the tabs.
   static const transactions = '/transactions';
 

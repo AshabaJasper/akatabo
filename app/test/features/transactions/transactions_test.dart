@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:akatabo/app/appearance.dart';
+import 'package:akatabo/app/routes.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/time/clock_provider.dart';
 import 'package:akatabo/data/db/app_database.dart';
@@ -18,6 +19,7 @@ import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../support/fixtures.dart';
@@ -91,6 +93,7 @@ Future<_FakeRepo> _pump(
   Widget screen, {
   Brightness brightness = Brightness.light,
   Stream<List<Transaction>>? all,
+  bool withRouter = false,
 }) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -111,7 +114,18 @@ Future<_FakeRepo> _pump(
         allCategoriesProvider.overrideWith((ref) => Stream.value(_categories)),
         enabledAccountsProvider.overrideWith((ref) => Stream.value(_accounts)),
       ],
-      child: MaterialApp(theme: buildAkTheme(brightness, const AkAppearance()), home: screen),
+      child: withRouter
+          ? MaterialApp.router(
+              theme: buildAkTheme(brightness, const AkAppearance()),
+              routerConfig: GoRouter(
+                routes: [
+                  GoRoute(path: '/', builder: (_, _) => screen),
+                  // Stands in for Add, naming the mode it was opened in.
+                  GoRoute(path: Routes.add, builder: (_, state) => Text('Add ${state.uri.query}')),
+                ],
+              ),
+            )
+          : MaterialApp(theme: buildAkTheme(brightness, const AkAppearance()), home: screen),
     ),
   );
   await tester.pumpAndSettle();
@@ -161,6 +175,32 @@ void main() {
     expect(find.text('UGX 1,000'), findsOneWidget);
     expect(find.text('UGX 46,000'), findsOneWidget, reason: 'total cost to you');
     expect(find.text('Today, 19 November 2026, 09:14'), findsOneWidget);
+  });
+
+  testWidgets('Edit opens Add on this entry; Add one like this opens Add filled from it', (
+    tester,
+  ) async {
+    await _pump(tester, const TransactionDetailScreen(id: 'groceries'), withRouter: true);
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add edit=groceries'), findsOneWidget);
+
+    GoRouter.of(tester.element(find.text('Add edit=groceries'))).pop();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add one like this'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add like=groceries'), findsOneWidget);
+  });
+
+  testWidgets('at large text the two bottom buttons stack and keep their labels', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _pump(tester, const TransactionDetailScreen(id: 'groceries'));
+    await tester.scrollUntilVisible(find.text('Add one like this'), 200);
+    final like = tester.getRect(find.text('Add one like this'));
+    final delete = tester.getRect(find.text('Delete'));
+    expect(delete.top, greaterThan(like.bottom), reason: 'stacked, not side by side');
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('delete asks first and removes only when confirmed', (tester) async {
