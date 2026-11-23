@@ -45,6 +45,7 @@ AkAppearance storedAppearance(Ref ref) {
     paletteId: SettingKeys.mainColour.decode(s[SettingKeys.mainColour.name]),
     corners: SettingKeys.corners.decode(s[SettingKeys.corners.name]),
     textSize: SettingKeys.textSize.decode(s[SettingKeys.textSize.name]),
+    categoryColours: SettingKeys.categoryColours.decode(s[SettingKeys.categoryColours.name]),
   );
 }
 

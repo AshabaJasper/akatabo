@@ -12,7 +12,7 @@ import 'settings_page.dart';
 
 String _capitalised(String name) => '${name[0].toUpperCase()}${name.substring(1)}';
 
-/// Theme, main colour, text size, corners and the category chart. Each change is saved at
+/// Theme, main colour, category colours, text size, corners and the category chart. Each change is saved at
 /// once and rebuilds the app's theme, because the app reads these from storage (see
 /// storedAppearanceProvider and categoryChartProvider).
 class AppearanceSettingsScreen extends ConsumerStatefulWidget {
@@ -71,6 +71,19 @@ class _AppearanceSettingsScreenState extends ConsumerState<AppearanceSettingsScr
               child: _MainColours(
                 selected: paletteById(look.paletteId).id,
                 onChanged: (id) => _save(SettingKeys.mainColour, id),
+              ),
+            ),
+            _ChoiceRow(
+              label: 'Category colours',
+              child: AkSegmented<AkCategoryColours>(
+                semanticLabel: 'Category colours',
+                segments: const [
+                  AkSegment(AkCategoryColours.colourful, 'Colourful'),
+                  AkSegment(AkCategoryColours.oneColour, 'One colour'),
+                  AkSegment(AkCategoryColours.greys, 'Greys'),
+                ],
+                selected: look.categoryColours,
+                onChanged: (v) => _save(SettingKeys.categoryColours, v),
               ),
             ),
             _ChoiceRow(

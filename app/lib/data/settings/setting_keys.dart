@@ -79,6 +79,11 @@ abstract final class SettingKeys {
     CategoryChart.pie,
     CategoryChart.values,
   );
+  static const categoryColours = EnumSetting(
+    'appearance.categoryColours',
+    AkCategoryColours.colourful,
+    AkCategoryColours.values,
+  );
   static const corners = EnumSetting('appearance.corners', AkCorners.rounded, AkCorners.values);
   static const textSize = EnumSetting(
     'appearance.textSize',

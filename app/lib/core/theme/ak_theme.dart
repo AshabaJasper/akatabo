@@ -28,6 +28,35 @@ AkColorTokens applyPalette(AkColorTokens base, AkPalette palette, Brightness bri
   );
 }
 
+/// "Category colours": under One colour every `cat-` token becomes the main colour, under
+/// Greys every one becomes `cat-slate`. Account colours are not category colours and stay.
+/// The `-past` tints are not used on any screen, so they are left as they are.
+AkColorTokens applyCategoryColours(AkColorTokens c, AkCategoryColours mode) {
+  final Color one;
+  switch (mode) {
+    case AkCategoryColours.colourful:
+      return c;
+    case AkCategoryColours.oneColour:
+      one = c.brand;
+    case AkCategoryColours.greys:
+      one = c.catSlate;
+  }
+  return c.copyWith(
+    catGreen: one,
+    catBlue: one,
+    catAmber: one,
+    catPurple: one,
+    catPink: one,
+    catSlate: one,
+    catOrange: one,
+    catTeal: one,
+    catIndigo: one,
+    catBrown: one,
+    catOlive: one,
+    catRed: one,
+  );
+}
+
 AkPalette paletteById(String id) =>
     akPalettes.firstWhere((p) => p.id == id, orElse: () => akPalettes.first);
 
@@ -157,7 +186,10 @@ class AkMetrics extends ThemeExtension<AkMetrics> {
 /// Builds the light or dark theme from tokens plus the Appearance settings.
 ThemeData buildAkTheme(Brightness brightness, AkAppearance appearance) {
   final base = brightness == Brightness.light ? akLightTokens : akDarkTokens;
-  final c = applyPalette(base, paletteById(appearance.paletteId), brightness);
+  final c = applyCategoryColours(
+    applyPalette(base, paletteById(appearance.paletteId), brightness),
+    appearance.categoryColours,
+  );
   final type = AkType.of(appearance.textSize, c.ink);
   final metrics = AkMetrics(appearance.corners);
 

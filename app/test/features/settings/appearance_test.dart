@@ -151,6 +151,19 @@ void main() {
       isSemantics(isSelected: true),
       reason: 'the page redraws with the new choice',
     );
+
+    // Category colours: One colour draws every category in the main colour, Greys in slate.
+    AkColorTokens colours() => tester.element(find.text('Appearance')).colors;
+    expect(colours().catAmber, akLightTokens.catAmber);
+    await tester.tap(find.text('One colour'));
+    await tester.pumpAndSettle();
+    expect(settings.values[SettingKeys.categoryColours.name], 'oneColour');
+    expect(colours().catAmber, paletteById('plum').light['brand']);
+    expect(colours().catBlue, paletteById('plum').light['brand']);
+    await tester.tap(find.text('Greys'));
+    await tester.pumpAndSettle();
+    expect(colours().catAmber, akLightTokens.catSlate);
+    expect(colours().acctMtn, akLightTokens.acctMtn, reason: 'accounts keep their colours');
   });
 
   group('Main colour swatches', () {

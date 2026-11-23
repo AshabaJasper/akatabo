@@ -1,5 +1,6 @@
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/theme/tokens.g.dart';
+import 'package:akatabo/widgets/ak_category_choices.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -26,6 +27,36 @@ void main() {
 
     test('an unknown palette id falls back to green', () {
       expect(paletteById('nope').id, 'green');
+    });
+  });
+
+  group('category colours', () {
+    test('Colourful leaves every token as it is', () {
+      expect(applyCategoryColours(akLightTokens, AkCategoryColours.colourful), akLightTokens);
+    });
+
+    test('One colour draws every category in the main colour; accounts keep theirs', () {
+      final c = applyCategoryColours(akDarkTokens, AkCategoryColours.oneColour);
+      for (final v in [c.catGreen, c.catAmber, c.catRed, c.catSlate, c.catOlive]) {
+        expect(v, akDarkTokens.brand);
+      }
+      expect(c.acctAirtel, akDarkTokens.acctAirtel);
+    });
+
+    test('Greys draws every category in slate', () {
+      final c = applyCategoryColours(akLightTokens, AkCategoryColours.greys);
+      expect(c.catPink, akLightTokens.catSlate);
+      expect(c.catTeal, akLightTokens.catSlate);
+    });
+
+    test('an amber category takes the light icon once it is drawn in another colour', () {
+      expect(categoryIconColour(akLightTokens, 'cat-amber'), akLightTokens.onLightFill);
+      expect(categoryIconColour(akLightTokens, 'cat-blue'), akLightTokens.onBrand);
+      for (final mode in [AkCategoryColours.oneColour, AkCategoryColours.greys]) {
+        final c = applyCategoryColours(akLightTokens, mode);
+        expect(categoryIconColour(c, 'cat-amber'), c.onBrand, reason: mode.name);
+        expect(categoryIconColour(c, 'cat-olive'), c.onBrand, reason: mode.name);
+      }
     });
   });
 
