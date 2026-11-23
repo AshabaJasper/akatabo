@@ -38,7 +38,6 @@ class BudgetsScreen extends ConsumerWidget {
     // The day of the budget month, which differs from the calendar day when "Month starts
     // on" is not the 1st.
     final day = calc.elapsedDays(month, today);
-    final previousStart = calc.previous(month).startDay;
     final rowsAsync = ref.watch(monthRowsProvider);
     final previousAsync = ref.watch(previousMonthRowsProvider);
     final catsAsync = ref.watch(allCategoriesProvider);
@@ -46,26 +45,19 @@ class BudgetsScreen extends ConsumerWidget {
     final failed = rowsAsync.hasError || previousAsync.hasError || catsAsync.hasError;
 
     final spentNow = moneyOutByCategory(rowsAsync.value ?? const <Transaction>[]);
-    final spentBefore = moneyOutByCategory(previousAsync.value ?? const <Transaction>[]);
     final cats = catsAsync.value ?? const <Category>[];
     final names = {for (final cat in cats) cat.id: cat};
 
+    // The same lines Home's "Left in budgets" tile sums, so the two never disagree.
     final lines = [
-      for (final cat in cats)
-        if (!cat.isSystem && !cat.hidden && (cat.monthlyBudget ?? 0) > 0)
-          _lineFor(
-            cat,
-            spent: spentNow[cat.id] ?? 0,
-            budget: effectiveBudget(
-              base: cat.monthlyBudget!,
-              carriesOver:
-                  cat.budgetCarriesOver &&
-                  carryApplies(budgetSince: cat.budgetSince, previousMonthStartDay: previousStart),
-              previousSpent: spentBefore[cat.id] ?? 0,
-            ),
-            day: day,
-            daysInMonth: month.lengthInDays,
-          ),
+      for (final l in ref.watch(budgetLinesProvider) ?? const [])
+        _lineFor(
+          l.category,
+          spent: l.spent,
+          budget: l.budget,
+          day: day,
+          daysInMonth: month.lengthInDays,
+        ),
     ]..sort((a, b) => b.ratio.compareTo(a.ratio));
 
     final totals = budgetTotalsOf([for (final l in lines) (budget: l.budget, spent: l.spent)]);
@@ -124,6 +116,46 @@ class BudgetsScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Home's "Budgets at a glance": the three most used budgets, drawn as on Budgets, with "See
+/// all" to the tab. Nothing at all while loading or with no budget set.
+class BudgetsAtAGlance extends ConsumerWidget {
+  const BudgetsAtAGlance({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final source = ref.watch(budgetLinesProvider);
+    if (source == null || source.isEmpty) return const SizedBox.shrink();
+    final today = dateOnly(ref.watch(appNowProvider));
+    final calc = ref.watch(periodCalculatorProvider);
+    final month = calc.month(today);
+    final day = calc.elapsedDays(month, today);
+    final lines = [
+      for (final l in source)
+        _lineFor(
+          l.category,
+          spent: l.spent,
+          budget: l.budget,
+          day: day,
+          daysInMonth: month.lengthInDays,
+        ),
+    ]..sort((a, b) => b.ratio.compareTo(a.ratio));
+    final pace = budgetPace(day: day, daysInMonth: month.lengthInDays);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AkSectionTitle(
+          'Budgets',
+          actionLabel: 'See all',
+          onAction: () => context.go(Routes.budgets),
+        ),
+        const SizedBox(height: AkSpace.s2),
+        for (final l in lines.take(3))
+          _BudgetRow(line: l, pace: pace, onTap: () => context.push(Routes.budget(l.category.id))),
+      ],
     );
   }
 }

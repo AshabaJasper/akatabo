@@ -43,6 +43,7 @@ class _HomeSettingsScreenState extends ConsumerState<HomeSettingsScreen> {
       children: [
         SettingsSection(
           label: 'Sections',
+          // In the order Home draws them, as SetAppearance.html lists them.
           children: [
             _switchRow(
               context,
@@ -53,12 +54,26 @@ class _HomeSettingsScreenState extends ConsumerState<HomeSettingsScreen> {
             ),
             _switchRow(
               context,
+              'Forecast card',
+              layout.forecast,
+              SettingKeys.homeShowForecast,
+              divider: true,
+            ),
+            _switchRow(
+              context,
               'Where it went',
               layout.whereItWent,
               SettingKeys.homeShowWhereItWent,
               divider: true,
             ),
-            _switchRow(context, 'Latest transactions', layout.latest, SettingKeys.homeShowLatest),
+            _switchRow(
+              context,
+              'Latest transactions',
+              layout.latest,
+              SettingKeys.homeShowLatest,
+              divider: true,
+            ),
+            _switchRow(context, 'Budgets at a glance', layout.budgets, SettingKeys.homeShowBudgets),
           ],
         ),
         if (_problem != null) AkEmptyNote(_problem!),

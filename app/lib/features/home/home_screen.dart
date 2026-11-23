@@ -23,6 +23,8 @@ import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/add_providers.dart';
+import '../budgets/budgets_providers.dart';
+import '../budgets/budgets_screen.dart' show BudgetsAtAGlance;
 import '../forecast/forecast_providers.dart';
 import '../forecast/forecast_words.dart';
 import '../settings/home_layout.dart';
@@ -70,6 +72,7 @@ class HomeScreen extends ConsumerWidget {
     final change = percentChange(current: totals.moneyOut, previous: previousOut);
     final parts = moneyOutByCategory(rows);
     final feesAndTax = parts[DefaultIds.fees] ?? 0;
+    final budgets = ref.watch(budgetTotalsProvider);
     final daysWithEntries = {for (final t in rows) t.localDay}.length;
     final forecastOn = SettingKeys.forecastMonth.decode(
       ref.watch(storedSettingsProvider).value?[SettingKeys.forecastMonth.name],
@@ -92,13 +95,26 @@ class HomeScreen extends ConsumerWidget {
             tiles: layout.headerTiles
                 ? [
                     _StatTile(label: 'Money in', value: formatShort(totals.moneyIn)),
-                    _StatTile(label: 'Fees and tax', value: formatAmount(feesAndTax)),
+                    // Only once a budget is set: with none, "0 left" would mislead.
+                    if (budgets != null)
+                      _StatTile(
+                        label: budgets.left < 0 ? 'Over budget' : 'Left in budgets',
+                        value: formatAmount(budgets.left.abs()),
+                        onTap: () => context.go(Routes.budgets),
+                        opens: 'Open budgets',
+                      ),
+                    _StatTile(
+                      label: 'Fees and tax',
+                      value: formatAmount(feesAndTax),
+                      onTap: () => context.push(Routes.fees),
+                      opens: 'Open fees and tax',
+                    ),
                   ]
                 : const [],
           ),
           // The forecast card, as Main.html draws it, once seven days have entries and while
           // "Forecast the month" is on. Its providers are only read once it can show.
-          if (daysWithEntries >= forecastMinDays && forecastOn) ...[
+          if (layout.forecast && daysWithEntries >= forecastMinDays && forecastOn) ...[
             const SizedBox(height: AkSpace.s3h),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: AkSpace.s6),
@@ -135,6 +151,14 @@ class HomeScreen extends ConsumerWidget {
                   onTap: () => context.push(Routes.transaction(tx.id)),
                 ),
               ),
+          ],
+          // Draws nothing until a budget is set, so its gap goes inside it.
+          if (layout.budgets && budgets != null) ...[
+            const SizedBox(height: AkSpace.s5),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: AkSpace.s6),
+              child: BudgetsAtAGlance(),
+            ),
           ],
           const SizedBox(height: AkSpace.s6),
         ],
@@ -237,14 +261,30 @@ class _Header extends StatelessWidget {
                   Text(comparison!, style: t.bodySm.copyWith(color: c.accent)),
                 ],
                 const SizedBox(height: AkSpace.s4),
-                Row(
-                  children: [
-                    for (final (i, tile) in tiles.indexed) ...[
-                      if (i > 0) const SizedBox(width: AkSpace.s2),
-                      Expanded(child: tile),
+                // Side by side and the same height, as drawn, even when one label takes two
+                // lines; at a large text size they stack so no figure is squeezed.
+                if (MediaQuery.textScalerOf(context).scale(1) > 1.3)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final (i, tile) in tiles.indexed) ...[
+                        if (i > 0) const SizedBox(height: AkSpace.s2),
+                        tile,
+                      ],
                     ],
-                  ],
-                ),
+                  )
+                else
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (final (i, tile) in tiles.indexed) ...[
+                          if (i > 0) const SizedBox(width: AkSpace.s2),
+                          Expanded(child: tile),
+                        ],
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -254,22 +294,25 @@ class _Header extends StatelessWidget {
   }
 }
 
+/// A figure in the header. With [onTap] it opens the page behind it (Budgets, Fees), as
+/// Main.html links them; Money in has no page of its own and stays still.
 class _StatTile extends StatelessWidget {
-  const _StatTile({required this.label, required this.value});
+  const _StatTile({required this.label, required this.value, this.onTap, this.opens});
 
   final String label;
   final String value;
+  final VoidCallback? onTap;
+
+  /// The page it opens, for screen readers: "Open budgets".
+  final String? opens;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = context.type;
-    return Container(
+    final radius = BorderRadius.circular(context.metrics.md);
+    final body = Padding(
       padding: const EdgeInsets.all(AkSpace.s2h),
-      decoration: BoxDecoration(
-        color: c.brandRaised,
-        borderRadius: BorderRadius.circular(context.metrics.md),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -278,6 +321,24 @@ class _StatTile extends StatelessWidget {
           AkHiddenAmount(value, style: t.bodyStrong.copyWith(color: c.onBrand)),
         ],
       ),
+    );
+    return Material(
+      color: c.brandRaised,
+      borderRadius: radius,
+      clipBehavior: Clip.antiAlias,
+      child: onTap == null
+          ? body
+          : Semantics(
+              button: true,
+              hint: opens,
+              child: InkWell(
+                onTap: onTap,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: AkSize.target),
+                  child: body,
+                ),
+              ),
+            ),
     );
   }
 }
@@ -360,7 +421,11 @@ class _WhereItWent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AkSectionTitle('Where it went'),
+        AkSectionTitle(
+          'Where it went',
+          actionLabel: 'See all',
+          onAction: () => context.push(Routes.categories),
+        ),
         const SizedBox(height: AkSpace.s2),
         if (top.isEmpty)
           Text(

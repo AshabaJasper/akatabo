@@ -102,6 +102,12 @@ abstract final class SettingKeys {
   static const homeShowWhereItWent = BoolSetting('home.showWhereItWent', true);
   static const homeShowLatest = BoolSetting('home.showLatest', true);
 
+  /// The forecast card on Home. It also needs "Forecast the month" on, and a week of entries.
+  static const homeShowForecast = BoolSetting('home.showForecast', true);
+
+  /// The three most used budgets on Home. Off until chosen, as drawn.
+  static const homeShowBudgets = BoolSetting('home.showBudgets', false);
+
   // Smart help
   /// When "Forget everything it has learned" was last used, in milliseconds since the epoch.
   /// Corrections before this time are ignored. 0 means never.

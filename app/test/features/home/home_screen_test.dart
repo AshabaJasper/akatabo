@@ -9,6 +9,7 @@ import 'package:akatabo/data/seed/default_data.dart';
 import 'package:akatabo/data/settings/setting_keys.dart';
 import 'package:akatabo/domain/forecast.dart';
 import 'package:akatabo/features/add/add_providers.dart';
+import 'package:akatabo/features/budgets/budgets_providers.dart';
 import 'package:akatabo/features/forecast/forecast_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/home/home_screen.dart';
@@ -42,6 +43,7 @@ Future<void> _pumpHome(
   Brightness brightness = Brightness.light,
   Map<String, String> settings = const {},
   List<Override> extra = const [],
+  List<Category>? categories,
 }) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -59,7 +61,8 @@ Future<void> _pumpHome(
         latestRowsProvider.overrideWith((ref) => Stream.value(latest)),
         monthRowsProvider.overrideWith((ref) => Stream.value(month)),
         previousSameDaysRowsProvider.overrideWith((ref) => Stream.value(previous)),
-        allCategoriesProvider.overrideWith((ref) => Stream.value(_categories)),
+        allCategoriesProvider.overrideWith((ref) => Stream.value(categories ?? _categories)),
+        previousMonthRowsProvider.overrideWith((ref) => Stream.value(const <Transaction>[])),
         enabledAccountsProvider.overrideWith((ref) => Stream.value(_accounts)),
         ...extra,
       ],
@@ -212,6 +215,125 @@ void main() {
     );
     expect(find.text('Latest'), findsNothing);
     expect(find.text('Where it went'), findsOneWidget);
+  });
+
+  group('header figures and sections', () {
+    // Food has a 100,000 budget. Its 45,000 counts against it; the 1,000 fee goes to Fees
+    // and tax, which is never budgeted.
+    final budgeted = [
+      categoryRow(id: DefaultIds.food, name: 'Food and shopping', monthlyBudget: 100000),
+      ..._categories.skip(1),
+    ];
+
+    testWidgets('with a budget set, Left in budgets sits between Money in and Fees', (
+      tester,
+    ) async {
+      final (a, b, c, oct) = _filled();
+      await _pumpHome(
+        tester,
+        latest: [a, b, c],
+        month: [a, b, c],
+        previous: [oct],
+        categories: budgeted,
+      );
+      expect(find.text('Left in budgets'), findsOneWidget);
+      expect(find.text('55,000'), findsOneWidget, reason: '100,000 less 45,000 on food');
+      final x = [
+        for (final label in ['Money in', 'Left in budgets', 'Fees and tax'])
+          tester.getTopLeft(find.text(label).first).dx,
+      ];
+      expect(x[0] < x[1] && x[1] < x[2], isTrue, reason: 'in the drawn order');
+    });
+
+    testWidgets('with no budget set there is no budgets figure at all, not a 0', (tester) async {
+      final (a, b, c, oct) = _filled();
+      await _pumpHome(tester, latest: [a, b, c], month: [a, b, c], previous: [oct]);
+      expect(find.text('Left in budgets'), findsNothing);
+      expect(find.text('Over budget'), findsNothing);
+    });
+
+    testWidgets('spending past every budget reads Over budget, with the overspend', (tester) async {
+      final (a, b, c, oct) = _filled();
+      await _pumpHome(
+        tester,
+        latest: [a, b, c],
+        month: [a, b, c],
+        previous: [oct],
+        categories: [
+          categoryRow(id: DefaultIds.food, name: 'Food and shopping', monthlyBudget: 40000),
+          ..._categories.skip(1),
+        ],
+      );
+      expect(find.text('Over budget'), findsOneWidget);
+      expect(find.text('5,000'), findsOneWidget);
+    });
+
+    testWidgets('Budgets at a glance is off until chosen, then lists the budgets', (tester) async {
+      final (a, b, c, oct) = _filled();
+      await _pumpHome(
+        tester,
+        latest: [a, b, c],
+        month: [a, b, c],
+        previous: [oct],
+        categories: budgeted,
+      );
+      expect(find.text('Budgets'), findsNothing);
+      // A fresh scope: Riverpod keeps the first overrides when the same scope rebuilds.
+      await tester.pumpWidget(const SizedBox());
+
+      await _pumpHome(
+        tester,
+        latest: [a, b, c],
+        month: [a, b, c],
+        previous: [oct],
+        categories: budgeted,
+        settings: {SettingKeys.homeShowBudgets.name: '1'},
+      );
+      await tester.dragUntilVisible(
+        find.text('Budgets'),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+      expect(find.text('Budgets'), findsOneWidget);
+      expect(find.text('Food and shopping'), findsWidgets);
+    });
+
+    testWidgets('the forecast card can be switched off on its own', (tester) async {
+      final days = _tenDays();
+      await _pumpHome(
+        tester,
+        latest: days.take(3).toList(),
+        month: days,
+        extra: _forecastData(days),
+        settings: {SettingKeys.homeShowForecast.name: '0'},
+      );
+      expect(find.textContaining('Heading for'), findsNothing);
+      expect(find.text('Where it went'), findsOneWidget);
+    });
+
+    testWidgets('three tiles keep one height when a label takes two lines', (tester) async {
+      tester.view.physicalSize = const Size(320, 700);
+      final (a, b, c, oct) = _filled();
+      await _pumpHome(
+        tester,
+        latest: [a, b, c],
+        month: [a, b, c],
+        previous: [oct],
+        categories: budgeted,
+      );
+      tester.view.physicalSize = const Size(320, 700);
+      await tester.pumpAndSettle();
+      final heights = {
+        for (final label in ['Money in', 'Left in budgets', 'Fees and tax'])
+          tester
+              .getSize(
+                find.ancestor(of: find.text(label).first, matching: find.byType(Material)).first,
+              )
+              .height,
+      };
+      expect(heights, hasLength(1), reason: 'equal heights: $heights');
+      expect(tester.takeException(), isNull);
+    });
   });
 
   testWidgets('the first day shows three steps, not empty charts', (tester) async {
