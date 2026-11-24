@@ -4,6 +4,24 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
+### [bug-review] READINESS.md names the wrong scandelete path
+
+- **Where:** `docs/fdroid/READINESS.md` (section 2, "Prebuilt binaries in the source")
+- **What happens:** the audit says the recipe uses `scandelete: .pub-cache`; the recipe uses `app/.pub-cache`, which is correct, because `scandelete` is relative to the repository root and the pub cache sits inside `subdir: app`.
+- **How to trigger:** a reviewer compares the audit with the recipe and copies the wrong path.
+- **Score:** frequency 1 x severity 2 = 2
+- **Suggested fix:** change it to `scandelete: app/.pub-cache`.
+- **Found:** 24 November 2026, Phase 7 bug review
+
+### [bug-review] READINESS.md mentions scanignore entries the draft does not have
+
+- **Where:** `docs/fdroid/READINESS.md` ("To verify on a build server", item 1)
+- **What happens:** it says the scanner passes "with the `scandelete` and `scanignore` entries in the draft", but the draft has no `scanignore`.
+- **How to trigger:** read the line beside the recipe.
+- **Score:** frequency 1 x severity 1 = 1
+- **Suggested fix:** remove "and `scanignore`".
+- **Found:** 24 November 2026, Phase 7 bug review
+
 ### [bug-review] About > Open-source licences reads "Akatabo" twice to screen readers
 
 - **Where:** `app/lib/features/privacy/about_section.dart` (the `applicationIcon` passed to `showLicensePage`)
@@ -12,6 +30,24 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Score:** frequency 2 x severity 1 = 2
 - **Suggested fix:** wrap the icon in `ExcludeSemantics`.
 - **Found:** 24 November 2026, bug review after the Phase 2 merge
+
+### [bug-review] F-Droid draft builds a release APK signed with the debug key
+
+- **Where:** `app/android/app/build.gradle.kts` (release `signingConfig = signingConfigs.getByName("debug")`), used by the `build:` step of `docs/fdroid/com.persmon.akatabo.yml`
+- **What happens:** `flutter build apk --release` gives a debug-signed APK, but F-Droid expects an unsigned one in `output` that it signs itself. The build or publish step may fail, or the APK gets signed twice, and it cannot be checked as reproducible.
+- **How to trigger:** once the READINESS.md blockers are cleared, run `fdroid build -v -l com.persmon.akatabo`.
+- **Score:** frequency 1 x severity 4 = 4
+- **Suggested fix:** sign releases only when `key.properties` exists and leave them unsigned otherwise (this is also needed for Play), or add a `prebuild` `sed` that deletes the signing line. Then check with `apksigner verify` that the output is unsigned.
+- **Found:** 24 November 2026, Phase 7 bug review
+
+### [bug-review] ml/README.md export command fails as written
+
+- **Where:** `ml/README.md`, "Run it" (`python ml/category/export.py`)
+- **What happens:** the exports use package imports, so running the file path gives `ImportError: attempted relative import with no known parent package` (or `No module named 'common'`).
+- **How to trigger:** run the documented command from the project root.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** document `PYTHONPATH=ml python -m category.export` (and `unusual`, `regular`, `forecast`). With that form, all four artefacts rebuild byte for byte.
+- **Found:** 24 November 2026, Phase 7 F-Droid audit
 
 ### [bug-review] The one-colour mark's layer has no bounds
 

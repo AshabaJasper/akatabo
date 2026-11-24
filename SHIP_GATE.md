@@ -14,6 +14,7 @@ Checklist from `~/.claude/ship-gate.md`. Status is PASS, MISSING (not done yet),
 4. Privacy policy facts: the operator's name, a contact address, and a hosted URL. The same contact is needed for "Send feedback".
 5. Store listing text, approved screenshots, and confirmation that "Akatabo" means "little book" and is free to use in the stores.
 6. A Mac with Xcode 26 for the iOS build, its privacy manifest and the App Store items.
+7. Before the repository goes public: switch on GitHub private vulnerability reporting (Settings > Code security). `SECURITY.md` and the issue chooser's "Report a security problem" link rely on it; without it a reporter has no private channel.
 
 ## Core
 

@@ -15,10 +15,17 @@ if (-not $sdk) { Write-Error "ANDROID_HOME is not set." }
 # apkanalyzer needs a JDK; use the one Flutter is configured with when JAVA_HOME is unset.
 if (-not $env:JAVA_HOME) {
     $jdk = (flutter config --machine | ConvertFrom-Json).'jdk-dir'
-    if ($jdk) { $env:JAVA_HOME = $jdk; $env:Path = "$jdk\bin;$env:Path" }
+    if ($jdk) {
+        $env:JAVA_HOME = $jdk
+        $env:PATH = (Join-Path $jdk "bin") + [IO.Path]::PathSeparator + $env:PATH
+    }
 }
 
-$analyzer = Join-Path $sdk "cmdline-tools\latest\bin\apkanalyzer.bat"
+# Works on Windows, Linux and macOS, in PowerShell 7 and Windows PowerShell 5.1 (which has
+# no $IsWindows).
+$onWindows = [IO.Path]::DirectorySeparatorChar -eq [char]92
+$tool = if ($onWindows) { "apkanalyzer.bat" } else { "apkanalyzer" }
+$analyzer = [IO.Path]::Combine($sdk, "cmdline-tools", "latest", "bin", $tool)
 $found = & $analyzer manifest permissions $Apk | ForEach-Object { $_.Trim() } | Where-Object { $_ }
 
 $allowed = @(

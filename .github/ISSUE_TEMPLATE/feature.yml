@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest something new, or a change to how Akatabo works.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Akatabo stays offline: it has no accounts, no sync and no network access.
+        Ideas that need the internet will not be accepted, but you can describe the problem behind them.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do, and what makes it hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How you would like it to work.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do now
+      description: Optional. How you manage today, or other ways it could be solved.
+  - type: checkboxes
+    id: offline
+    attributes:
+      label: Offline
+      options:
+        - label: This works without the internet.
+          required: true

@@ -22,9 +22,29 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // Test fakes each open their own in-memory database, so drift's warning about one database
   // opened twice over the same connection does not apply here. The app opens exactly one.
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+  // Goldens are drawn on Windows and only match there (font rendering differs elsewhere).
+  // CI's Linux job sets AKATABO_SKIP_GOLDENS=1, so every other check in a golden test still
+  // runs while the image comparison passes; the Windows job compares the images for real.
+  if (Platform.environment['AKATABO_SKIP_GOLDENS'] == '1') {
+    goldenFileComparator = _SkippedGoldens();
+  }
   await _loadFont('Bricolage Grotesque', 'assets/fonts/BricolageGrotesque-Variable.ttf');
   await _loadFont('Geist', 'assets/fonts/Geist-Variable.ttf');
   await testMain();
+}
+
+/// Accepts every golden without reading it; refuses to write one, so `--update-goldens`
+/// cannot overwrite the Windows images with images drawn on another system.
+class _SkippedGoldens extends GoldenFileComparator {
+  _SkippedGoldens();
+
+  @override
+  Future<bool> compare(Uint8List imageBytes, Uri golden) async => true;
+
+  @override
+  Future<void> update(Uri golden, Uint8List imageBytes) => throw StateError(
+    'Goldens are switched off (AKATABO_SKIP_GOLDENS=1). Update them on Windows.',
+  );
 }
 
 Future<void> _loadFont(String family, String path) async {

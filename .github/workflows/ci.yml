@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The version in app/.metadata (revision ab2912035e) and app/README.md. Change it only
+  # together with the goldens, which are drawn by this exact version on Windows.
+  FLUTTER_VERSION: "3.50.0"
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  analyze-test:
+    name: Analyze and test (Linux, goldens off)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter analyze
+      # Goldens only match on Windows; test/flutter_test_config.dart reads this variable and
+      # skips the image comparison, while every other expectation in those tests still runs.
+      - run: flutter test
+        env:
+          AKATABO_SKIP_GOLDENS: "1"
+
+  goldens:
+    name: Full tests with goldens (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter test
+      - name: Keep golden failure images
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-failures
+          path: app/test/**/failures/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  build-apk:
+    name: Debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter build apk --debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: akatabo-debug-apk
+          path: app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7

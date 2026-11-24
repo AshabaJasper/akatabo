@@ -1,0 +1,53 @@
+# DRAFT F-Droid metadata for Akatabo. It goes into fdroiddata as metadata/com.persmon.akatabo.yml.
+# Do not submit it yet. See READINESS.md for what has to happen first: the repository goes public,
+# the sqlite3 prebuilt download is replaced by a source build, and v0.2.0 is tagged.
+# Check it with `fdroid lint com.persmon.akatabo` and `fdroid build -v -l com.persmon.akatabo`.
+
+Categories:
+  - Money
+License: GPL-3.0-only
+# OWNER: the name to show as the author (a person or Persmon Technologies). Not filled in on purpose.
+# AuthorName:
+SourceCode: https://github.com/AshabaJasper/akatabo
+IssueTracker: https://github.com/AshabaJasper/akatabo/issues
+Changelog: https://github.com/AshabaJasper/akatabo/releases
+
+AutoName: Akatabo
+# Summary and Description come from fastlane/metadata/android/en-US/ once it exists (waits for the logo).
+
+RepoType: git
+Repo: https://github.com/AshabaJasper/akatabo.git
+
+Builds:
+  - versionName: 0.2.0
+    # Must match the +N in app/pubspec.yaml at the tag (it is +1 today; bump it before tagging).
+    versionCode: 2
+    commit: v0.2.0
+    subdir: app
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-17-jdk-headless
+      - update-alternatives --auto java
+    output: build/app/outputs/flutter-apk/app-release.apk
+    srclibs:
+      - flutter@3.50.0
+    rm:
+      - app/ios
+    prebuild:
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter config --no-analytics
+      - $$flutter$$/bin/flutter pub get --enforce-lockfile
+    scandelete:
+      - app/.pub-cache
+    build:
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter build apk --release
+    # Flutter 3.50.0 asks for NDK 28.2.13676358 (r28c) in FlutterExtension.kt, and
+    # app/android/app/build.gradle.kts takes it (ndkVersion = flutter.ndkVersion).
+    ndk: r28c
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+$
+UpdateCheckData: app/pubspec.yaml|version:\s.+\+(\d+)|.|version:\s(.+)\+
+CurrentVersion: 0.2.0
+CurrentVersionCode: 2
