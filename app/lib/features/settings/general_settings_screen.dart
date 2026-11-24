@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/formats.dart';
+import '../../app/routes.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
+import '../../data/settings/remembered_rates.dart';
 import '../../data/settings/setting_keys.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
@@ -116,12 +119,13 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                 if (picked != null) await _save(SettingKeys.dateStyle, picked);
               },
             ),
-            // Fixed by the owner's plan: UGX only, and English until translations exist. The
-            // rows carry no chevron and no tap, and the line below says why, rather than a
-            // picker that offers a single choice.
-            const SettingsValueRow(
-              title: 'Currency',
-              value: 'UGX, Ugandan shilling',
+            // UGX is the home currency. The rates typed for other currencies, and a converter,
+            // live on their own page.
+            SettingsValueRow(
+              title: 'Currencies and rates',
+              value: _ratesSummary(rememberedRates(s)),
+              onTap: () => context.push(Routes.settingsCurrencies),
+              chevron: true,
               divider: true,
             ),
             const SettingsValueRow(title: 'Language', value: 'English', divider: true),
@@ -219,3 +223,10 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     );
   }
 }
+
+/// The Currencies and rates row's value: "UGX only", or how many rates are remembered.
+String _ratesSummary(Map<String, int> rates) => switch (rates.length) {
+  0 => 'UGX only',
+  1 => '1 rate remembered',
+  _ => '${rates.length} rates remembered',
+};

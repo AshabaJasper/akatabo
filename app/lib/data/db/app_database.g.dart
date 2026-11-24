@@ -1682,6 +1682,35 @@ class $TransactionsTable extends Transactions with TableInfo<$TransactionsTable,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _foreignCurrencyMeta = const VerificationMeta('foreignCurrency');
+  @override
+  late final GeneratedColumn<String> foreignCurrency = GeneratedColumn<String>(
+    'foreign_currency',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _foreignAmountMinorMeta = const VerificationMeta(
+    'foreignAmountMinor',
+  );
+  @override
+  late final GeneratedColumn<int> foreignAmountMinor = GeneratedColumn<int>(
+    'foreign_amount_minor',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rateMicrosMeta = const VerificationMeta('rateMicros');
+  @override
+  late final GeneratedColumn<int> rateMicros = GeneratedColumn<int>(
+    'rate_micros',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1705,6 +1734,9 @@ class $TransactionsTable extends Transactions with TableInfo<$TransactionsTable,
     flaggedUnusual,
     flagDismissed,
     regularPaymentId,
+    foreignCurrency,
+    foreignAmountMinor,
+    rateMicros,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1846,6 +1878,27 @@ class $TransactionsTable extends Transactions with TableInfo<$TransactionsTable,
         regularPaymentId.isAcceptableOrUnknown(data['regular_payment_id']!, _regularPaymentIdMeta),
       );
     }
+    if (data.containsKey('foreign_currency')) {
+      context.handle(
+        _foreignCurrencyMeta,
+        foreignCurrency.isAcceptableOrUnknown(data['foreign_currency']!, _foreignCurrencyMeta),
+      );
+    }
+    if (data.containsKey('foreign_amount_minor')) {
+      context.handle(
+        _foreignAmountMinorMeta,
+        foreignAmountMinor.isAcceptableOrUnknown(
+          data['foreign_amount_minor']!,
+          _foreignAmountMinorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('rate_micros')) {
+      context.handle(
+        _rateMicrosMeta,
+        rateMicros.isAcceptableOrUnknown(data['rate_micros']!, _rateMicrosMeta),
+      );
+    }
     return context;
   }
 
@@ -1929,6 +1982,18 @@ class $TransactionsTable extends Transactions with TableInfo<$TransactionsTable,
         DriftSqlType.string,
         data['${effectivePrefix}regular_payment_id'],
       ),
+      foreignCurrency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}foreign_currency'],
+      ),
+      foreignAmountMinor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}foreign_amount_minor'],
+      ),
+      rateMicros: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rate_micros'],
+      ),
     );
   }
 
@@ -1974,6 +2039,16 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   final bool flaggedUnusual;
   final bool flagDismissed;
   final String? regularPaymentId;
+
+  /// The currency the person paid in, when it was not shillings (e.g. "USD"). Null for
+  /// shillings. [amount] is always the shillings, so totals and budgets do not change.
+  final String? foreignCurrency;
+
+  /// The amount in [foreignCurrency], in hundredths of its unit (100.50 USD is 10050).
+  final int? foreignAmountMinor;
+
+  /// Shillings per one unit of [foreignCurrency], times a million (3,720 is 3720000000).
+  final int? rateMicros;
   const Transaction({
     required this.id,
     required this.createdAt,
@@ -1996,6 +2071,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     required this.flaggedUnusual,
     required this.flagDismissed,
     this.regularPaymentId,
+    this.foreignCurrency,
+    this.foreignAmountMinor,
+    this.rateMicros,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2035,6 +2113,15 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     if (!nullToAbsent || regularPaymentId != null) {
       map['regular_payment_id'] = Variable<String>(regularPaymentId);
     }
+    if (!nullToAbsent || foreignCurrency != null) {
+      map['foreign_currency'] = Variable<String>(foreignCurrency);
+    }
+    if (!nullToAbsent || foreignAmountMinor != null) {
+      map['foreign_amount_minor'] = Variable<int>(foreignAmountMinor);
+    }
+    if (!nullToAbsent || rateMicros != null) {
+      map['rate_micros'] = Variable<int>(rateMicros);
+    }
     return map;
   }
 
@@ -2067,6 +2154,13 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       regularPaymentId: regularPaymentId == null && nullToAbsent
           ? const Value.absent()
           : Value(regularPaymentId),
+      foreignCurrency: foreignCurrency == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foreignCurrency),
+      foreignAmountMinor: foreignAmountMinor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foreignAmountMinor),
+      rateMicros: rateMicros == null && nullToAbsent ? const Value.absent() : Value(rateMicros),
     );
   }
 
@@ -2096,6 +2190,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       flaggedUnusual: serializer.fromJson<bool>(json['flaggedUnusual']),
       flagDismissed: serializer.fromJson<bool>(json['flagDismissed']),
       regularPaymentId: serializer.fromJson<String?>(json['regularPaymentId']),
+      foreignCurrency: serializer.fromJson<String?>(json['foreignCurrency']),
+      foreignAmountMinor: serializer.fromJson<int?>(json['foreignAmountMinor']),
+      rateMicros: serializer.fromJson<int?>(json['rateMicros']),
     );
   }
   @override
@@ -2125,6 +2222,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'flaggedUnusual': serializer.toJson<bool>(flaggedUnusual),
       'flagDismissed': serializer.toJson<bool>(flagDismissed),
       'regularPaymentId': serializer.toJson<String?>(regularPaymentId),
+      'foreignCurrency': serializer.toJson<String?>(foreignCurrency),
+      'foreignAmountMinor': serializer.toJson<int?>(foreignAmountMinor),
+      'rateMicros': serializer.toJson<int?>(rateMicros),
     };
   }
 
@@ -2150,6 +2250,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     bool? flaggedUnusual,
     bool? flagDismissed,
     Value<String?> regularPaymentId = const Value.absent(),
+    Value<String?> foreignCurrency = const Value.absent(),
+    Value<int?> foreignAmountMinor = const Value.absent(),
+    Value<int?> rateMicros = const Value.absent(),
   }) => Transaction(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -2176,6 +2279,11 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     flaggedUnusual: flaggedUnusual ?? this.flaggedUnusual,
     flagDismissed: flagDismissed ?? this.flagDismissed,
     regularPaymentId: regularPaymentId.present ? regularPaymentId.value : this.regularPaymentId,
+    foreignCurrency: foreignCurrency.present ? foreignCurrency.value : this.foreignCurrency,
+    foreignAmountMinor: foreignAmountMinor.present
+        ? foreignAmountMinor.value
+        : this.foreignAmountMinor,
+    rateMicros: rateMicros.present ? rateMicros.value : this.rateMicros,
   );
   Transaction copyWithCompanion(TransactionsCompanion data) {
     return Transaction(
@@ -2208,6 +2316,13 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       regularPaymentId: data.regularPaymentId.present
           ? data.regularPaymentId.value
           : this.regularPaymentId,
+      foreignCurrency: data.foreignCurrency.present
+          ? data.foreignCurrency.value
+          : this.foreignCurrency,
+      foreignAmountMinor: data.foreignAmountMinor.present
+          ? data.foreignAmountMinor.value
+          : this.foreignAmountMinor,
+      rateMicros: data.rateMicros.present ? data.rateMicros.value : this.rateMicros,
     );
   }
 
@@ -2234,7 +2349,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('categoryWasCorrected: $categoryWasCorrected, ')
           ..write('flaggedUnusual: $flaggedUnusual, ')
           ..write('flagDismissed: $flagDismissed, ')
-          ..write('regularPaymentId: $regularPaymentId')
+          ..write('regularPaymentId: $regularPaymentId, ')
+          ..write('foreignCurrency: $foreignCurrency, ')
+          ..write('foreignAmountMinor: $foreignAmountMinor, ')
+          ..write('rateMicros: $rateMicros')
           ..write(')'))
         .toString();
   }
@@ -2262,6 +2380,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     flaggedUnusual,
     flagDismissed,
     regularPaymentId,
+    foreignCurrency,
+    foreignAmountMinor,
+    rateMicros,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -2287,7 +2408,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.categoryWasCorrected == this.categoryWasCorrected &&
           other.flaggedUnusual == this.flaggedUnusual &&
           other.flagDismissed == this.flagDismissed &&
-          other.regularPaymentId == this.regularPaymentId);
+          other.regularPaymentId == this.regularPaymentId &&
+          other.foreignCurrency == this.foreignCurrency &&
+          other.foreignAmountMinor == this.foreignAmountMinor &&
+          other.rateMicros == this.rateMicros);
 }
 
 class TransactionsCompanion extends UpdateCompanion<Transaction> {
@@ -2312,6 +2436,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<bool> flaggedUnusual;
   final Value<bool> flagDismissed;
   final Value<String?> regularPaymentId;
+  final Value<String?> foreignCurrency;
+  final Value<int?> foreignAmountMinor;
+  final Value<int?> rateMicros;
   final Value<int> rowid;
   const TransactionsCompanion({
     this.id = const Value.absent(),
@@ -2335,6 +2462,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.flaggedUnusual = const Value.absent(),
     this.flagDismissed = const Value.absent(),
     this.regularPaymentId = const Value.absent(),
+    this.foreignCurrency = const Value.absent(),
+    this.foreignAmountMinor = const Value.absent(),
+    this.rateMicros = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TransactionsCompanion.insert({
@@ -2359,6 +2489,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.flaggedUnusual = const Value.absent(),
     this.flagDismissed = const Value.absent(),
     this.regularPaymentId = const Value.absent(),
+    this.foreignCurrency = const Value.absent(),
+    this.foreignAmountMinor = const Value.absent(),
+    this.rateMicros = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        createdAt = Value(createdAt),
@@ -2390,6 +2523,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<bool>? flaggedUnusual,
     Expression<bool>? flagDismissed,
     Expression<String>? regularPaymentId,
+    Expression<String>? foreignCurrency,
+    Expression<int>? foreignAmountMinor,
+    Expression<int>? rateMicros,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2414,6 +2550,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (flaggedUnusual != null) 'flagged_unusual': flaggedUnusual,
       if (flagDismissed != null) 'flag_dismissed': flagDismissed,
       if (regularPaymentId != null) 'regular_payment_id': regularPaymentId,
+      if (foreignCurrency != null) 'foreign_currency': foreignCurrency,
+      if (foreignAmountMinor != null) 'foreign_amount_minor': foreignAmountMinor,
+      if (rateMicros != null) 'rate_micros': rateMicros,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2440,6 +2579,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Value<bool>? flaggedUnusual,
     Value<bool>? flagDismissed,
     Value<String?>? regularPaymentId,
+    Value<String?>? foreignCurrency,
+    Value<int?>? foreignAmountMinor,
+    Value<int?>? rateMicros,
     Value<int>? rowid,
   }) {
     return TransactionsCompanion(
@@ -2464,6 +2606,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       flaggedUnusual: flaggedUnusual ?? this.flaggedUnusual,
       flagDismissed: flagDismissed ?? this.flagDismissed,
       regularPaymentId: regularPaymentId ?? this.regularPaymentId,
+      foreignCurrency: foreignCurrency ?? this.foreignCurrency,
+      foreignAmountMinor: foreignAmountMinor ?? this.foreignAmountMinor,
+      rateMicros: rateMicros ?? this.rateMicros,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2536,6 +2681,15 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (regularPaymentId.present) {
       map['regular_payment_id'] = Variable<String>(regularPaymentId.value);
     }
+    if (foreignCurrency.present) {
+      map['foreign_currency'] = Variable<String>(foreignCurrency.value);
+    }
+    if (foreignAmountMinor.present) {
+      map['foreign_amount_minor'] = Variable<int>(foreignAmountMinor.value);
+    }
+    if (rateMicros.present) {
+      map['rate_micros'] = Variable<int>(rateMicros.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2566,6 +2720,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('flaggedUnusual: $flaggedUnusual, ')
           ..write('flagDismissed: $flagDismissed, ')
           ..write('regularPaymentId: $regularPaymentId, ')
+          ..write('foreignCurrency: $foreignCurrency, ')
+          ..write('foreignAmountMinor: $foreignAmountMinor, ')
+          ..write('rateMicros: $rateMicros, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5029,6 +5186,9 @@ typedef $$TransactionsTableCreateCompanionBuilder = TransactionsCompanion Functi
   Value<bool> flaggedUnusual,
   Value<bool> flagDismissed,
   Value<String?> regularPaymentId,
+  Value<String?> foreignCurrency,
+  Value<int?> foreignAmountMinor,
+  Value<int?> rateMicros,
   Value<int> rowid,
 });
 typedef $$TransactionsTableUpdateCompanionBuilder = TransactionsCompanion Function({
@@ -5053,6 +5213,9 @@ typedef $$TransactionsTableUpdateCompanionBuilder = TransactionsCompanion Functi
   Value<bool> flaggedUnusual,
   Value<bool> flagDismissed,
   Value<String?> regularPaymentId,
+  Value<String?> foreignCurrency,
+  Value<int?> foreignAmountMinor,
+  Value<int?> rateMicros,
   Value<int> rowid,
 });
 
@@ -5177,6 +5340,19 @@ class $$TransactionsTableFilterComposer extends Composer<_$AppDatabase, $Transac
     column: $table.regularPaymentId,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get foreignCurrency => $composableBuilder(
+    column: $table.foreignCurrency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get foreignAmountMinor => $composableBuilder(
+    column: $table.foreignAmountMinor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rateMicros =>
+      $composableBuilder(column: $table.rateMicros, builder: (column) => ColumnFilters(column));
 
   $$CategoriesTableFilterComposer get categoryId {
     final $$CategoriesTableFilterComposer composer = $composerBuilder(
@@ -5307,6 +5483,19 @@ class $$TransactionsTableOrderingComposer extends Composer<_$AppDatabase, $Trans
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get foreignCurrency => $composableBuilder(
+    column: $table.foreignCurrency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get foreignAmountMinor => $composableBuilder(
+    column: $table.foreignAmountMinor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rateMicros =>
+      $composableBuilder(column: $table.rateMicros, builder: (column) => ColumnOrderings(column));
+
   $$CategoriesTableOrderingComposer get categoryId {
     final $$CategoriesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -5424,6 +5613,15 @@ class $$TransactionsTableAnnotationComposer extends Composer<_$AppDatabase, $Tra
   GeneratedColumn<String> get regularPaymentId =>
       $composableBuilder(column: $table.regularPaymentId, builder: (column) => column);
 
+  GeneratedColumn<String> get foreignCurrency =>
+      $composableBuilder(column: $table.foreignCurrency, builder: (column) => column);
+
+  GeneratedColumn<int> get foreignAmountMinor =>
+      $composableBuilder(column: $table.foreignAmountMinor, builder: (column) => column);
+
+  GeneratedColumn<int> get rateMicros =>
+      $composableBuilder(column: $table.rateMicros, builder: (column) => column);
+
   $$CategoriesTableAnnotationComposer get categoryId {
     final $$CategoriesTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -5526,6 +5724,9 @@ class $$TransactionsTableTableManager
                 Value<bool> flaggedUnusual = const Value.absent(),
                 Value<bool> flagDismissed = const Value.absent(),
                 Value<String?> regularPaymentId = const Value.absent(),
+                Value<String?> foreignCurrency = const Value.absent(),
+                Value<int?> foreignAmountMinor = const Value.absent(),
+                Value<int?> rateMicros = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TransactionsCompanion(
                 id: id,
@@ -5549,6 +5750,9 @@ class $$TransactionsTableTableManager
                 flaggedUnusual: flaggedUnusual,
                 flagDismissed: flagDismissed,
                 regularPaymentId: regularPaymentId,
+                foreignCurrency: foreignCurrency,
+                foreignAmountMinor: foreignAmountMinor,
+                rateMicros: rateMicros,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -5574,6 +5778,9 @@ class $$TransactionsTableTableManager
                 Value<bool> flaggedUnusual = const Value.absent(),
                 Value<bool> flagDismissed = const Value.absent(),
                 Value<String?> regularPaymentId = const Value.absent(),
+                Value<String?> foreignCurrency = const Value.absent(),
+                Value<int?> foreignAmountMinor = const Value.absent(),
+                Value<int?> rateMicros = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TransactionsCompanion.insert(
                 id: id,
@@ -5597,6 +5804,9 @@ class $$TransactionsTableTableManager
                 flaggedUnusual: flaggedUnusual,
                 flagDismissed: flagDismissed,
                 regularPaymentId: regularPaymentId,
+                foreignCurrency: foreignCurrency,
+                foreignAmountMinor: foreignAmountMinor,
+                rateMicros: rateMicros,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

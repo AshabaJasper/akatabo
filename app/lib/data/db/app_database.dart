@@ -17,7 +17,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _open());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   /// The database lives in the app's private support folder. Android backup is off for it.
   static QueryExecutor _open() => driftDatabase(
@@ -52,6 +52,13 @@ class AppDatabase extends _$AppDatabase {
           ],
           updates: {accounts},
         );
+      },
+      // v4: a transaction can keep the foreign currency it was paid in, its amount there and
+      // the rate typed for it. Old rows stay in shillings, with all three empty.
+      from3To4: (m, schema) async {
+        await m.addColumn(schema.transactions, schema.transactions.foreignCurrency);
+        await m.addColumn(schema.transactions, schema.transactions.foreignAmountMinor);
+        await m.addColumn(schema.transactions, schema.transactions.rateMicros);
       },
     ),
     beforeOpen: (details) async {

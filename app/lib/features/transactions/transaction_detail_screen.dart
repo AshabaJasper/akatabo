@@ -14,6 +14,7 @@ import '../../core/theme/token_colour.dart';
 import '../../core/time/clock_provider.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
+import '../../domain/currency.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
@@ -122,6 +123,16 @@ class TransactionDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AkSpace.s1),
+            // What was paid in another currency, and the rate used, when it was not shillings.
+            if (tx.foreignCurrency != null &&
+                tx.foreignAmountMinor != null &&
+                tx.rateMicros != null) ...[
+              Text(
+                foreignSummary(tx.foreignCurrency!, tx.foreignAmountMinor!, tx.rateMicros!),
+                style: t.bodySm.copyWith(color: c.inkMuted),
+              ),
+              const SizedBox(height: AkSpace.s1),
+            ],
             Text(whenLine, style: t.bodySm.copyWith(color: c.inkMuted)),
             const SizedBox(height: AkSpace.s5),
             if (unusual != null) ...[

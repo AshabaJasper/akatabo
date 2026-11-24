@@ -156,6 +156,14 @@ A new icon follows the same grid and stroke and is added to this table before it
 
 Pick the chart by the question: share of a whole is a pie, change over time is a line, a pattern across days is the heat calendar, progress against a limit is a bar.
 
+## Foreign money
+
+- UGX is the home currency: every total, budget and forecast is in whole shillings. A payment in another currency keeps its own amount and rate beside it, and its shillings are what the totals use.
+- A foreign amount is kept in hundredths of its unit (100.50 dollars is 10050). A rate is shillings per one unit (3,720 is 3720000000 micros). Both are whole numbers in storage.
+- **Rounding is half up to the whole shilling, and is done once, on the converted amount.** Half a shilling rounds up (2.5 becomes 3); a reversal rounds away from zero, so it matches its original. The arithmetic is exact integer arithmetic, so no rounding error comes from floating point.
+- The detail line reads "USD 100 at 3,720"; the Add line reads "= UGX 372,000". Spreadsheet cells are plain numbers, never grouped.
+- Rates are typed by the person and kept on the phone. Nothing is fetched. An entry keeps the rate it was saved with when a rate changes later.
+
 ## Motion
 
 Motion is for onboarding and for a chart's first appearance. Nothing loops except one pulse on the "today" point of a forecast.

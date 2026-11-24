@@ -8,6 +8,7 @@ import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/data/seed/default_data.dart';
+import 'package:akatabo/data/settings/remembered_rates.dart';
 import 'package:akatabo/data/settings/setting_keys.dart';
 import 'package:akatabo/domain/spending.dart';
 import 'package:akatabo/features/add/add_providers.dart';
@@ -55,6 +56,16 @@ class RecordingTransactionRepository extends TransactionRepository {
 class FailingTransactionRepository extends RecordingTransactionRepository {
   @override
   Future<String> add(TransactionDraft draft) => Future.error(StateError('disk full'));
+}
+
+/// Keeps the settings Add writes, such as the rate remembered for a currency.
+class RecordingSettingsRepository extends SettingsRepository {
+  RecordingSettingsRepository() : super(AppDatabase(NativeDatabase.memory()));
+
+  final written = <String, String>{};
+
+  @override
+  Future<void> write<T>(SettingKey<T> key, T value) async => written[key.name] = '$value';
 }
 
 /// Saves only when [finish] completes, so a test can close Add mid-save.
@@ -109,6 +120,7 @@ final _income = [
 Future<RecordingTransactionRepository> _pumpAdd(
   WidgetTester tester, {
   RecordingTransactionRepository? repository,
+  RecordingSettingsRepository? settingsRepository,
   Brightness brightness = Brightness.light,
   Map<String, String> settings = const {},
   double height = 844,
@@ -132,6 +144,8 @@ Future<RecordingTransactionRepository> _pumpAdd(
         incomeCategoriesProvider.overrideWith((ref) => Stream.value(_income)),
         enabledAccountsProvider.overrideWith((ref) => Stream.value(_accounts)),
         transactionRepositoryProvider.overrideWithValue(repo),
+        if (settingsRepository != null)
+          settingsRepositoryProvider.overrideWithValue(settingsRepository),
         if (warned != null)
           budgetWarnerProvider.overrideWith((ref) => RecordingBudgetWarner(ref, warned)),
       ],
@@ -279,6 +293,127 @@ void main() {
       moneyOutOf(txRow(amount: repo.drafts.single.amount, fee: repo.drafts.single.fee)),
       46000,
     );
+  });
+
+  testWidgets('a dollar payment is typed in dollars, saved in shillings, and its rate remembered', (
+    tester,
+  ) async {
+    final repo = RecordingTransactionRepository();
+    final settings = RecordingSettingsRepository();
+    // Taller than the default, so the foreign fields and Save all fit without scrolling.
+    await _pumpAdd(tester, repository: repo, settingsRepository: settings, height: 1100);
+
+    await tester.tap(find.text('UGX')); // the currency chip
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('USD'));
+    await tester.pumpAndSettle();
+    await _enterAmount(tester, '100');
+    // The rate field comes straight after the amount field (index 0).
+    await tester.enterText(find.byType(TextField).at(1), '3720');
+    await tester.pump();
+    expect(find.text('= UGX 372,000'), findsOneWidget, reason: 'the live conversion');
+
+    await tester.tap(find.bySemanticsLabel('Food and shopping'));
+    await tester.pump();
+    await tester.tap(find.text('Save transaction'));
+    await tester.pumpAndSettle();
+
+    final draft = repo.drafts.single;
+    expect(draft.amount, 372000, reason: 'saved as whole shillings');
+    expect(draft.foreignCurrency, 'USD');
+    expect(draft.foreignAmountMinor, 10000);
+    expect(draft.rateMicros, 3720000000);
+    expect(settings.written[rateSetting('USD').name], '3720000000', reason: 'rate remembered');
+  });
+
+  group('a decimal point in a shilling amount', () {
+    Future<String> after(WidgetTester tester, String before, String next) async {
+      await _pumpAdd(tester);
+      if (before.isNotEmpty) await _enterAmount(tester, before);
+      await tester.enterText(find.byType(TextField).at(0), next);
+      await tester.pump();
+      return tester.widget<TextField>(find.byType(TextField).at(0)).controller!.text;
+    }
+
+    testWidgets('never joins the digits either side (5000.5 is not 50,005)', (tester) async {
+      expect(await after(tester, '5000', '5,000.5'), '5,000');
+    });
+
+    testWidgets('a pasted figure with cents keeps its shillings', (tester) async {
+      expect(await after(tester, '', '50,000.00'), '50,000');
+    });
+
+    testWidgets('a point that groups thousands is refused, not cut', (tester) async {
+      expect(await after(tester, '', '1.500'), '', reason: 'cutting would make it 1');
+    });
+  });
+
+  group('changing the currency', () {
+    const rates = {'rate.USD': '3720000000', 'rate.KES': '28000000'};
+    String rateText(WidgetTester tester) =>
+        tester.widget<TextField>(find.byType(TextField).at(1)).controller!.text;
+    Future<void> choose(WidgetTester tester, String chip, String option) async {
+      await tester.tap(find.text(chip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(option));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('each foreign currency starts with its own rate, not the last one', (tester) async {
+      await _pumpAdd(tester, settings: rates, height: 1100);
+      await choose(tester, 'UGX', 'USD');
+      expect(rateText(tester), '3,720');
+      await choose(tester, 'USD', 'KES');
+      expect(rateText(tester), '28', reason: 'the KES rate, not the dollar one');
+      await choose(tester, 'KES', 'EUR');
+      expect(rateText(tester), '', reason: 'no rate remembered for EUR');
+    });
+
+    testWidgets('back to shillings, a complete foreign amount becomes its shillings', (
+      tester,
+    ) async {
+      await _pumpAdd(tester, settings: rates, height: 1100);
+      await choose(tester, 'UGX', 'USD');
+      await _enterAmount(tester, '100');
+      await choose(tester, 'USD', 'UGX, Ugandan shilling');
+      expect(find.text('372,000'), findsOneWidget);
+    });
+
+    testWidgets('shillings get a keyboard with no decimal key; a foreign amount gets one', (
+      tester,
+    ) async {
+      await _pumpAdd(tester, height: 1100);
+      TextInputType amountKeyboard() =>
+          tester.widget<TextField>(find.byType(TextField).first).keyboardType;
+      expect(amountKeyboard(), TextInputType.number);
+      await choose(tester, 'UGX', 'USD');
+      expect(amountKeyboard(), const TextInputType.numberWithOptions(decimal: true));
+    });
+
+    testWidgets('saving an edit at an old rate leaves the remembered rate alone', (tester) async {
+      final repo = RecordingTransactionRepository()
+        ..stored['t1'] = txRow(id: 't1', amount: 360000, description: 'Licence').copyWith(
+          foreignCurrency: const Value('USD'),
+          foreignAmountMinor: const Value(10000),
+          rateMicros: const Value(3600000000),
+        );
+      final settings = RecordingSettingsRepository();
+      await _pumpAdd(
+        tester,
+        repository: repo,
+        settingsRepository: settings,
+        settings: rates,
+        height: 1600,
+        screen: const AddScreen(editId: 't1'),
+      );
+      await tester.pumpAndSettle();
+      expect(rateText(tester), '3,600', reason: 'the entry keeps the rate it was saved with');
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+
+      expect(repo.updates.single.$2.rateMicros, 3600000000);
+      expect(settings.written, isEmpty, reason: 'today\'s 3,720 is still the one remembered');
+    });
   });
 
   group('"Ask for the fee each time"', () {

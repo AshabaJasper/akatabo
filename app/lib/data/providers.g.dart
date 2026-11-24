@@ -304,7 +304,7 @@ final class StoredAppearanceProvider
   }
 }
 
-String _$storedAppearanceHash() => r'5cd2836c3e055e903a7f02d0084482aa2f223fa0';
+String _$storedAppearanceHash() => r'b8e169df8b44b95f9f30e1967a99d261e6f5368a';
 
 /// Periods from "Month starts on" and "Week starts on".
 

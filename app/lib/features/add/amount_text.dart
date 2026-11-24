@@ -49,3 +49,37 @@ class ThousandsFormatter extends TextInputFormatter {
     );
   }
 }
+
+/// Keeps a decimal point out of a whole-shilling field. Shillings have no cents, and dropping
+/// the point after the fact joined the digits either side (5000.5 became 50,005).
+///
+/// A point typed on the keyboard is refused. A pasted figure with cents at the end, such as
+/// "50,000.00" from a bank SMS, keeps its shillings and loses the cents. Any other point, as
+/// in "1.500" where it groups thousands, is refused, since cutting there would change the
+/// amount. The grouping commas are written by [ThousandsFormatter].
+class NoDecimalPointFormatter extends TextInputFormatter {
+  const NoDecimalPointFormatter();
+
+  /// A point with at most two digits after it, ending the figure: the cents.
+  static final _cents = RegExp(r'\.\d{0,2}(?!\d)');
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = newValue.text;
+    if (!text.contains('.')) return newValue;
+    // How many characters this edit put in: one for a key press, more for a paste.
+    final sel = oldValue.selection;
+    final replaced = sel.isValid ? sel.end - sel.start : 0;
+    final inserted = text.length - (oldValue.text.length - replaced);
+    if (inserted > 1 && _cents.allMatches(text).length == 1) {
+      final shillings = text.replaceFirst(_cents, '');
+      if (!shillings.contains('.')) {
+        return TextEditingValue(
+          text: shillings,
+          selection: TextSelection.collapsed(offset: shillings.length),
+        );
+      }
+    }
+    return oldValue;
+  }
+}

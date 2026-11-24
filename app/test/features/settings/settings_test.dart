@@ -216,7 +216,7 @@ void main() {
       await _pump(tester, const GeneralSettingsScreen(), db);
       expect(find.text('The 1st'), findsOneWidget, reason: 'month starts on the 1st');
       expect(find.text('Sunday'), findsOneWidget, reason: 'week starts on Sunday');
-      expect(find.text('UGX, Ugandan shilling'), findsOneWidget);
+      expect(find.text('UGX only'), findsOneWidget);
     });
 
     testWidgets('a long value wraps instead of overflowing at large text', (tester) async {
@@ -246,7 +246,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
-      expect(find.text('UGX, Ugandan shilling'), findsOneWidget);
+      expect(find.text('UGX only'), findsOneWidget);
     });
 
     testWidgets('choosing a month start saves it and shows it', (tester) async {

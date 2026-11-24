@@ -180,6 +180,9 @@ void main() {
         'Tax',
         'Money out',
         'Money in',
+        'Currency',
+        'Foreign amount',
+        'Rate',
       ]);
       final entries = csv.sublist(1, 5);
       expect(entries.map((r) => r[0]), [
@@ -189,7 +192,7 @@ void main() {
         '2026-11-12 07:45',
       ]);
       // Money out includes the fee and tax; a withdrawal counts only its fee and tax.
-      expect(entries[1].sublist(6), ['45000', '1000', '225', '46225', '0']);
+      expect(entries[1].sublist(6), ['45000', '1000', '225', '46225', '0', '', '', '']);
       expect(entries[2].sublist(1, 7), [
         'Move money',
         'Withdraw',
@@ -213,8 +216,15 @@ void main() {
       );
       expect(csv.first, isNot(contains('Fee')));
       expect(csv.first, isNot(contains('Note')));
-      expect(csv.first.sublist(6), ['Amount', 'Money out', 'Money in']);
-      expect(csv[2].sublist(6), ['45000', '46225', '0']);
+      expect(csv.first.sublist(6), [
+        'Amount',
+        'Money out',
+        'Money in',
+        'Currency',
+        'Foreign amount',
+        'Rate',
+      ]);
+      expect(csv[2].sublist(6), ['45000', '46225', '0', '', '', '']);
       expect(csv.length, 5, reason: 'header and four entries, no category table');
     });
 
