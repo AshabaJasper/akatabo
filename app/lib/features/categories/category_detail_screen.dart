@@ -147,7 +147,8 @@ class CategoryDetailScreen extends ConsumerWidget {
                 style: t.bodySm.copyWith(color: c.inkMuted),
               ),
               const SizedBox(height: AkSpace.s1),
-              AkHeadlineAmount(total, style: t.figureXl.copyWith(color: c.ink)),
+              // Spent in this category: money out, so the out colour; the line above names it.
+              AkHeadlineAmount(total, style: t.figureXl.copyWith(color: c.moneyOut)),
               const SizedBox(height: AkSpace.s1),
               Text(
                 comparison(total, previousTotal, against),
@@ -206,7 +207,10 @@ class CategoryDetailScreen extends ConsumerWidget {
                 AkListRow(
                   title: p.name,
                   subtitle: '${p.count} ${p.count == 1 ? 'time' : 'times'}',
-                  trailing: Text(formatAmount(p.total), style: t.figure.copyWith(color: c.ink)),
+                  trailing: Text(
+                    formatSigned(p.total, moneyIn: false),
+                    style: t.figure.copyWith(color: c.moneyOut),
+                  ),
                   divider: true,
                 ),
             ],

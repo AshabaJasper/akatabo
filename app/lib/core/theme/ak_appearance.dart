@@ -12,12 +12,13 @@ enum AkCorners {
   final double factor;
 }
 
-/// "Text size" on Settings > Appearance. The drawn buttons are 13, 14 and 16px, so the
-/// factors are 13/14 and 16/14. The phone's own text size still applies on top.
+/// "Text size" on Settings > Appearance. The type tokens went one step up on 24 Nov 2026
+/// (body 14 to 16), so Small is the old Standard (body 14, 14/16) and Large is one more
+/// step (body 18, 18/16). The phone's own text size still applies on top.
 enum AkTextSize {
-  small(13 / 14),
+  small(14 / 16),
   standard(1),
-  large(16 / 14);
+  large(18 / 16);
 
   const AkTextSize(this.factor);
   final double factor;
@@ -28,6 +29,11 @@ enum AkTextSize {
 /// so switching back to Colourful brings every one back.
 enum AkCategoryColours { colourful, oneColour, greys }
 
+/// "Money colours" on Settings > Appearance: money out in red and money in in green (the
+/// default, which the owner asked for), or the drawn orange and blue, which stay apart for
+/// colour-blind eyes. Signs and arrows travel with both, so colour is never the only cue.
+enum AkMoneyColours { redGreen, orangeBlue }
+
 /// Everything on the Appearance page that changes how the theme is built.
 class AkAppearance {
   const AkAppearance({
@@ -36,6 +42,7 @@ class AkAppearance {
     this.corners = AkCorners.rounded,
     this.textSize = AkTextSize.standard,
     this.categoryColours = AkCategoryColours.colourful,
+    this.moneyColours = AkMoneyColours.redGreen,
   });
 
   final ThemeMode themeMode;
@@ -45,6 +52,7 @@ class AkAppearance {
   final AkCorners corners;
   final AkTextSize textSize;
   final AkCategoryColours categoryColours;
+  final AkMoneyColours moneyColours;
 
   AkAppearance copyWith({
     ThemeMode? themeMode,
@@ -52,12 +60,14 @@ class AkAppearance {
     AkCorners? corners,
     AkTextSize? textSize,
     AkCategoryColours? categoryColours,
+    AkMoneyColours? moneyColours,
   }) => AkAppearance(
     themeMode: themeMode ?? this.themeMode,
     paletteId: paletteId ?? this.paletteId,
     corners: corners ?? this.corners,
     textSize: textSize ?? this.textSize,
     categoryColours: categoryColours ?? this.categoryColours,
+    moneyColours: moneyColours ?? this.moneyColours,
   );
 
   @override
@@ -67,8 +77,10 @@ class AkAppearance {
       other.paletteId == paletteId &&
       other.corners == corners &&
       other.textSize == textSize &&
-      other.categoryColours == categoryColours;
+      other.categoryColours == categoryColours &&
+      other.moneyColours == moneyColours;
 
   @override
-  int get hashCode => Object.hash(themeMode, paletteId, corners, textSize, categoryColours);
+  int get hashCode =>
+      Object.hash(themeMode, paletteId, corners, textSize, categoryColours, moneyColours);
 }

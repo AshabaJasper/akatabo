@@ -46,7 +46,7 @@ class AkSegmented<T> extends StatelessWidget {
         decoration: BoxDecoration(color: c.surfaceSunk, borderRadius: BorderRadius.circular(m.lg)),
         child: LayoutBuilder(
           builder: (context, box) {
-            final flex = _flexes(context, box.maxWidth);
+            final (flex, labelScale) = _flexes(context, box.maxWidth);
             // Each segment's width and left edge, worked out once so the sliding thumb and
             // the labels above it line up exactly.
             final n = segments.length;
@@ -83,7 +83,7 @@ class AkSegmented<T> extends StatelessWidget {
                   children: [
                     for (var i = 0; i < n; i++) ...[
                       if (i > 0) const SizedBox(width: AkSpace.s1),
-                      SizedBox(width: widths[i], child: _segment(context, segments[i])),
+                      SizedBox(width: widths[i], child: _segment(context, segments[i], labelScale)),
                     ],
                   ],
                 ),
@@ -98,41 +98,65 @@ class AkSegmented<T> extends StatelessWidget {
   /// Equal widths, as drawn, while every label fits its share. When one would break onto a
   /// second line but all of them fit side by side ("This month" beside "All"), each segment
   /// takes room in proportion to its label, so no label breaks while space is left beside it.
-  List<int> _flexes(BuildContext context, double width) {
+  /// When even that is too wide, the labels shrink together, at most to [_minLabelScale]
+  /// (the type before it went one step up, body 14 of 16), before any breaks: on a 390 phone
+  /// "Money out, Money in, Move money" beside Add's close button is a few pixels too wide.
+  /// Returns the flexes and the label scale (1 unless they had to shrink).
+  (List<int>, double) _flexes(BuildContext context, double width) {
     final n = segments.length;
     final equal = List<int>.filled(n, 1);
-    if (!width.isFinite) return equal;
+    if (!width.isFinite) return (equal, 1);
     final t = context.type;
     final scaler = MediaQuery.textScalerOf(context);
     final direction = Directionality.of(context);
     // The chosen style is the widest, so a label fits whichever segment is chosen.
+    double labelWidth(AkSegment<T> s) => (TextPainter(
+      text: TextSpan(text: s.label, style: t.bodyStrong),
+      textDirection: direction,
+      textScaler: scaler,
+      maxLines: 1,
+    )..layout()).width;
+    double chrome(AkSegment<T> s) =>
+        AkSpace.s1 * 2 +
+        (s.icon == null ? 0 : AkSize.iconSm + AkSpace.s2) +
+        1; // rounding slack, so a label that just fits is not measured a hair short
+    final labels = [for (final s in segments) labelWidth(s)];
     // Never narrower than a 44px target, so a short label ("All") stays easy to tap.
-    final natural = [
-      for (final s in segments)
-        math.max(
-          AkSize.target,
-          (TextPainter(
-                text: TextSpan(text: s.label, style: t.bodyStrong),
-                textDirection: direction,
-                textScaler: scaler,
-                maxLines: 1,
-              )..layout()).width +
-              AkSpace.s1 * 2 +
-              (s.icon == null ? 0 : AkSize.iconSm + AkSpace.s2) +
-              1,
-        ), // rounding slack, so a label that just fits is not measured a hair short
+    List<double> natural(double scale) => [
+      for (var i = 0; i < n; i++) math.max(AkSize.target, labels[i] * scale + chrome(segments[i])),
     ];
     final room = width - AkSpace.s1 * (n - 1);
     final share = room / n;
-    if (natural.every((w) => w <= share)) return equal;
-    final total = natural.fold<double>(0, (a, w) => a + w);
-    if (total > room) return equal; // nothing fits on one line; keep the drawn even split
-    // The spare room is shared out as evenly as the labels allow.
-    final spare = (room - total) / n;
-    return [for (final w in natural) ((w + spare) * 10).round()];
+    List<int> proportional(List<double> widths) {
+      final total = widths.fold<double>(0, (a, w) => a + w);
+      // The spare room is shared out as evenly as the labels allow.
+      final spare = (room - total) / n;
+      return [for (final w in widths) ((w + spare) * 10).round()];
+    }
+
+    final full = natural(1);
+    if (full.every((w) => w <= share)) return (equal, 1);
+    final total = full.fold<double>(0, (a, w) => a + w);
+    if (total <= room) return (proportional(full), 1);
+    // Shrink the labels just enough to fit, never under the floor.
+    final fixed = [for (var i = 0; i < n; i++) chrome(segments[i])]
+        .fold<double>(0, (a, w) => a + w);
+    final textTotal = labels.fold<double>(0, (a, w) => a + w);
+    final scale = textTotal == 0 ? 1.0 : (room - fixed) / textTotal;
+    if (scale >= _minLabelScale) {
+      final shrunk = natural(scale);
+      // The widths come from room, so they sum to it; allow for floating-point rounding.
+      if (shrunk.fold<double>(0, (a, w) => a + w) <= room + 0.01) {
+        return (proportional(shrunk), scale);
+      }
+    }
+    return (equal, 1); // nothing fits on one line; keep the drawn even split
   }
 
-  Widget _segment(BuildContext context, AkSegment<T> s) {
+  /// The smallest a segment label shrinks to before it may break: 14 of 16.
+  static const _minLabelScale = 14 / 16;
+
+  Widget _segment(BuildContext context, AkSegment<T> s, double labelScale) {
     final c = context.colors;
     final t = context.type;
     final on = s.value == selected;
@@ -164,8 +188,10 @@ class AkSegmented<T> extends StatelessWidget {
                     child: AnimatedDefaultTextStyle(
                       duration: AkMotion.of(context),
                       curve: AkMotion.settle,
-                      style: (on ? t.bodyStrong : t.body.copyWith(fontWeight: FontWeight.w500))
-                          .copyWith(color: colour),
+                      style: _scaled(
+                        on ? t.bodyStrong : t.body.copyWith(fontWeight: FontWeight.w500),
+                        labelScale,
+                      ).copyWith(color: colour),
                       child: Text(s.label, textAlign: TextAlign.center),
                     ),
                   ),
@@ -178,6 +204,9 @@ class AkSegmented<T> extends StatelessWidget {
     );
   }
 }
+
+TextStyle _scaled(TextStyle style, double scale) =>
+    scale == 1 ? style : style.copyWith(fontSize: style.fontSize! * scale);
 
 /// A yes or no choice: a 48 by 28 track inside a 44px tall target, `switch-on` when on.
 class AkSwitch extends StatelessWidget {

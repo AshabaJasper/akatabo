@@ -236,8 +236,21 @@ class _CashFlow extends ConsumerWidget {
               Expanded(
                 child: Text('Cash flow', style: t.bodyStrong.copyWith(color: c.ink)),
               ),
-              Text(
-                '${hidden ? hiddenFigure : formatSigned(net.abs(), moneyIn: net >= 0)} so far',
+              // The net figure takes the direction's colour (in when ahead, out when behind),
+              // beside its sign; hidden or level, it stays muted.
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: hidden ? hiddenFigure : formatSigned(net.abs(), moneyIn: net >= 0),
+                      style: t.bodySm.copyWith(
+                        color: hidden || net == 0 ? c.inkMuted : (net > 0 ? c.moneyIn : c.moneyOut),
+                        fontWeight: hidden || net == 0 ? null : FontWeight.w600,
+                      ),
+                    ),
+                    const TextSpan(text: ' so far'),
+                  ],
+                ),
                 style: t.bodySm.copyWith(color: c.inkMuted),
               ),
             ],

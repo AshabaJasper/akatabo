@@ -37,6 +37,9 @@ const _tapTarget44 = MinimumTapTargetGuideline(
 /// A small Android phone: 360 by 780 dp.
 const _phone = Size(360, 780);
 
+/// The smallest phone the app is laid out for: 360 by 640 dp (Phase 2, bigger type).
+const _smallPhone = Size(360, 640);
+
 /// Every screen the router can show. `{tx}` is replaced by a real transaction id.
 final _screens = <String, String>{
   'Home': Routes.home,
@@ -91,9 +94,10 @@ Future<void> _open(
   String location, {
   required AppDatabase db,
   double textScale = 1,
+  Size size = _phone,
 }) async {
   tester.view
-    ..physicalSize = _phone
+    ..physicalSize = size
     ..devicePixelRatio = 1;
   tester.platformDispatcher.textScaleFactorTestValue = textScale;
   addTearDown(tester.view.reset);
@@ -143,12 +147,13 @@ Future<List<String>> _layoutErrors(
   String location, {
   required AppDatabase db,
   double textScale = 1,
+  Size size = _phone,
 }) async {
   final errors = <String>[];
   final previous = FlutterError.onError;
   FlutterError.onError = (details) => errors.add(details.toString());
   try {
-    await _open(tester, location, db: db, textScale: textScale);
+    await _open(tester, location, db: db, textScale: textScale, size: size);
   } finally {
     FlutterError.onError = previous;
   }
@@ -171,6 +176,21 @@ void main() {
           await _close(tester, seeded.db);
         });
       }
+
+      // The type went one step up (body 16): the smallest phone at the largest text must
+      // still fit.
+      testWidgets('lays out without overflow on a 360x640 phone at text size 2.0', (tester) async {
+        final seeded = await _seededDb(tester);
+        final errors = await _layoutErrors(
+          tester,
+          _resolve(location, seeded.txId),
+          db: seeded.db,
+          textScale: 2,
+          size: _smallPhone,
+        );
+        expect(errors, isEmpty, reason: '$name at 2.0 on 360x640');
+        await _close(tester, seeded.db);
+      });
 
       for (final dark in const [false, true]) {
         final theme = dark ? 'dark' : 'light';

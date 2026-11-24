@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/theme/contrast.dart';
 import 'package:akatabo/core/theme/tokens.g.dart';
@@ -6,6 +8,13 @@ import 'package:material_ui/material_ui.dart';
 
 const _text = 4.5;
 const _mark = 3.0;
+
+/// CIE 1976 L* (0 to 100) of an opaque colour, from its WCAG relative luminance.
+double lightnessL(Color c) {
+  final y = c.computeLuminance();
+  final f = y > 216 / 24389 ? math.pow(y, 1 / 3).toDouble() : (24389 / 27 * y + 16) / 116;
+  return 116 * f - 16;
+}
 
 void main() {
   test('the contrast function matches the WCAG reference values', () {
@@ -54,6 +63,40 @@ void main() {
     });
   }
 
+  // Money colours > Red and green (the default): the red and green take the place of
+  // money-out and money-in everywhere, so they meet the same text pairs. They also differ in
+  // lightness by 20 or more L*, so the pair still reads apart without hue.
+  for (final b in Brightness.values) {
+    test('red and green money colours reach 4.5:1 and differ by 20 L* in ${b.name}', () {
+      final base = b == Brightness.light ? akLightTokens : akDarkTokens;
+      final c = applyMoneyColours(base, AkMoneyColours.redGreen);
+      final pairs = <String, (Color, Color)>{
+        'money-out-red on ground': (c.moneyOut, c.ground),
+        'money-out-red on surface': (c.moneyOut, c.surface),
+        'money-in-green on ground': (c.moneyIn, c.ground),
+        'money-in-green on surface': (c.moneyIn, c.surface),
+        'money-out-red on its soft partner (Over chip)': (c.moneyOut, c.moneyOutSoft),
+        'money-in-green on its soft partner': (c.moneyIn, c.moneyInSoft),
+        'ink on money-out-red-soft': (c.ink, c.moneyOutSoft),
+        'ink on money-in-green-soft': (c.ink, c.moneyInSoft),
+      };
+      final failing = [
+        for (final e in pairs.entries)
+          if (contrastRatio(e.value.$1, e.value.$2) < _text)
+            '${e.key}: ${contrastRatio(e.value.$1, e.value.$2).toStringAsFixed(2)}',
+      ];
+      expect(failing, isEmpty);
+      expect((lightnessL(c.moneyOut) - lightnessL(c.moneyIn)).abs(), greaterThanOrEqualTo(20));
+    });
+  }
+
+  test('CIE L* matches reference values', () {
+    expect(lightnessL(const Color(0xFFFFFFFF)), closeTo(100, 1e-6));
+    expect(lightnessL(const Color(0xFF000000)), closeTo(0, 1e-6));
+    // Mid grey #777777 is L* 50.0.
+    expect(lightnessL(const Color(0xFF777777)), closeTo(50, 0.1));
+  });
+
   // Every main colour, in both themes: text drawn on the brand fills and brand text on the
   // page must stay readable, and the switch and selection marks must stand out.
   for (final palette in akPalettes) {
@@ -68,6 +111,16 @@ void main() {
           'on-brand-muted text on brand-deep (Home header)': (c.onBrandMuted, c.brandDeep, _text),
           'accent text on brand-deep (Home comparison)': (c.accent, c.brandDeep, _text),
           'on-brand-muted text on brand-raised': (c.onBrandMuted, c.brandRaised, _text),
+          'money-in-on-brand on brand-raised (Money in tile)': (
+            c.moneyInOnBrand,
+            c.brandRaised,
+            _text,
+          ),
+          'money-in-green-on-brand on brand-raised (Money in tile)': (
+            c.moneyInGreenOnBrand,
+            c.brandRaised,
+            _text,
+          ),
           'brand-text links on ground': (c.brandText, c.ground, _text),
           'brand-text links on surface': (c.brandText, c.surface, _text),
           'on-deep text on screen-deep (Welcome)': (c.onDeep, c.screenDeep, _text),

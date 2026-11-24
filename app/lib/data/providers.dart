@@ -46,6 +46,7 @@ AkAppearance storedAppearance(Ref ref) {
     corners: SettingKeys.corners.decode(s[SettingKeys.corners.name]),
     textSize: SettingKeys.textSize.decode(s[SettingKeys.textSize.name]),
     categoryColours: SettingKeys.categoryColours.decode(s[SettingKeys.categoryColours.name]),
+    moneyColours: SettingKeys.moneyColours.decode(s[SettingKeys.moneyColours.name]),
   );
 }
 

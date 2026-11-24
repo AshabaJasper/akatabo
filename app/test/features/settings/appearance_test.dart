@@ -140,7 +140,7 @@ void main() {
     await tester.tap(find.text('Large'));
     await tester.pumpAndSettle();
     expect(settings.values[SettingKeys.textSize.name], 'large');
-    expect(_labelSize(tester), closeTo(AkTextTokens.bodyMd.size * 16 / 14, 1e-9));
+    expect(_labelSize(tester), closeTo(AkTextTokens.bodyMd.size * 18 / 16, 1e-9));
 
     // Category chart is stored for the Categories screen.
     await tester.tap(find.text('Bars'));
@@ -164,6 +164,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(colours().catAmber, akLightTokens.catSlate);
     expect(colours().acctMtn, akLightTokens.acctMtn, reason: 'accounts keep their colours');
+
+    // Money colours: red and green by default, orange and blue one tap away; stored.
+    expect(colours().moneyOut, akLightTokens.moneyOutRed);
+    expect(colours().moneyIn, akLightTokens.moneyInGreen);
+    expect(find.text('Orange and blue is easier for colour-blind eyes.'), findsOneWidget);
+    await tester.ensureVisible(find.text('Orange and blue'));
+    await tester.tap(find.text('Orange and blue'));
+    await tester.pumpAndSettle();
+    expect(settings.values[SettingKeys.moneyColours.name], 'orangeBlue');
+    expect(colours().moneyOut, akLightTokens.moneyOut);
+    expect(colours().moneyIn, akLightTokens.moneyIn);
   });
 
   group('Main colour swatches', () {

@@ -398,3 +398,18 @@ Four builders worked in separate git worktrees (Smart help and Reminders, the pi
 | 6 | One-colour saveLayer has no bounds | 4 | Filed in `docs/BUGS.md` |
 | 7 | currentColor sentinel drops alpha | 2 | Filed |
 | 8 | `_drawSvg` matches x= inside rx= | 2 | Filed |
+
+
+## November plan, Phase 2: bigger type and money colours (24 November 2026, branch `phase-2-foundation`)
+
+- **Works:** type one step up everywhere (body 16), rows and buttons 56px, Text size rescaled (Small is the old Standard). Settings > Appearance > Money colours: Red and green (default) or Orange and blue, stored and applied at once. Colour now marks direction on the Insights net, the Forecast gap line, Category detail headline and payee totals, Calendar totals and the Home Money in tile. `DESIGN_SYSTEM.md` colour and writing rules updated: signs and arrows stay, colour is never the only cue.
+- **Tested:** `flutter analyze` clean, `flutter test` green. New: money-colour swap and default, the built theme following the setting, the Appearance row storing `orangeBlue`, red/green contrast (4.5:1 on ground, surface and soft tints) and the 20 L* gap, the Money in tile colour on every main colour, Text size factors, segment labels shrinking to the floor and no further, and every screen at 360x640 at text scale 2.0 with no overflow. All goldens regenerated on Windows in one commit.
+- **Not tested:** on the Pixel 8 Pro (light and dark screenshots of the changed screens are still owed), and the journey integration test on the device.
+- **For a design check:** the new type steps, the red and green values, the on-brand money-in tile colours, and body-lg/chart-label moving with the scale.
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | Segment labels wrapped at some widths: a rounding error threw away a shrink scale that fitted exactly | 4 x 3 = 12 | Fixed; tested every 0.25px of the shrink range |
+| 2 | Calendar showed "UGX 0" in the out colour for a day or period with nothing spent | 6 x 2 = 12 | Fixed; tested |
+| 3 | Forecast reads "UGX 0 more than came in" in the out colour when the gap is zero | 2 x 2 = 4 | Filed in `docs/BUGS.md` |
+| 4 | Segment shrink ignores the 44px floor of short labels and falls back to wrapping early | 2 x 2 = 4 | Filed in `docs/BUGS.md` |

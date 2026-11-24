@@ -96,7 +96,11 @@ class HomeScreen extends ConsumerWidget {
                 : '${-change}% below this point in $prevName',
             tiles: layout.headerTiles
                 ? [
-                    _StatTile(label: 'Money in', value: formatShort(totals.moneyIn)),
+                    _StatTile(
+                      label: 'Money in',
+                      value: formatShort(totals.moneyIn),
+                      valueColour: context.colors.moneyInOnBrand,
+                    ),
                     // Only once a budget is set: with none, "0 left" would mislead.
                     if (budgets != null)
                       _StatTile(
@@ -303,10 +307,19 @@ class _Header extends StatelessWidget {
 /// A figure in the header. With [onTap] it opens the page behind it (Budgets, Fees), as
 /// Main.html links them; Money in has no page of its own and stays still.
 class _StatTile extends StatelessWidget {
-  const _StatTile({required this.label, required this.value, this.onTap, this.opens});
+  const _StatTile({
+    required this.label,
+    required this.value,
+    this.onTap,
+    this.opens,
+    this.valueColour,
+  });
 
   final String label;
   final String value;
+
+  /// The figure's colour when it carries a direction (Money in); `on-brand` otherwise.
+  final Color? valueColour;
   final VoidCallback? onTap;
 
   /// The page it opens, for screen readers: "Open budgets".
@@ -324,7 +337,7 @@ class _StatTile extends StatelessWidget {
         children: [
           Text(label, style: t.caption.copyWith(color: c.onBrandMuted)),
           const SizedBox(height: AkSpace.s0h),
-          AkHiddenAmount(value, style: t.bodyStrong.copyWith(color: c.onBrand)),
+          AkHiddenAmount(value, style: t.bodyStrong.copyWith(color: valueColour ?? c.onBrand)),
         ],
       ),
     );

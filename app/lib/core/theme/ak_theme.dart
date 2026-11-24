@@ -58,6 +58,20 @@ AkColorTokens applyCategoryColours(AkColorTokens c, AkCategoryColours mode) {
   );
 }
 
+/// "Money colours": under Red and green (the default) `money-out`/`money-in` and their `-soft`
+/// partners (and `money-in-on-brand`) become `money-out-red`/`money-in-green`; under Orange and blue they stay as drawn.
+/// Every screen reads `moneyOut`/`moneyIn`, so this one swap reaches all of them.
+AkColorTokens applyMoneyColours(AkColorTokens c, AkMoneyColours mode) => switch (mode) {
+  AkMoneyColours.orangeBlue => c,
+  AkMoneyColours.redGreen => c.copyWith(
+    moneyOut: c.moneyOutRed,
+    moneyOutSoft: c.moneyOutRedSoft,
+    moneyIn: c.moneyInGreen,
+    moneyInSoft: c.moneyInGreenSoft,
+    moneyInOnBrand: c.moneyInGreenOnBrand,
+  ),
+};
+
 /// The `cat-` colours as drawn, before "Category colours" changes them. They are the same in
 /// every main colour, so the base tokens of the brightness are enough. For the colour picker
 /// and for charts whose parts are not categories (the Fees parts), which must stay apart.
@@ -201,9 +215,12 @@ class AkMetrics extends ThemeExtension<AkMetrics> {
 /// Builds the light or dark theme from tokens plus the Appearance settings.
 ThemeData buildAkTheme(Brightness brightness, AkAppearance appearance) {
   final base = brightness == Brightness.light ? akLightTokens : akDarkTokens;
-  final c = applyCategoryColours(
-    applyPalette(base, paletteById(appearance.paletteId), brightness),
-    appearance.categoryColours,
+  final c = applyMoneyColours(
+    applyCategoryColours(
+      applyPalette(base, paletteById(appearance.paletteId), brightness),
+      appearance.categoryColours,
+    ),
+    appearance.moneyColours,
   );
   final type = AkType.of(appearance.textSize, c.ink);
   final metrics = AkMetrics(appearance.corners);
