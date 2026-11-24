@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -42,6 +43,14 @@ final exportBytesBuilderProvider =
 final pdfFontsProvider = FutureProvider<PdfFonts>((ref) async {
   final regular = await rootBundle.load(pdfRegularAsset);
   final semiBold = await rootBundle.load(pdfSemiBoldAsset);
-  final logo = await rootBundle.load(pdfLogoAsset);
-  return PdfFonts(regular: regular, semiBold: semiBold, logo: logo.buffer.asUint8List());
+  // The logo is a nicety: if it cannot be read, the header falls back to the word and the
+  // export still works.
+  Uint8List? logo;
+  try {
+    final bytes = await rootBundle.load(pdfLogoAsset);
+    logo = bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
+  } on Object catch (e) {
+    debugPrint('PDF logo could not be read: $e');
+  }
+  return PdfFonts(regular: regular, semiBold: semiBold, logo: logo);
 });

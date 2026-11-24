@@ -39,9 +39,12 @@ Future<_Harness> _pump(
   AppDatabase? db,
   Brightness brightness = Brightness.light,
   Widget? home,
+  Size size = const Size(390, 844),
+  FakeViewPadding padding = FakeViewPadding.zero,
 }) async {
   tester.view
-    ..physicalSize = const Size(390, 844)
+    ..physicalSize = size
+    ..padding = padding
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final h = _Harness(values ?? await valuesWithPin('2580'), biometrics: biometrics);
@@ -238,6 +241,25 @@ void main() {
     await _type(tester, '2580');
     await tester.pumpAndSettle();
     expect(find.text('Second page'), findsOneWidget);
+  });
+
+  for (final (name, padding) in [
+    ('without', FakeViewPadding.zero),
+    ('with', const FakeViewPadding(top: 24, bottom: 48)),
+  ]) {
+    testWidgets('a 360 x 640 phone, $name system bars, shows the whole keypad', (tester) async {
+      await _pump(tester, size: const Size(360, 640), padding: padding);
+      await tester.pump();
+      final key0 = tester.getRect(find.bySemanticsLabel('0').last);
+      expect(key0.bottom, lessThanOrEqualTo(640 - padding.bottom));
+      expect(key0.height, greaterThanOrEqualTo(AkSize.target));
+    });
+  }
+
+  testWidgets('a tall phone keeps full-size keys', (tester) async {
+    await _pump(tester);
+    await tester.pump();
+    expect(tester.getSize(find.bySemanticsLabel('0').last).height, AkSize.pinKey);
   });
 
   testWidgets('locking takes focus away from a field behind it', (tester) async {

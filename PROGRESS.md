@@ -401,6 +401,14 @@ Four builders worked in separate git worktrees (Smart help and Reminders, the pi
 | 7 | currentColor sentinel drops alpha | 2 | Filed |
 | 8 | `_drawSvg` matches x= inside rx= | 2 | Filed |
 
+Bug review after the Phase 2 merge and the Phase 6 finish:
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | PDF export failed every time: the logo PNG was not listed in `pubspec.yaml` | 8 x 6 = 48 | Fixed: asset listed, logo now optional, test loads it through the asset bundle |
+| 2 | On a 360 x 640 phone the keypad's bottom row was below the screen edge | 4 x 4 = 16 | Fixed: keys shrink to fit short screens (never below 44), tested at 360 x 640 with and without system bars |
+| 3 | About > Open-source licences reads "Akatabo" twice to screen readers | 2 x 1 = 2 | Filed in `docs/BUGS.md` |
+
 
 ## November plan, Phase 2: bigger type and money colours (24 November 2026, branch `phase-2-foundation`)
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
@@ -55,6 +56,40 @@ class _PinPanelState extends State<PinPanel> {
 
   bool get _keysOn => widget.enabled && !_busy;
 
+  /// The content below the safe area, measured after each layout.
+  final _contentKey = GlobalKey();
+
+  /// The largest key that lets everything fit on a short screen, or null for full size.
+  double? _keyCap;
+
+  /// The screen height [_keyCap] was worked out for.
+  double? _capHeight;
+
+  /// The key cap for a screen [height] tall. A new height starts again at full size; each
+  /// layout is then checked once it is done (see [_fitKeypad]).
+  double _keyCapFor(double height, double width) {
+    if (_capHeight != height) {
+      _capHeight = height;
+      _keyCap = null;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fitKeypad(height, width));
+    return _keyCap ?? double.infinity;
+  }
+
+  /// If the content ran past the screen, shrink the keys by a quarter of the overflow (the
+  /// keypad has four rows), never below the 44px target. Where everything fits, as on most
+  /// phones, nothing changes; where even 44px keys do not fit, the screen scrolls.
+  void _fitKeypad(double height, double width) {
+    if (!mounted || _capHeight != height) return;
+    final content = _contentKey.currentContext?.findRenderObject();
+    if (content is! RenderBox || !content.hasSize) return;
+    final over = content.size.height - height;
+    if (over < 1) return;
+    final current = _Keypad.keyFor(width, _keyCap ?? double.infinity);
+    final next = math.max(AkSize.target, (current - over / 4).floorToDouble());
+    if (next < current) setState(() => _keyCap = next);
+  }
+
   Future<void> _type(String digit) async {
     if (!_keysOn || _digits.length >= pinLength) return;
     unawaited(HapticFeedback.selectionClick());
@@ -96,6 +131,7 @@ class _PinPanelState extends State<PinPanel> {
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: box.maxHeight),
                 child: IntrinsicHeight(
+                  key: _contentKey,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
                       AkSpace.s6,
@@ -147,6 +183,7 @@ class _PinPanelState extends State<PinPanel> {
                           onBiometric: widget.onBiometric,
                           canDelete: _digits.isNotEmpty,
                           width: box.maxWidth - 2 * AkSpace.s6,
+                          maxKey: _keyCapFor(box.maxHeight, box.maxWidth - 2 * AkSpace.s6),
                         ),
                         const SizedBox(height: AkSpace.s3),
                         widget.footer ?? const SizedBox(height: AkSize.target),
@@ -207,10 +244,20 @@ class _Keypad extends StatelessWidget {
     required this.onBiometric,
     required this.canDelete,
     required this.width,
+    this.maxKey = double.infinity,
   });
+
+  /// The key size for a keypad [width] wide, at most [maxKey]: keys grow with the phone up
+  /// to `size-pin-key`, shrink so three fit a narrow phone, and never go below the 44px
+  /// target.
+  static double keyFor(double width, double maxKey) =>
+      math.min((width - 2 * AkSpace.s6) / 3, maxKey).clamp(AkSize.target, AkSize.pinKey);
 
   /// The width the keypad may use; keys shrink to fit narrow phones.
   final double width;
+
+  /// The largest key the screen's height allows (see `_PinPanelState._fitKeypad`).
+  final double maxKey;
   final bool enabled;
   final ValueChanged<String> onDigit;
   final VoidCallback onDelete;
@@ -221,10 +268,9 @@ class _Keypad extends StatelessWidget {
   Widget build(BuildContext context) {
     {
       {
-        // Keys grow with the phone up to `size-pin-key`; narrower phones shrink them so three
-        // fit, never below the 44px target. Rows open up a little once keys are large.
+        // Rows open up a little once keys are large.
         const gap = AkSpace.s6;
-        final key = ((width - 2 * gap) / 3).clamp(AkSize.target, AkSize.pinKey);
+        final key = keyFor(width, maxKey);
         final rowGap = key >= AkSize.catCell ? AkSpace.s5 : AkSpace.s4;
         Widget row(List<Widget> keys) => Row(
           mainAxisSize: MainAxisSize.min,

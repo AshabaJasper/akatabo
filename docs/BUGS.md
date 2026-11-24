@@ -4,6 +4,15 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
+### [bug-review] About > Open-source licences reads "Akatabo" twice to screen readers
+
+- **Where:** `app/lib/features/privacy/about_section.dart` (the `applicationIcon` passed to `showLicensePage`)
+- **What happens:** the icon is `AkLogo(wordmark: false)`, which carries the label "Akatabo" as an image, and the licence page shows the application name "Akatabo" as text right under it, so TalkBack or VoiceOver reads the name twice.
+- **How to trigger:** turn on TalkBack, open Settings > Privacy and data > About > Open-source licences, and swipe through the header.
+- **Score:** frequency 2 x severity 1 = 2
+- **Suggested fix:** wrap the icon in `ExcludeSemantics`.
+- **Found:** 24 November 2026, bug review after the Phase 2 merge
+
 ### [bug-review] The one-colour mark's layer has no bounds
 
 - **Where:** `app/lib/core/brand/akatabo_mark.dart` (`AkMarkPainter._paintOneColour`, `saveLayer(null, ...)`)

@@ -65,6 +65,8 @@ flutter:
     # Geist-Variable.ttf with fonttools 4.68.0; covered by OFL-Geist.txt.
     - assets/fonts/Geist-Regular.ttf
     - assets/fonts/Geist-SemiBold.ttf
+    # The logo in the PDF report header, drawn by tool/render_brand_test.dart.
+    - assets/brand/pdf-logo.png
     # Shown on About > Open-source licences.
     - assets/fonts/OFL-BricolageGrotesque.txt
     - assets/fonts/OFL-Geist.txt
