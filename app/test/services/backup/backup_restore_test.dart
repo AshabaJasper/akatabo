@@ -11,6 +11,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/backup_seed.dart';
+import '../../support/fake_backup.dart';
 
 /// Every table, each sorted by its key, so two databases compare by content.
 Future<BackupTables> _all(AppDatabase db) async {
@@ -45,6 +46,24 @@ void main() {
         expect(await _all(target), await _all(source));
       });
     }
+
+    test('a file from before savings goals still restores, with no goals', () async {
+      final tables = await BackupStore(source).readAll()
+        ..remove('goals')
+        ..remove('goalMoves');
+      final oldCodec = BackupCodec(schemaVersion: 4, keys: CountingKeys().deriver);
+      final bytes = await oldCodec.encode(tables, appVersion: '0.9.0', now: DateTime(2026, 11));
+
+      final service = testBackupService(target);
+      await service.restore(await service.open(bytes), RestoreMode.replaceAll);
+
+      expect(await target.select(target.goals).get(), isEmpty);
+      expect(await target.select(target.goalMoves).get(), isEmpty);
+      expect(
+        (await target.select(target.transactions).get()).length,
+        (await source.select(source.transactions).get()).length,
+      );
+    });
 
     test('every table is in the file, counted in its header', () async {
       final bytes = await testBackupService(source).createFile();
@@ -168,6 +187,47 @@ void main() {
   });
 
   group('replace everything', () {
+    test('removes a goal and its account held only on this phone', () async {
+      final bytes = await testBackupService(source).createFile();
+      // A goal saving into an account the backup does not have. Replacing must remove the
+      // move before the account, or the foreign key from the move stops the restore.
+      final now = DateTime(2026, 11, 19);
+      final onlyHere = await withClock(
+        Clock.fixed(now),
+        () => AccountRepository(target).add(name: 'Only here', kind: AccountKind.cash),
+      );
+      await target
+          .into(target.goals)
+          .insert(
+            GoalsCompanion.insert(
+              id: 'goal.only-here',
+              createdAt: now,
+              updatedAt: now,
+              name: 'Bicycle',
+              colourToken: 'cat-red',
+              target: 300000,
+            ),
+          );
+      await target
+          .into(target.goalMoves)
+          .insert(
+            GoalMovesCompanion.insert(
+              id: 'move.only-here',
+              createdAt: now,
+              updatedAt: now,
+              goalId: 'goal.only-here',
+              accountId: onlyHere,
+              amount: 20000,
+              occurredAt: now,
+              localDay: 20261119,
+            ),
+          );
+
+      final service = testBackupService(target);
+      await service.restore(await service.open(bytes), RestoreMode.replaceAll);
+      expect(await _all(target), await _all(source));
+    });
+
     test('leaves this phone equal to the backup', () async {
       final bytes = await testBackupService(source).createFile();
       await addEntry(target, DateTime(2026, 11, 19), description: 'Boda');

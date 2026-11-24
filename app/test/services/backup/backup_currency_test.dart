@@ -100,7 +100,11 @@ void main() {
 
   test('a file from a newer version is still refused', () async {
     final tables = await BackupStore(source).readAll();
-    final newer = BackupCodec(schemaVersion: 5, keys: CountingKeys().deriver);
+    // One above this app's schema, so the test stays right when the schema moves on.
+    final newer = BackupCodec(
+      schemaVersion: target.schemaVersion + 1,
+      keys: CountingKeys().deriver,
+    );
     final bytes = await newer.encode(tables, appVersion: '9.9.9', now: DateTime(2026, 11));
     expect(
       () => testBackupService(target).open(bytes),

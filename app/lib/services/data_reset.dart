@@ -1,14 +1,17 @@
 import '../data/db/app_database.dart';
 import '../data/seed/default_data.dart';
 
-/// Deletes every entry, category, account, regular payment, setting and saved forecast on this
-/// phone, then puts back the default categories and accounts, as on a first launch. All of it
-/// happens or none of it does.
+/// Deletes every entry, category, account, regular payment, savings goal, setting and saved
+/// forecast on this phone, then puts back the default categories and accounts, as on a first
+/// launch. All of it happens or none of it does.
 ///
 /// Used by "Delete everything on this phone" and by "Forgot your PIN?". It touches the database
 /// only: the PIN and anything else kept outside it are cleared by their own services.
 Future<void> deleteEverything(AppDatabase db) => db.transaction(() async {
-  // Children before parents, so no foreign key is left pointing at a deleted row.
+  // Children before parents, so no foreign key is left pointing at a deleted row. Goal moves
+  // point at goals and accounts, so they go first.
+  await db.delete(db.goalMoves).go();
+  await db.delete(db.goals).go();
   await db.delete(db.transactions).go();
   await db.delete(db.regularPayments).go();
   await db.delete(db.forecastSnapshots).go();

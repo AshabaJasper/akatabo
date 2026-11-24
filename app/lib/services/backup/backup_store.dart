@@ -22,6 +22,8 @@ class BackupStore {
       'transactions': json(await db.select(db.transactions).get()),
       'settings': json(await db.select(db.settings).get()),
       'forecastSnapshots': json(await db.select(db.forecastSnapshots).get()),
+      'goals': json(await db.select(db.goals).get()),
+      'goalMoves': json(await db.select(db.goalMoves).get()),
     };
   });
 
@@ -46,6 +48,8 @@ class BackupStore {
     'transactions' => Transaction.fromJson(row),
     'settings' => Setting.fromJson(row),
     'forecastSnapshots' => ForecastSnapshot.fromJson(row),
+    'goals' => Goal.fromJson(row),
+    'goalMoves' => GoalMove.fromJson(row),
     _ => throw ArgumentError.value(table, 'table'),
   } as Insertable<DataClass>;
 
@@ -56,6 +60,8 @@ class BackupStore {
     'transactions' => db.transactions,
     'settings' => db.settings,
     'forecastSnapshots' => db.forecastSnapshots,
+    'goals' => db.goals,
+    'goalMoves' => db.goalMoves,
     _ => throw ArgumentError.value(name, 'table'),
   } as TableInfo<Table, DataClass>;
 
@@ -79,6 +85,10 @@ class BackupStore {
         await (db.delete(db.categories)..where((t) => t.id.isIn(keys))).go();
       case 'accounts':
         await (db.delete(db.accounts)..where((t) => t.id.isIn(keys))).go();
+      case 'goals':
+        await (db.delete(db.goals)..where((t) => t.id.isIn(keys))).go();
+      case 'goalMoves':
+        await (db.delete(db.goalMoves)..where((t) => t.id.isIn(keys))).go();
     }
   }
 
@@ -88,7 +98,13 @@ class BackupStore {
   /// so foreign keys hold at every step. Afterwards only one account stays "picked first":
   /// the one marked most recently.
   Future<void> apply(RestorePlan plan) => db.transaction(() async {
-    for (final t in ['transactions', 'regularPayments', 'forecastSnapshots', 'settings']) {
+    for (final t in [
+      'goalMoves',
+      'transactions',
+      'regularPayments',
+      'forecastSnapshots',
+      'settings',
+    ]) {
       await _delete(t, plan.deletes[t]!);
     }
     for (final t in BackupFormat.tables) {
@@ -97,7 +113,7 @@ class BackupStore {
         await db.into(table).insertOnConflictUpdate(_fromJson(t, row));
       }
     }
-    for (final t in ['categories', 'accounts']) {
+    for (final t in ['goals', 'categories', 'accounts']) {
       await _delete(t, plan.deletes[t]!);
     }
 

@@ -36,7 +36,8 @@ Future<String> addEntry(
 );
 
 /// A phone with something in every table: entries from March to 12 November, a budget, a
-/// new category and account, a regular payment, settings and a saved forecast.
+/// new category and account, a regular payment, a savings goal with money set aside, settings
+/// and a saved forecast.
 Future<void> seedFullPhone(AppDatabase db) async {
   await withClock(Clock.fixed(DateTime(2026, 3, 1, 8)), () async {
     final rent = await CategoryRepository(db).add(
@@ -52,6 +53,34 @@ Future<void> seedFullPhone(AppDatabase db) async {
     ).add(label: 'Rent', amount: 400000, intervalDays: 30, nextDueOn: 20261201, categoryId: rent);
     await SettingsRepository(db).write(SettingKeys.monthStartsOn, 25);
     await SettingsRepository(db).write(SettingKeys.suggestCategory, false);
+    final now = clock.now();
+    await db
+        .into(db.goals)
+        .insert(
+          GoalsCompanion.insert(
+            id: 'goal.fees',
+            createdAt: now,
+            updatedAt: now,
+            name: 'School fees',
+            colourToken: 'cat-teal',
+            target: 900000,
+            targetDay: const Value(20270115),
+          ),
+        );
+    await db
+        .into(db.goalMoves)
+        .insert(
+          GoalMovesCompanion.insert(
+            id: 'move.fees.1',
+            createdAt: now,
+            updatedAt: now,
+            goalId: 'goal.fees',
+            accountId: DefaultIds.mtn,
+            amount: 150000,
+            occurredAt: now,
+            localDay: 20260301,
+          ),
+        );
   });
   for (
     var d = DateTime(2026, 3);

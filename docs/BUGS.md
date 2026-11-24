@@ -4,6 +4,15 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
+### [bug-review] Deleting an account that holds goal money fails with a misleading message
+
+- **Where:** `app/lib/data/repositories/repositories.dart` (`AccountRepository.usedBy` and `delete`); message in `app/lib/features/settings/new_account_screen.dart`
+- **What happens:** `usedBy` counts only entries. An account with money set aside for a goal but no entries passes the check, the dialog says "No entries use it", and the delete then hits the foreign key from `goal_moves.account_id`. A raw SQLite error comes back instead of the `StateError` the repository promises, and the screen shows "could not be deleted. Try again.", which never works.
+- **How to trigger:** save a goal move into an account with no entries, then delete that account from Settings > Accounts. Not reachable yet: nothing writes goal moves until the goals screens ship.
+- **Score:** frequency 1 x severity 4 = 4
+- **Suggested fix:** count `goalMoves.accountId == id` too (in `usedBy`, or a separate check in `delete` throwing a `StateError` such as "Account holds savings goal money"), and have the screen say that money for a goal is kept in this account. Land it with the goal repository, before the first goal write ships.
+- **Found:** 24 November 2026, savings goals v5 bug review
+
 ### [bug-review] Forecast day labels shift a day after the clocks go back
 
 - **Where:** `app/lib/features/forecast/forecast_screen.dart` (the chart's `dayLabelOf`)

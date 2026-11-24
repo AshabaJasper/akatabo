@@ -164,3 +164,51 @@ class ForecastSnapshots extends Table {
   @override
   Set<Column<Object>> get primaryKey => {periodStart, takenOn};
 }
+
+/// How often a goal reminds the person to add to it. Stored by name.
+enum GoalRemind { off, weekly, monthly }
+
+/// Something the person is saving toward. The money saved is not in this row: it is the sum
+/// of the goal's [GoalMoves], so it can never drift from the moves that made it. Schema v5.
+class Goals extends Table with _Synced {
+  TextColumn get name => text()();
+
+  /// A name from the icon table in DESIGN_SYSTEM.md; `wallet` is the "Savings" icon.
+  TextColumn get iconKey => text().withDefault(const Constant('wallet'))();
+
+  /// A `cat-` colour token name.
+  TextColumn get colourToken => text()();
+
+  /// Whole shillings to reach, above zero.
+  IntColumn get target => integer().check(target.isBiggerThanValue(0))();
+
+  /// The local day (yyyymmdd) the person wants to reach it by. Null with no date.
+  IntColumn get targetDay => integer().nullable()();
+  TextColumn get remindEvery => textEnum<GoalRemind>().withDefault(Constant(GoalRemind.off.name))();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+
+  /// When the saved amount first reached [target]. Cleared if money is taken out below it.
+  DateTimeColumn get reachedAt => dateTime().nullable()();
+
+  /// When the person put the goal away. Its moves stay, so its money stays set aside until
+  /// it is taken out.
+  DateTimeColumn get archivedAt => dateTime().nullable()();
+}
+
+/// Money set aside for a goal inside one account, or taken back out. Not a transaction: the
+/// money does not leave the account, so totals, budgets and the forecast never see it. The
+/// account's free-to-spend figure is its balance less what its moves have set aside. Schema v5.
+@TableIndex(name: 'goal_move_goal', columns: {#goalId})
+@TableIndex(name: 'goal_move_account', columns: {#accountId})
+class GoalMoves extends Table with _Synced {
+  TextColumn get goalId => text().references(Goals, #id)();
+  TextColumn get accountId => text().references(Accounts, #id)();
+
+  /// Whole shillings, never zero: above zero sets money aside, below zero takes it out.
+  IntColumn get amount => integer().check(amount.equals(0).not())();
+  TextColumn get note => text().nullable()();
+  DateTimeColumn get occurredAt => dateTime()();
+
+  /// The local calendar day of [occurredAt] as yyyymmdd, written at save time.
+  IntColumn get localDay => integer()();
+}

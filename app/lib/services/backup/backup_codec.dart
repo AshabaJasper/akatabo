@@ -38,8 +38,10 @@ abstract final class BackupFormat {
   static const tables = [
     'accounts',
     'categories',
+    'goals',
     'regularPayments',
     'transactions',
+    'goalMoves',
     'settings',
     'forecastSnapshots',
   ];
