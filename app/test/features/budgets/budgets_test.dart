@@ -11,6 +11,7 @@ import 'package:akatabo/features/budgets/budget_edit_screen.dart';
 import 'package:akatabo/features/budgets/budgets_providers.dart';
 import 'package:akatabo/features/budgets/budgets_screen.dart';
 import 'package:akatabo/features/home/home_providers.dart';
+import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -368,6 +369,39 @@ void main() {
         expect(find.text(m), findsOneWidget);
       }
     });
+
+    testWidgets('the carry-over switch sits at the end of its row, level with its label', (
+      tester,
+    ) async {
+      await _pump(tester, const BudgetEditScreen(categoryId: DefaultIds.transport), data: _rows());
+      final label = find.text('Carry over what is left');
+      final toggle = find.byWidgetPredicate(
+        (w) => w is AkSwitch && w.label == 'Carry over what is left',
+      );
+      await tester.ensureVisible(toggle);
+      await tester.pump();
+      final labelBox = tester.getRect(label);
+      final switchBox = tester.getRect(toggle);
+      expect(switchBox.left, greaterThan(labelBox.right));
+      expect(switchBox.top, lessThan(labelBox.bottom));
+      expect(switchBox.bottom, greaterThan(labelBox.top));
+      expect(find.text('Unspent money adds to next month'), findsOneWidget);
+    });
+
+    for (final b in Brightness.values) {
+      testWidgets('set a budget golden, ${b.name}', (tester) async {
+        await _pump(
+          tester,
+          const BudgetEditScreen(categoryId: DefaultIds.transport),
+          data: _rows(history: _transportHistory()),
+          brightness: b,
+        );
+        await expectLater(
+          find.byType(BudgetEditScreen),
+          matchesGoldenFile('goldens/budget_edit_${b.name}.png'),
+        );
+      });
+    }
 
     testWidgets('without three months of spending there is no suggestion', (tester) async {
       await _pump(tester, const BudgetEditScreen(categoryId: DefaultIds.school), data: _rows());

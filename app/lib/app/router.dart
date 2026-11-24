@@ -31,6 +31,7 @@ import '../features/settings/general_settings_screen.dart';
 import '../features/settings/home_settings_screen.dart';
 import '../features/settings/income_categories_screen.dart';
 import '../features/settings/new_account_screen.dart';
+import '../features/settings/permissions_screen.dart';
 import '../features/settings/reminders_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/settings/smart_help_screen.dart';
@@ -172,6 +173,7 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       ),
       GoRoute(path: Routes.settingsSmart, builder: (_, _) => const SmartHelpScreen()),
       GoRoute(path: Routes.settingsReminders, builder: (_, _) => const RemindersScreen()),
+      GoRoute(path: Routes.settingsPermissions, builder: (_, _) => const PermissionsScreen()),
       GoRoute(
         path: Routes.settingsPrivacy,
         builder: (_, state) =>

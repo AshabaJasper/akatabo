@@ -68,6 +68,7 @@ final _screens = <String, String>{
   'Money-in categories': Routes.settingsIncomeCategories,
   'Smart help': Routes.settingsSmart,
   'Reminders': Routes.settingsReminders,
+  'Phone permissions': Routes.settingsPermissions,
   'Privacy and data': Routes.settingsPrivacy,
   'Export and backup': Routes.dataExport,
   'Restore': Routes.dataRestore,

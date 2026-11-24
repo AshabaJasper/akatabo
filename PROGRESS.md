@@ -452,3 +452,11 @@ Bug review after the Phase 2 merge and the Phase 6 finish:
 - **Checked on the Pixel 8 Pro, dark theme:** App lock, Smart help and Reminders each render correctly, and the test-notification path shows the blocked message. The phone reports notifications as Blocked for Akatabo, so no reminder can arrive until that is allowed in the phone's settings. **Light theme not checked this phase**; switching the app's theme needs the owner's go-ahead.
 - **Tested:** `flutter analyze` is clean and the full suite passes (1,237 tests). Goldens regenerated on purpose: `privacy_section_light/dark`, `smart_help_light/dark`, `reminders_light/dark`, `reminders_check_light/dark`; the old combined `smart_help_reminders_*` images were removed. `pin_set` and the lock golden are unchanged.
 
+## Set a budget toggle and Phone permissions (24 November 2026)
+
+- **Set a budget:** "Carry over what is left" is now a row on a card, with the switch at its end, as BudgetEdit.html draws it. New goldens `budget_edit_light/dark` and a layout test.
+- **Phone permissions** (Settings > Phone permissions): notifications Allowed or Blocked, fingerprint or face Ready or None added, any other permission the build asks for, and what Akatabo never asks for. Read live from the phone through a native channel, again on each return to the app. Each row opens the phone's own settings page, and there is an "Open Akatabo in phone settings" row.
+- **Reminders:** an "Open notification settings" row.
+- **Bug review:** four bugs found. Two scored 9 and 12 and were fixed: permission rows that TalkBack could not activate (test added), and the Fingerprint or face row opening an enrol screen that closes at once when one is already added (now opens Security settings then). Two scored 4 and are filed in `docs/BUGS.md`.
+- **Tested:** `flutter analyze` clean; full suite run. Goldens new or changed on purpose: `budget_edit_light/dark`, `permissions_light/dark`, `reminders_check_light/dark`, `reminders_light/dark`.
+

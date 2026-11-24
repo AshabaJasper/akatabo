@@ -16,6 +16,7 @@ import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/amount_text.dart';
 import '../home/home_providers.dart';
+import '../settings/smart_rows.dart';
 import 'budgets_providers.dart';
 
 /// The warn levels a person can choose, as whole percents of the budget.
@@ -247,12 +248,17 @@ class _BudgetFormState extends ConsumerState<_BudgetForm> {
           colours: (brand: c.brand, over: c.moneyOut, line: c.ink),
         ),
         const SizedBox(height: AkSpace.s5),
-        AkSwitch(
-          label: 'Carry over what is left',
-          value: _carry,
-          onChanged: (v) => setState(() => _carry = v),
+        // As drawn: label and note on the left, the switch at the row's end, on a card.
+        AkCard(
+          padding: EdgeInsets.zero,
+          child: NotedSwitchRow(
+            label: 'Carry over what is left',
+            note: 'Unspent money adds to next month',
+            value: _carry,
+            onChanged: (v) => setState(() => _carry = v),
+            divider: false,
+          ),
         ),
-        Text('Unspent money adds to next month', style: t.caption.copyWith(color: c.inkMuted)),
         const SizedBox(height: AkSpace.s5),
         const AkEyebrowLabel('Warn me at'),
         const SizedBox(height: AkSpace.s2),

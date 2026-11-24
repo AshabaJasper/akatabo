@@ -147,10 +147,10 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       await _pump(tester, const SettingsScreen(), db);
-      // Three groups: 3 + 4 + 3 pages, App lock with its own row.
+      // Three groups: 3 + 4 + 4 pages, App lock and Phone permissions each with a row.
       expect(find.byType(AkCard), findsNWidgets(3));
-      expect(find.byType(AkIconTile), findsNWidgets(10));
-      expect(find.byType(AkIcon), findsNWidgets(20), reason: 'a tile icon and a chevron per row');
+      expect(find.byType(AkIconTile), findsNWidgets(11));
+      expect(find.byType(AkIcon), findsNWidgets(22), reason: 'a tile icon and a chevron per row');
       // The version cannot be read in a test, so the footer is the plain line.
       expect(find.text('Free, with no account and no adverts.'), findsOneWidget);
       // Text sits inside the card, not against its edge.

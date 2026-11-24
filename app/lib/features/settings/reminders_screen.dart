@@ -9,8 +9,10 @@ import '../../services/notifications/notifications_service.dart';
 import '../../services/notifications/reminder_plan.dart' show weeklySummaryHour;
 import '../../services/notifications/reminder_scheduler.dart';
 import '../../services/notifications/reminder_switch.dart' show notificationsRefusedMessage;
+import '../../services/permissions/phone_permissions.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_pickers.dart';
+import 'permissions_screen.dart' show settingsNotOpenedMessage;
 import 'settings_page.dart';
 import 'smart_rows.dart';
 
@@ -166,6 +168,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     if (picked != null) await _save(SettingKeys.weeklySummaryDay, picked, reschedule: true);
   }
 
+  /// Opens Akatabo's notification settings in the phone, where a block is lifted.
+  Future<void> _openSettings() async {
+    setState(() {
+      _problem = null;
+      _done = null;
+    });
+    final opened = await ref.read(phonePermissionsProvider).open(PhoneSettingsPage.notifications);
+    if (!opened && mounted) setState(() => _problem = settingsNotOpenedMessage);
+  }
+
   /// Sends one notification now, so the person can see that reminders reach this phone.
   Future<void> _sendTest() async {
     setState(() {
@@ -276,7 +288,17 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   : 'Blocked',
               divider: true,
             ),
-            ActionRow(label: 'Send a test notification', onTap: _sendTest, destructive: false),
+            ActionRow(
+              label: 'Send a test notification',
+              onTap: _sendTest,
+              destructive: false,
+              divider: true,
+            ),
+            ActionRow(
+              label: 'Open notification settings',
+              onTap: _openSettings,
+              destructive: false,
+            ),
           ],
         ),
         if (_allowed == false &&

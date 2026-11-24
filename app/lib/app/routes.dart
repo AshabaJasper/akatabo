@@ -28,6 +28,9 @@ abstract final class Routes {
   /// Reminders: each switch, when it next fires, and a test notification.
   static const settingsReminders = '/settings/reminders';
 
+  /// Phone permissions: what the phone allows Akatabo, read live, and what it never asks for.
+  static const settingsPermissions = '/settings/permissions';
+
   /// Privacy and data: app lock, hidden amounts, data and backup, about. One page reached
   /// from both hub rows; the Data and backup row opens it at that section.
   static const settingsPrivacy = '/settings/privacy';

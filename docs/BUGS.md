@@ -511,6 +511,24 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Suggested fix:** have `pinTriesProvider` watch `lockControllerProvider`, so it reads again when the app opens; while a wait runs, a one-off timer for the time left refreshes it (cancelled in `ref.onDispose`).
 - **Found:** 24 November 2026, bug review of the November plan's Phase 4
 
+### [bug-review] Phone permissions reads ref after dispose if left during the first check
+
+- **Where:** `app/lib/features/settings/permissions_screen.dart`, `_check`
+- **What happens:** `_check` awaits `areAllowed()`, then calls `ref.read(phonePermissionsProvider)` before checking `mounted`. If the page was closed meanwhile, Riverpod throws, and the error is reported. The person sees nothing wrong.
+- **How to trigger:** open Settings > Phone permissions and go back at once.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** read both services before the first `await`, and check `mounted` between the awaits.
+- **Found:** 24 November 2026, bug review of the permissions page
+
+### [bug-review] "Never asked for" list misses some permissions, and the storage sentence is unconditional
+
+- **Where:** `app/lib/services/permissions/phone_permissions.dart`, `sensitiveAccess`; `app/lib/features/settings/permissions_screen.dart`, the Never asked for text
+- **What happens:** `sensitiveAccess` leaves out READ_MEDIA_VIDEO, READ_MEDIA_AUDIO, READ_MEDIA_VISUAL_USER_SELECTED, MANAGE_EXTERNAL_STORAGE, ACCESS_BACKGROUND_LOCATION, SEND_SMS, READ_PHONE_STATE, WRITE_CONTACTS and GET_ACCOUNTS. A future plugin adding one of them would leave a false "never asks for" claim. "So no storage permission is needed" shows whenever anything is listed. Today the manifest removals and `tool/check_permissions.ps1` prevent this.
+- **How to trigger:** add a dependency that merges READ_MEDIA_VIDEO without a `tools:node="remove"` line.
+- **Score:** frequency 1 x severity 4 = 4
+- **Suggested fix:** add the missing permissions to each group; show the storage sentence only when "your files and photos" is in the list; add a unit test.
+- **Found:** 24 November 2026, bug review of the permissions page
+
 ## Fixed
 
 ### [states-audit] Budgets' empty state has no button

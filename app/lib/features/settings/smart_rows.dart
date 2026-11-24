@@ -22,6 +22,7 @@ class NotedSwitchRow extends StatelessWidget {
     required this.note,
     required this.value,
     required this.onChanged,
+    this.divider = true,
   });
 
   final String label;
@@ -29,13 +30,18 @@ class NotedSwitchRow extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
 
+  /// A line under the row. Off for the last row of a card.
+  final bool divider;
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     return Container(
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: c.line)),
-      ),
+      decoration: divider
+          ? BoxDecoration(
+              border: Border(bottom: BorderSide(color: c.line)),
+            )
+          : null,
       padding: const EdgeInsets.symmetric(horizontal: settingsRowSide, vertical: AkSpace.s2h),
       child: Row(
         children: [
@@ -86,11 +92,20 @@ class SegmentRow extends StatelessWidget {
 /// A full-width text action. [destructive] takes the money-out colour, for an action that
 /// cannot be undone; otherwise it is the brand colour.
 class ActionRow extends StatelessWidget {
-  const ActionRow({super.key, required this.label, required this.onTap, this.destructive = true});
+  const ActionRow({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.destructive = true,
+    this.divider = false,
+  });
 
   final String label;
   final VoidCallback onTap;
   final bool destructive;
+
+  /// A line under the row, when another row follows it in the card.
+  final bool divider;
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +120,11 @@ class ActionRow extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: AkSize.row),
             alignment: AlignmentDirectional.centerStart,
             padding: const EdgeInsets.symmetric(horizontal: settingsRowSide),
+            decoration: divider
+                ? BoxDecoration(
+                    border: Border(bottom: BorderSide(color: c.line)),
+                  )
+                : null,
             child: Text(
               label,
               style: context.type.bodyMd.copyWith(

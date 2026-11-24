@@ -455,3 +455,12 @@ After the owner tried the app on a Pixel 8 Pro. Owner decisions: a new private G
 - **No "Use PIN" label on the lock screen.** Lock.html draws none: the fingerprint prompt starts on its own, and the PIN keypad stays on screen under it as the fallback, with the fingerprint key to ask again.
 - **Smart help and Reminders are two pages.** `openAtReminders` is gone; the hub links to each. Reminders show their next time ("Next: tonight, 20:00"), whether the phone allows notifications, and send a test notification (id 99, beside the reminders' 1, 2 and 100 up). Smart help shows forecast accuracy (a month forecast at zero is left out of the average) and how many regular payments it noticed.
 - **Not done:** inline time and day pickers (the shared modal pickers stay); a button that opens the phone's notification settings (needs a native channel); suggestion counts and recent unusual payments in Smart help (nothing records them yet).
+
+### Between Phases 4 and 5: Set a budget toggle and Phone permissions (24 November 2026)
+
+- **Carry over is a row, as drawn.** BudgetEdit.html puts the label and its note on the left and the switch at the row's end, on a card. The switch had been centred on its own line above the note.
+- **Phone permissions is its own Settings page.** It reads the permissions this build asks for from the phone at runtime (a native "akatabo/permissions" channel), not from a fixed list, so a debug build honestly shows the Internet and Local network permissions Flutter adds for development. It reads them again each time the app comes back. Notifications use the same check as Reminders; Fingerprint or face shows whether one is added on the phone. Each row opens the phone's own settings page; Akatabo changes nothing itself.
+- **"Never asks for" is worked out, not written in.** The sentence lists only the kinds of access whose permissions are missing from the phone's list, and is left out where the phone cannot list them (iOS).
+- **Reminders gain "Open notification settings"**, which closes the Phase 4 gap.
+- **Phase 5 rates live in Settings.** Remembered exchange rates are stored as `rate.<ISO>` rows of the Settings table rather than a new ExchangeRates table. Settings rows already travel through backup and restore with the newest-wins merge, so no new backup table or restore path is needed.
+

@@ -13,6 +13,7 @@ import 'package:akatabo/services/notifications/notifications_service.dart';
 import 'package:akatabo/services/notifications/reminder_plan.dart';
 import 'package:akatabo/services/notifications/reminder_scheduler.dart';
 import 'package:akatabo/services/notifications/reminder_switch.dart';
+import 'package:akatabo/services/permissions/phone_permissions.dart';
 import 'package:akatabo/smart/forecast/forecast_range.dart';
 import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:clock/clock.dart';
@@ -25,6 +26,20 @@ import '../../support/fake_notifications.dart';
 import '../../support/fixtures.dart';
 
 typedef _FakeNotifications = FakeNotifications;
+
+/// Records each phone settings page opened.
+class _FakePhone implements PhonePermissions {
+  final opened = <PhoneSettingsPage>[];
+
+  @override
+  Future<Map<String, bool>?> requested() async => const {};
+
+  @override
+  Future<bool> open(PhoneSettingsPage page) async {
+    opened.add(page);
+    return true;
+  }
+}
 
 /// The drawn state: every reminder on, Balanced, 20:00, Sunday evening.
 final _drawn = {
@@ -44,6 +59,7 @@ Future<void> _pump(
   Brightness brightness = Brightness.light,
   Size size = const Size(390, 3000),
   double textScale = 1,
+  PhonePermissions? phone,
 }) async {
   tester.view
     ..physicalSize = size
@@ -62,6 +78,7 @@ Future<void> _pump(
         activeRegularProvider.overrideWith((ref) => Stream.value(const [])),
         storedSettingsProvider.overrideWith((ref) => Stream.value(settings)),
         notificationsServiceProvider.overrideWithValue(fake),
+        if (phone != null) phonePermissionsProvider.overrideWithValue(phone),
       ],
       child: MaterialApp(
         theme: buildAkTheme(brightness, const AkAppearance()),
@@ -192,6 +209,24 @@ void main() {
       final stored = int.parse((await _stored(tester, db, SettingKeys.learningResetAt.name))!);
       expect(stored, greaterThan(0));
       expect(find.text(forgotMessage), findsOneWidget);
+    });
+
+    testWidgets("open notification settings goes to Akatabo's page in the phone", (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final phone = _FakePhone();
+      await _pump(
+        tester,
+        db,
+        _FakeNotifications(allowedNow: false),
+        page: const RemindersScreen(),
+        phone: phone,
+      );
+
+      await tester.tap(find.text('Open notification settings'));
+      await _settle(tester);
+
+      expect(phone.opened, [PhoneSettingsPage.notifications]);
     });
 
     testWidgets('every row in a card starts 14 from the card edge', (tester) async {

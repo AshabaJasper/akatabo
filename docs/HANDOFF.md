@@ -7,7 +7,7 @@ Where Akatabo stands, for the next working session. Written 24 November 2026.
 - Branch `main`, pushed to a private GitHub repository. The 14 local `worktree-agent-*` branches were never pushed and are not needed.
 - Phases 1 to 8 of `PLAN.md` are done. The polish round after the owner tried the app on a Pixel 8 Pro is done too, including stage 4: every piece drawn in `design/screens/` is now built. See the last sections of `PROGRESS.md` and the polish round entries in the decision log of `PLAN.md`.
 - Phase 3 of the November plan (Forecast and Insights) is committed; see its section in `PROGRESS.md` for what is not done (18% band, top-3 strip, light-theme device check).
-- Phase 4 (App lock, Smart help and Reminders) is committed; see its section in `PROGRESS.md`. Light theme is not checked on the device yet. Reminders show notifications as Blocked on the Pixel, so allow them in the phone's settings before testing reminders. Phase 5 (currency) is not started.
+- Phase 4 (App lock, Smart help and Reminders) is committed; see its section in `PROGRESS.md`. Light theme is not checked on the device yet. Reminders show notifications as Blocked on the Pixel, so allow them in the phone's settings before testing reminders. Settings > Phone permissions and the Set a budget toggle fix are committed after Phase 4. Phase 5 (currency) is next; remembered rates go in the Settings table (see `PLAN.md`).
 - Not published. The launch blockers that need the owner are at the top of `SHIP_GATE.md`.
 
 ## How to run

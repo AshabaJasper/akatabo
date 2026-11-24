@@ -59,6 +59,12 @@ class SettingsScreen extends ConsumerWidget {
     [
       _Entry(AkIcons.lock, 'App lock', 'PIN, fingerprint or face, lock after', Routes.settingsLock),
       _Entry(
+        AkIcons.check,
+        'Phone permissions',
+        'What this phone allows Akatabo',
+        Routes.settingsPermissions,
+      ),
+      _Entry(
         AkIcons.phone,
         'Privacy and security',
         'Hidden amounts, the app switcher',
