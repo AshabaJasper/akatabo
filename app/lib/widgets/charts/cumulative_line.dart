@@ -18,7 +18,11 @@ class CumulativeColours {
     required this.forecast,
     required this.band,
     required this.grid,
+    this.incomeLine,
   });
+
+  /// The money-in line, dashed across the chart at what came in. Null leaves it out.
+  final Color? incomeLine;
 
   /// This period's running total: the solid line and its light fill.
   final Color line;
@@ -47,6 +51,9 @@ class CumulativeLinePainter extends CustomPainter {
     this.forecast,
     this.forecastBand,
     this.pulse,
+    this.income,
+    this.dayLabelOf,
+    this.hideFigures = false,
   }) : super(repaint: pulse);
 
   final List<double?> actual;
@@ -59,7 +66,19 @@ class CumulativeLinePainter extends CustomPainter {
   /// 0 to 1 over the today point's one pulse; null on charts with no forecast.
   final Animation<double>? pulse;
 
+  /// What came in this period, drawn as a dashed line when [CumulativeColours.incomeLine] is set.
+  final double? income;
+
+  /// The day label under each tick on the x-axis, by index. Null draws no axis.
+  final String Function(int index)? dayLabelOf;
+
+  /// Amounts are hidden: the chart keeps its shape but writes no money figures.
+  final bool hideFigures;
+
   static const _gridLines = 3;
+
+  /// The room under the plot for the x-axis labels.
+  static const _axisHeight = 18.0;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -72,11 +91,14 @@ class CumulativeLinePainter extends CustomPainter {
       ...?previous,
       ...?forecast,
       if (forecastBand != null) forecastBand!.$2,
+      ?income,
     ].fold<double>(0, math.max);
     final maxY = top <= 0 ? 1.0 : top;
 
+    // The plot sits above the x-axis labels, when there are any.
+    final plotH = size.height - (dayLabelOf == null ? 0.0 : _axisHeight);
     double x(int i) => i * size.width / (n - 1);
-    double y(double v) => size.height - (v / maxY) * size.height * 0.92 - size.height * 0.04;
+    double y(double v) => plotH - (v / maxY) * plotH * 0.92 - plotH * 0.04;
 
     // Three labelled gridlines, the top one at the highest figure on the chart.
     final gridPaint = Paint()
@@ -90,7 +112,10 @@ class CumulativeLinePainter extends CustomPainter {
         text: TextSpan(text: formatShort(value.round()), style: labelStyle),
         textDirection: TextDirection.ltr,
       )..layout();
-      label.paint(canvas, Offset(0, gy - label.height - 2));
+      // The income line carries its own label; a gridline at the same height does not repeat it.
+      if (income == null || (value - income!).abs() > 0.5) {
+        label.paint(canvas, Offset(0, gy - label.height - 2));
+      }
     }
 
     // The forecast band, from today's total out to the low and high at month's end.
@@ -123,7 +148,7 @@ class CumulativeLinePainter extends CustomPainter {
 
     if (lastActual >= 0) {
       final path = Path();
-      final fill = Path()..moveTo(x(0), size.height);
+      final fill = Path()..moveTo(x(0), plotH);
       for (var i = 0; i <= lastActual; i++) {
         final p = Offset(x(i), y(actual[i] ?? 0));
         if (i == 0) {
@@ -135,7 +160,7 @@ class CumulativeLinePainter extends CustomPainter {
         }
       }
       fill
-        ..lineTo(x(lastActual), size.height)
+        ..lineTo(x(lastActual), plotH)
         ..close();
       canvas.drawPath(fill, Paint()..color = colours.fill);
       canvas.drawPath(
@@ -184,7 +209,118 @@ class CumulativeLinePainter extends CustomPainter {
         );
       }
       canvas.drawCircle(today, 4, Paint()..color = colours.line);
+      // Today's figure sits above the dot, in the line colour and bold. Only beside a forecast:
+      // without one, today's total is the top of the chart and its own gridline already says it.
+      if (!hideFigures && forecast != null) {
+        _centred(
+          canvas,
+          formatShort(actual[lastActual]!.round()),
+          labelStyle.copyWith(color: colours.line, fontWeight: FontWeight.w700),
+          Offset(today.dx, today.dy - 16),
+          size,
+        );
+      }
     }
+
+    // Income: a dashed line across at what came in, labelled at the right.
+    final incomeColour = colours.incomeLine;
+    final incomeValue = income;
+    if (incomeColour != null && incomeValue != null && incomeValue > 0) {
+      final iy = y(incomeValue);
+      _dash(
+        canvas,
+        Path()
+          ..moveTo(0, iy)
+          ..lineTo(size.width, iy),
+        Paint()
+          ..color = incomeColour
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+        dash: 6,
+        gap: 4,
+      );
+      final tp = TextPainter(
+        text: TextSpan(
+          text: hideFigures ? 'Income' : 'Income ${formatShort(incomeValue.round())}',
+          style: labelStyle.copyWith(color: incomeColour),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(canvas, Offset(size.width - tp.width, iy - tp.height - 2));
+
+      // The first day the forecast reaches the income: where money out passes what came in.
+      final k = forecast == null || lastActual < 0 ? null : passesIncomeAt(forecast!, incomeValue);
+      if (k != null) {
+        final p = Offset(x(lastActual + k), y(forecast![k]));
+        canvas.drawCircle(p, 5, Paint()..color = colours.forecast);
+        _centred(
+          canvas,
+          'Passes income',
+          labelStyle.copyWith(color: colours.forecast),
+          Offset(p.dx, p.dy - 16),
+          size,
+        );
+      }
+    }
+
+    // The forecast's end is hollow, so it reads as a guess, not a total.
+    if (forecast != null && forecast!.isNotEmpty && lastActual >= 0) {
+      final endIndex = math.min(n - 1, lastActual + forecast!.length - 1);
+      canvas.drawCircle(
+        Offset(x(endIndex), y(forecast!.last)),
+        5,
+        Paint()
+          ..color = colours.forecast
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+    }
+
+    // Day labels under the plot, with today in bold.
+    final dayLabel = dayLabelOf;
+    if (dayLabel != null) {
+      // Every fourth day, but a tick that would sit on top of the last day or today gives way.
+      final step = math.max(1, (n - 1) ~/ 4);
+      bool crowded(int i) =>
+          i != n - 1 &&
+          i != lastActual &&
+          ((n - 1 - i).abs() < step / 2 || (lastActual >= 0 && (i - lastActual).abs() < step / 2));
+      final ticks = <int>{
+        for (var i = 0; i < n; i += step)
+          if (!crowded(i)) i,
+        n - 1,
+        if (lastActual >= 0) lastActual,
+      };
+      for (final i in ticks) {
+        final isToday = i == lastActual;
+        _centred(
+          canvas,
+          dayLabel(i),
+          isToday
+              ? labelStyle.copyWith(color: colours.line, fontWeight: FontWeight.w700)
+              : labelStyle,
+          Offset(x(i), plotH + _axisHeight / 2),
+          size,
+        );
+      }
+    }
+  }
+
+  /// Draws [text] centred on [centre], pulled inside the chart's width and height at the edges.
+  void _centred(Canvas canvas, String text, TextStyle style, Offset centre, Size size) {
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final dx = math.min(
+      math.max<double>(centre.dx - tp.width / 2, 0),
+      math.max<double>(0, size.width - tp.width),
+    );
+    final dy = math.min(
+      math.max<double>(centre.dy - tp.height / 2, 0),
+      math.max<double>(0, size.height - tp.height),
+    );
+    tp.paint(canvas, Offset(dx, dy));
   }
 
   /// Draws [path] as dashes of [dash] length with [gap] between them.
@@ -205,6 +341,8 @@ class CumulativeLinePainter extends CustomPainter {
       old.previous != previous ||
       old.forecast != forecast ||
       old.forecastBand != forecastBand ||
+      old.income != income ||
+      old.hideFigures != hideFigures ||
       old.colours != colours ||
       old.pulse != pulse;
 }
@@ -221,6 +359,9 @@ class CumulativeLineChart extends StatefulWidget {
     this.previous,
     this.forecast,
     this.forecastBand,
+    this.income,
+    this.dayLabelOf,
+    this.hideFigures = false,
   });
 
   /// Read aloud instead of the drawing.
@@ -230,6 +371,9 @@ class CumulativeLineChart extends StatefulWidget {
   final List<double>? forecast;
   final (double, double)? forecastBand;
   final CumulativeColours colours;
+  final double? income;
+  final String Function(int index)? dayLabelOf;
+  final bool hideFigures;
 
   @override
   State<CumulativeLineChart> createState() => _CumulativeLineChartState();
@@ -279,9 +423,23 @@ class _CumulativeLineChartState extends State<CumulativeLineChart>
             colours: widget.colours,
             labelStyle: t.caption,
             pulse: widget.forecast == null ? null : _eased,
+            income: widget.income,
+            dayLabelOf: widget.dayLabelOf,
+            hideFigures: widget.hideFigures,
           ),
         ),
       ),
     );
   }
+}
+
+/// The step along [forecast] (0 is today) where money out first reaches [income], or null
+/// when it never does or is there already today: a crossing that has happened is not
+/// marked as if it were still to come.
+int? passesIncomeAt(List<double> forecast, double income) {
+  if (forecast.isEmpty || forecast.first >= income) return null;
+  for (var k = 1; k < forecast.length; k++) {
+    if (forecast[k] >= income) return k;
+  }
+  return null;
 }

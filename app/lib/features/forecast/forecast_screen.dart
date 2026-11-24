@@ -19,6 +19,7 @@ import '../../smart/forecast/forecast_range.dart';
 import '../../widgets/ak_dashed_box.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_headline_amount.dart';
+import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../../widgets/charts/cumulative_line.dart';
@@ -44,6 +45,9 @@ class ForecastScreen extends ConsumerWidget {
     final forecast = view.forecast;
     final range = view.range;
     final monthRows = ref.watch(monthRowsProvider).value ?? const <Transaction>[];
+    final sameDaysLastMonth =
+        ref.watch(previousSameDaysRowsProvider).value ?? const <Transaction>[];
+    final hidden = ref.watch(amountsHiddenProvider);
     final daysWithEntries = view.daysWithEntries;
     if (forecast != null && range != null) {
       ref
@@ -89,6 +93,8 @@ class ForecastScreen extends ConsumerWidget {
                 today: today,
                 monthRows: monthRows,
                 moneyIn: totalsOf(monthRows).moneyIn,
+                lastMonthSpent: totalsOf(sameDaysLastMonth).moneyOut,
+                hidden: hidden,
               ),
           ],
         ),
@@ -105,6 +111,8 @@ class _ForecastBody extends StatelessWidget {
     required this.today,
     required this.monthRows,
     required this.moneyIn,
+    required this.lastMonthSpent,
+    required this.hidden,
   });
 
   final Forecast forecast;
@@ -116,10 +124,17 @@ class _ForecastBody extends StatelessWidget {
   final List<Transaction> monthRows;
   final int moneyIn;
 
+  /// Money out over the same days last month; zero when there was none to compare with.
+  final int lastMonthSpent;
+
+  /// Amounts are hidden: every figure shows as dots.
+  final bool hidden;
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = context.type;
+    String money(int v) => hidden ? hiddenFigure : formatUgx(v);
     final gap = forecast.point - moneyIn;
     // The history the rate comes from: the last 90 days, or fewer for someone new.
     final historyDays = forecast.everydayDaily.isEmpty
@@ -143,12 +158,26 @@ class _ForecastBody extends StatelessWidget {
       forecast: c.moneyOut,
       band: c.rangeBand,
       grid: c.line,
+      incomeLine: c.moneyIn,
     );
+
+    // Today counts as one of the days left to share the spare money over.
+    final safe = safeToSpend(
+      moneyIn: moneyIn,
+      forecastPoint: forecast.point,
+      daysLeft: forecast.daysLeft + 1,
+    );
+    final pace = paceVsLast(thisMonth: forecast.spentSoFar, lastMonth: lastMonthSpent);
+    final oneOffs = forecast.oneOffs;
+    final leftOut = [
+      for (final row in monthRows)
+        if (oneOffs.contains(row.id)) row,
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AkHeadlineAmount(forecast.point, style: t.figureXl.copyWith(color: c.ink)),
+        AkHeadlineAmount(forecast.point, hideable: true, style: t.figureXl.copyWith(color: c.ink)),
         const SizedBox(height: AkSpace.s1),
         // "more than came in" is money going out faster than it came, so it takes the out
         // colour; "less" takes the in colour, as Forecast.html draws it. The words carry the
@@ -158,11 +187,11 @@ class _ForecastBody extends StatelessWidget {
             children: [
               TextSpan(
                 text:
-                    '${range == null ? '' : '${rangeInWords(range!, formatUgx)}. '}'
+                    '${range == null ? '' : '${rangeInWords(range!, money)}. '}'
                     'That is about ',
               ),
               TextSpan(
-                text: '${formatUgx(gap.abs())} ${gap >= 0 ? 'more' : 'less'}',
+                text: '${money(gap.abs())} ${gap >= 0 ? 'more' : 'less'}',
                 style: t.bodySm.copyWith(
                   color: gap >= 0 ? c.moneyOut : c.moneyIn,
                   fontWeight: FontWeight.w600,
@@ -174,14 +203,40 @@ class _ForecastBody extends StatelessWidget {
           style: t.bodySm.copyWith(color: c.inkMuted),
         ),
         const SizedBox(height: AkSpace.s4),
+        if (safe case SafeAmount(:final perDay))
+          _FactRow(
+            label: 'Safe to spend',
+            value: '${money(perDay)} a day',
+            valueColour: c.ink,
+            detail: 'Income so far, less the forecast, shared over the days left.',
+          )
+        else if (safe case OverBy(:final amount))
+          _FactRow(
+            label: 'Over by',
+            value: money(amount),
+            valueColour: c.moneyOut,
+            detail: 'The forecast is more than the income recorded this month.',
+          ),
+        if (pace != null)
+          _FactRow(
+            label: 'Pace against last month',
+            value: money(pace.difference.abs()),
+            valueColour: pace.difference >= 0 ? c.moneyOut : c.moneyIn,
+            detail:
+                '${pace.difference >= 0 ? 'More' : 'Less'} money out than the same days last month.',
+          ),
+        const SizedBox(height: AkSpace.s2),
         CumulativeLineChart(
           summary:
-              'Money out so far ${formatUgx(forecast.spentSoFar)}, forecast '
-              '${formatUgx(forecast.point)} by the end of the month.',
+              'Money out so far ${money(forecast.spentSoFar)}, forecast '
+              '${money(forecast.point)} by the end of the month.',
           actual: actual,
           forecast: path,
           forecastBand: range == null ? null : (range!.low.toDouble(), range!.high.toDouble()),
           colours: colours,
+          hideFigures: hidden,
+          income: moneyIn > 0 ? moneyIn.toDouble() : null,
+          dayLabelOf: (i) => DateFormat('d').format(month.start.add(Duration(days: i))),
         ),
         const SizedBox(height: AkSpace.s2),
         Wrap(
@@ -194,16 +249,70 @@ class _ForecastBody extends StatelessWidget {
         ),
         const SizedBox(height: AkSpace.s5),
         const AkEyebrow('How it adds up'),
-        _SumRow(title: 'Spent so far', amount: forecast.spentSoFar, sign: ''),
+        const SizedBox(height: AkSpace.s3),
+        _StackedBar(
+          money: money,
+          spent: forecast.spentSoFar,
+          everyday: forecast.everydayToCome,
+          regular: forecast.regularDue,
+        ),
+        const SizedBox(height: AkSpace.s3),
         _SumRow(
+          hidden: hidden,
+          title: 'Spent so far',
+          amount: forecast.spentSoFar,
+          sign: '',
+          dot: c.moneyOut,
+          detail: 'Today so far ${money(forecast.everydayToday)}',
+        ),
+        _SumRow(
+          hidden: hidden,
           title: forecast.daysLeft == 0
               ? 'Everyday, rest of today'
               : 'Everyday, rest of today and ${forecast.daysLeft} more days',
-          detail: '${formatUgx(forecast.dailyRate)} a day',
+          detail: '${money(forecast.dailyRate)} a day',
           amount: forecast.everydayToCome,
           sign: '+ ',
+          dot: c.brand,
         ),
-        _SumRow(title: 'Regular bills due', amount: forecast.regularDue, sign: '+ '),
+        _SumRow(
+          hidden: hidden,
+          title: 'Regular bills due',
+          amount: forecast.regularDue,
+          sign: '+ ',
+          dot: c.inkMuted,
+          onTap: () => context.push(Routes.regular),
+        ),
+        if (forecast.regularBands.isNotEmpty) ...[
+          const SizedBox(height: AkSpace.s4),
+          const AkEyebrow('Regular payments still due'),
+          const SizedBox(height: AkSpace.s3),
+          for (final due in forecast.regularBands)
+            _SumRow(
+              hidden: hidden,
+              title: due.label,
+              detail:
+                  '${DateFormat('d MMM').format(due.due)}, '
+                  '${money(due.low)} to ${money(due.high)}',
+              amount: due.typical,
+              sign: '',
+              onTap: () => context.push(Routes.regular),
+            ),
+        ],
+        if (leftOut.isNotEmpty) ...[
+          const SizedBox(height: AkSpace.s4),
+          const AkEyebrow('Left out as one-offs'),
+          const SizedBox(height: AkSpace.s3),
+          for (final row in leftOut)
+            _SumRow(
+              hidden: hidden,
+              title: row.description.isEmpty ? 'One-off payment' : row.description,
+              detail: DateFormat('d MMM').format(fromLocalDay(row.localDay)),
+              amount: row.amount,
+              sign: '',
+              onTap: () => context.push(Routes.transaction(row.id)),
+            ),
+        ],
         _HowClose(dayOfMonth: today.day),
         const SizedBox(height: AkSpace.s4),
         Text(
@@ -213,6 +322,102 @@ class _ForecastBody extends StatelessWidget {
           style: t.caption.copyWith(color: c.inkMuted),
         ),
       ],
+    );
+  }
+}
+
+/// One line of a figure with a short explanation beneath it, such as "Safe to spend".
+class _FactRow extends StatelessWidget {
+  const _FactRow({
+    required this.label,
+    required this.value,
+    required this.valueColour,
+    required this.detail,
+  });
+
+  final String label;
+  final String value;
+  final Color valueColour;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = context.type;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AkSpace.s3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: t.bodyMd.copyWith(color: c.ink)),
+                const SizedBox(height: AkSpace.s1),
+                Text(detail, style: t.caption.copyWith(color: c.inkMuted)),
+              ],
+            ),
+          ),
+          const SizedBox(width: AkSpace.s3),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: t.figure.copyWith(color: valueColour),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Spent, everyday and regular money out as one bar. Its legend is the rows beneath it.
+class _StackedBar extends StatelessWidget {
+  const _StackedBar({
+    required this.spent,
+    required this.everyday,
+    required this.regular,
+    required this.money,
+  });
+
+  final int spent;
+  final int everyday;
+  final int regular;
+  final String Function(int) money;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final parts = [
+      (spent, c.moneyOut),
+      (everyday, c.brand),
+      (regular, c.inkMuted),
+    ].where((p) => p.$1 > 0).toList();
+    if (parts.isEmpty) return const SizedBox.shrink();
+    return Semantics(
+      image: true,
+      container: true,
+      excludeSemantics: true,
+      label:
+          'Spent ${money(spent)}, everyday ${money(everyday)}, '
+          'regular bills ${money(regular)}.',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(context.metrics.sm),
+        child: SizedBox(
+          height: AkSpace.s4,
+          child: Row(
+            children: [
+              for (final part in parts)
+                Expanded(
+                  flex: part.$1,
+                  child: ColoredBox(color: part.$2, child: const SizedBox.expand()),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -233,6 +438,9 @@ class _HowClose extends ConsumerWidget {
     final c = context.colors;
     final t = context.type;
     final history = ref.watch(forecastHistoryProvider);
+    final hidden = ref.watch(amountsHiddenProvider);
+    String sh(int v) => hidden ? hiddenFigure : formatShort(v);
+    String ug(int v) => hidden ? hiddenFigure : formatUgx(v);
     if (history == null || history.isEmpty) return const SizedBox.shrink();
 
     final largest = history.fold(0, (m, s) => math.max(m, math.max(s.point, s.actual)));
@@ -242,9 +450,11 @@ class _HowClose extends ConsumerWidget {
     final day = ordinalDay(dayOfMonth).replaceFirst('The ', '');
     String month(SnapshotPoint s) => DateFormat('MMMM').format(fromLocalDay(s.periodStart));
     String short(SnapshotPoint s) => DateFormat('MMM').format(fromLocalDay(s.periodStart));
+    String range(SnapshotPoint s) =>
+        s.low == null || s.high == null ? '' : ', range ${sh(s.low!)} to ${sh(s.high!)}';
     final spoken = [
       for (final s in history)
-        '${month(s)}: forecast ${formatUgx(s.point)}, actual ${formatUgx(s.actual)}',
+        '${month(s)}: forecast ${ug(s.point)}${range(s)}, actual ${ug(s.actual)}',
     ].join('. ');
     final count = history.length == 1 ? 'last month' : 'the last ${history.length} months';
     double height(int v) => largest == 0 ? 0 : math.max(2, AkSize.barChartSm * v / largest);
@@ -316,9 +526,14 @@ class _HowClose extends ConsumerWidget {
                         ),
                         const SizedBox(height: AkSpace.s1),
                         Text(
-                          '${short(s)} ${formatShort(s.point)} / ${formatShort(s.actual)}',
+                          '${short(s)} ${sh(s.point)} / ${sh(s.actual)}',
                           style: t.caption.copyWith(color: c.inkMuted),
                         ),
+                        if (s.low != null && s.high != null)
+                          Text(
+                            'range ${sh(s.low!)} to ${sh(s.high!)}',
+                            style: t.caption.copyWith(color: c.inkMuted),
+                          ),
                       ],
                     ),
                   ),
@@ -343,21 +558,45 @@ class _HowClose extends ConsumerWidget {
 }
 
 class _SumRow extends StatelessWidget {
-  const _SumRow({required this.title, required this.amount, required this.sign, this.detail});
+  const _SumRow({
+    required this.title,
+    required this.amount,
+    required this.sign,
+    this.detail,
+    this.dot,
+    this.onTap,
+    this.hidden = false,
+  });
 
   final String title;
   final int amount;
   final String sign;
   final String? detail;
 
+  /// The legend colour for this part of the stacked bar; null when the row is not in the bar.
+  final Color? dot;
+
+  /// Set for rows that open another screen (Coming up, one transaction).
+  final VoidCallback? onTap;
+
+  /// Amounts are hidden: the figure shows as dots.
+  final bool hidden;
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = context.type;
-    return Padding(
+    final row = Padding(
       padding: const EdgeInsets.only(bottom: AkSpace.s3),
       child: Row(
         children: [
+          if (dot != null) ...[
+            DecoratedBox(
+              decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+              child: const SizedBox(width: AkSpace.s2, height: AkSpace.s2),
+            ),
+            const SizedBox(width: AkSpace.s2),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,9 +609,14 @@ class _SumRow extends StatelessWidget {
               ],
             ),
           ),
-          Text('$sign${formatAmount(amount)}', style: t.figure.copyWith(color: c.ink)),
+          Text(
+            hidden ? hiddenFigure : '$sign${formatAmount(amount)}',
+            style: t.figure.copyWith(color: c.ink),
+          ),
         ],
       ),
     );
+    if (onTap == null) return row;
+    return InkWell(onTap: onTap, child: row);
   }
 }

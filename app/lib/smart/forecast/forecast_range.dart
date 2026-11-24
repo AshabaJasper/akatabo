@@ -215,6 +215,8 @@ class SnapshotPoint {
     required this.dayInPeriod,
     required this.point,
     required this.actual,
+    this.low,
+    this.high,
   });
 
   /// The month's first day, yyyymmdd.
@@ -224,6 +226,10 @@ class SnapshotPoint {
   final int dayInPeriod;
   final int point;
   final int actual;
+
+  /// The range that was saved with the forecast, when it was saved (older rows have none).
+  final int? low;
+  final int? high;
 }
 
 /// One relative error per earlier month, newest month first, at most [forecastMaxMonths].

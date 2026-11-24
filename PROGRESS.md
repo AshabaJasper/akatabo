@@ -423,3 +423,22 @@ Bug review after the Phase 2 merge and the Phase 6 finish:
 | 2 | Calendar showed "UGX 0" in the out colour for a day or period with nothing spent | 6 x 2 = 12 | Fixed; tested |
 | 3 | Forecast reads "UGX 0 more than came in" in the out colour when the gap is zero | 2 x 2 = 4 | Filed in `docs/BUGS.md` |
 | 4 | Segment shrink ignores the 44px floor of short labels and falls back to wrapping early | 2 x 2 = 4 | Filed in `docs/BUGS.md` |
+
+## Phase 3: Forecast and Insights (24 November 2026, partly done)
+
+- **Works:** The Forecast page now has safe to spend per day (income so far less the forecast, shared over the days left including today; "Over by" when the forecast passes income; hidden without income), a pace line against the same days last month, a stacked bar of spent, everyday and regular money out with its legend rows, "Regular bills due" that opens Coming up, a list of the regular payments still due, a list of the one-offs left out of the rate (each opens its transaction), and How close shows each saved past range. The chart gains a dashed income line with its label, a "Passes income" marker, today's figure above the dot, a hollow end circle, and day labels on the x-axis with today in bold. Insights gains a Forecast card (current month only, while Forecast is on, tap to open it; figures dotted while amounts are hidden) and a coloured dot on each "Look closer" row. The cash-flow net was already coloured.
+- **Pure functions:** `safeToSpend`, `paceVsLast` and `RegularDue` in `lib/domain/forecast.dart`, tested in `test/domain/forecast_phase3_test.dart`.
+- **Not done in this phase:** the 18% money-out band from Forecast.html (not clear from the drawing which band it means, so it is not guessed); the top-3 categories strip on Insights (the `_WhereItWent` widget is private to Home and needs moving first). Both carry to the next pass.
+- **Checked on the Pixel 8 Pro, dark theme:** Forecast with real income (income line and label, safe to spend UGX 58,127 a day, today's figure and bold day, hollow end, stacked bar, a school-fees one-off), and Insights (Forecast card, coloured net, row dots). The phone showed today's figure landing on the top gridline of the Insights chart, so that figure is now drawn only beside a forecast; and the top gridline no longer repeats the income figure. "Passes income" did not show on the phone because this month's forecast stays under income; it is covered by unit tests. **Light theme not checked this phase.** During the check one tap landed on Appearance > Theme > Light while the page was still sliding in; the theme was put back to Dark straight away.
+- **Tested:** `flutter analyze` is clean and all 1212 tests pass. Goldens updated on purpose: `forecast_shown_light`, `forecast_shown_dark`, `forecast_history_light` and `insights_loaded_light`.
+
+### Bug review
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | The chart wrote today's figure while amounts were hidden | 6 x 7 = 42 | Fixed: `hideFigures` on the chart, passed from Forecast and Insights |
+| 2 | The new Forecast rows (safe to spend, over by, pace, regular list, one-offs, income label) showed figures while amounts were hidden | 5 x 7 = 35 | Fixed: one `money()` helper for every figure on the page, How close too; tested (Hide amounts on the Forecast page) |
+| 3 | "Left out as one-offs" listed the month's own one-offs, not the ones the rate left out across its window, and showed them with a minus sign although they are in Spent so far | 5 x 4 = 20 | Fixed: `Forecast.oneOffs` from the window, no sign; tested |
+| 4 | "Passes income" was marked tomorrow when money out was already over income | 6 x 3 = 18 | Fixed: `passesIncomeAt` returns nothing when today is already over; tested |
+| 5 | A fact row's figure could not wrap at 360 wide and text size 2.0 | 3 x 4 = 12 | Fixed: the figure wraps |
+| 6 | Chart day labels shift a day after the clocks go back (not in Kampala) | 2 x 2 = 4 | Filed in `docs/BUGS.md` |

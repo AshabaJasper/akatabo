@@ -15,8 +15,10 @@ import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/seed/default_data.dart';
 import '../../data/settings/setting_keys.dart';
+import '../../domain/forecast.dart';
 import '../../domain/insights.dart';
 import '../../domain/spending.dart';
+import '../../smart/forecast/forecast_range.dart';
 import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
@@ -25,6 +27,8 @@ import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../../widgets/charts/cumulative_line.dart';
+import '../forecast/forecast_providers.dart';
+import '../forecast/forecast_words.dart';
 import '../home/home_providers.dart';
 import 'insights_providers.dart';
 import 'insights_text.dart';
@@ -87,6 +91,17 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
       grid: c.line,
     );
 
+    // The forecast card shows only for the current month, and only while Forecast is on.
+    final forecastOn = SettingKeys.forecastMonth.decode(
+      ref.watch(storedSettingsProvider).value?[SettingKeys.forecastMonth.name],
+    );
+    final forecastView = ref.watch(monthForecastProvider);
+    final showForecast =
+        forecastOn &&
+        _kind == PeriodKind.month &&
+        period.start == ref.watch(currentMonthProvider).start &&
+        forecastView.forecast != null;
+
     return Scaffold(
       backgroundColor: c.ground,
       body: SafeArea(
@@ -135,6 +150,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                     v ?? 0,
                 ],
                 colours: colours,
+                hideFigures: ref.watch(amountsHiddenProvider),
               ),
               const SizedBox(height: AkSpace.s2),
               _Legend(
@@ -148,6 +164,16 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                 comparisonReading(percent, against),
                 style: t.bodySm.copyWith(color: c.inkMuted),
               ),
+              if (showForecast) ...[
+                const SizedBox(height: AkSpace.s4),
+                _ForecastSummary(
+                  forecast: forecastView.forecast!,
+                  range: forecastView.range,
+                  moneyIn: totals.moneyIn,
+                  hidden: ref.watch(amountsHiddenProvider),
+                  onTap: () => context.push(Routes.forecast),
+                ),
+              ],
               const SizedBox(height: AkSpace.s5),
               _CashFlow(totals: totals),
               const SizedBox(height: AkSpace.s5),
@@ -167,14 +193,30 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
               ],
             ],
             const AkEyebrow('Look closer'),
-            _LinkRow(label: 'Categories', onTap: () => context.push(Routes.categories)),
-            _LinkRow(label: 'Fees and tax', onTap: () => context.push(Routes.fees)),
+            _LinkRow(
+              label: 'Categories',
+              dot: c.brand,
+              onTap: () => context.push(Routes.categories),
+            ),
+            _LinkRow(
+              label: 'Fees and tax',
+              dot: c.moneyOut,
+              onTap: () => context.push(Routes.fees),
+            ),
             // "Forecast the month" in Smart help switches the forecast off.
             if (SettingKeys.forecastMonth.decode(
               ref.watch(storedSettingsProvider).value?[SettingKeys.forecastMonth.name],
             ))
-              _LinkRow(label: 'Forecast', onTap: () => context.push(Routes.forecast)),
-            _LinkRow(label: 'Coming up', onTap: () => context.push(Routes.regular)),
+              _LinkRow(
+                label: 'Forecast',
+                dot: c.inkMuted,
+                onTap: () => context.push(Routes.forecast),
+              ),
+            _LinkRow(
+              label: 'Coming up',
+              dot: c.inkMuted,
+              onTap: () => context.push(Routes.regular),
+            ),
           ],
         ),
       ),
@@ -357,16 +399,91 @@ class _ChangeRow extends ConsumerWidget {
   }
 }
 
-class _LinkRow extends StatelessWidget {
-  const _LinkRow({required this.label, required this.onTap});
+/// The month's forecast in one card: the headline, the range and what is safe to spend a day.
+/// Tapping it opens the full Forecast page.
+class _ForecastSummary extends StatelessWidget {
+  const _ForecastSummary({
+    required this.forecast,
+    required this.range,
+    required this.moneyIn,
+    required this.hidden,
+    required this.onTap,
+  });
 
-  final String label;
+  final Forecast forecast;
+  final ForecastRange? range;
+  final int moneyIn;
+
+  /// Amounts are hidden: every figure shows as dots, as the rest of Insights does.
+  final bool hidden;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final t = context.type;
+    final m = context.metrics;
+    final safe = safeToSpend(
+      moneyIn: moneyIn,
+      forecastPoint: forecast.point,
+      daysLeft: forecast.daysLeft + 1,
+    );
+    String money(int v) => hidden ? hiddenFigure : formatUgx(v);
+    final safeText = switch (safe) {
+      SafeAmount(:final perDay) => 'Safe to spend ${money(perDay)} a day',
+      OverBy(:final amount) => 'Over by ${money(amount)}',
+      null => null,
+    };
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(m.md),
+      child: Container(
+        padding: const EdgeInsets.all(AkSpace.s4),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(m.md),
+          border: Border.all(color: c.line),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Money out by month end', style: t.caption.copyWith(color: c.inkMuted)),
+            const SizedBox(height: AkSpace.s1),
+            Text(money(forecast.point), style: t.figure.copyWith(color: c.ink)),
+            if (range != null) ...[
+              const SizedBox(height: AkSpace.s1),
+              Text(rangeInWords(range!, money), style: t.bodySm.copyWith(color: c.inkMuted)),
+            ],
+            if (safeText != null) ...[
+              const SizedBox(height: AkSpace.s2),
+              Text(safeText, style: t.bodyMd.copyWith(color: safe is OverBy ? c.moneyOut : c.ink)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LinkRow extends StatelessWidget {
+  const _LinkRow({required this.label, required this.onTap, this.dot});
+
+  final String label;
+  final VoidCallback onTap;
+
+  /// A small coloured dot that tells the rows apart at a glance.
+  final Color? dot;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
     return AkListRow(
+      leading: dot == null
+          ? null
+          : DecoratedBox(
+              decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+              child: const SizedBox(width: AkSpace.s2, height: AkSpace.s2),
+            ),
       title: label,
       trailing: AkIcon(AkIcons.chevron, color: c.inkMuted, size: AkSize.iconSm),
       onTap: onTap,

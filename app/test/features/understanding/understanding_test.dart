@@ -573,6 +573,24 @@ void main() {
       );
     });
 
+    testWidgets('Hide amounts dots every figure on the Forecast page', (tester) async {
+      final days = _tenDays();
+      await _pump(
+        tester,
+        const ForecastScreen(),
+        data: _data(month: days, window: days),
+        settings: {PrivacyKeys.hideAmounts.name: '1'},
+      );
+      final figure = RegExp(r'UGX|\d,\d{3}');
+      expect(find.textContaining(figure), findsNothing);
+      await tester.dragUntilVisible(
+        find.textContaining('Worked out on this phone'),
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
+      expect(find.textContaining(figure), findsNothing);
+    });
+
     testWidgets('How close it has been sets each earlier forecast beside what was spent', (
       tester,
     ) async {

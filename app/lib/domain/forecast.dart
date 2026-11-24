@@ -26,6 +26,68 @@ const oneOffMinSample = 4;
 /// which guards against an interval of 0 or 1 day in bad data.
 const _maxDuesPerPayment = 400;
 
+/// One regular payment still due this month.
+class RegularDue {
+  const RegularDue({
+    required this.label,
+    required this.due,
+    required this.low,
+    required this.typical,
+    required this.high,
+  });
+
+  final String label;
+  final DateTime due;
+  final int low;
+  final int typical;
+  final int high;
+}
+
+/// What is left to spend each day until month end, when income is known.
+sealed class SafeToSpend {
+  const SafeToSpend();
+}
+
+/// Money still to spare, shared over the days left.
+final class SafeAmount extends SafeToSpend {
+  const SafeAmount(this.perDay);
+  final int perDay;
+}
+
+/// The forecast is above the income: this much more than came in.
+final class OverBy extends SafeToSpend {
+  const OverBy(this.amount);
+  final int amount;
+}
+
+/// Income minus the forecast, divided by the days left. Null when no income is recorded
+/// this month (there is nothing to measure against) or no day is left to spread it over.
+SafeToSpend? safeToSpend({
+  required int moneyIn,
+  required int forecastPoint,
+  required int daysLeft,
+}) {
+  if (moneyIn <= 0 || daysLeft <= 0) return null;
+  final spare = moneyIn - forecastPoint;
+  if (spare < 0) return OverBy(-spare);
+  return SafeAmount(spare ~/ daysLeft);
+}
+
+/// Money out so far this month against the same days last month.
+class Pace {
+  const Pace({required this.thisMonth, required this.lastMonth});
+
+  final int thisMonth;
+  final int lastMonth;
+
+  /// Positive when this month is spending more than it did by now last month.
+  int get difference => thisMonth - lastMonth;
+}
+
+/// The pace, or null when last month has no spending on those days to compare with.
+Pace? paceVsLast({required int thisMonth, required int lastMonth}) =>
+    lastMonth <= 0 ? null : Pace(thisMonth: thisMonth, lastMonth: lastMonth);
+
 /// The forecast for one month, as it stands on [today].
 class Forecast {
   const Forecast({
@@ -40,6 +102,7 @@ class Forecast {
     this.everydayDaily = const [],
     this.everydayToday = 0,
     this.regularBands = const [],
+    this.oneOffs = const {},
   });
 
   /// Money out this month so far, including fees and tax.
@@ -75,8 +138,13 @@ class Forecast {
   /// The everyday part of what was already spent today.
   final int everydayToday;
 
-  /// One band for each regular payment occurrence still due this month.
-  final List<({int low, int typical, int high})> regularBands;
+  /// One band for each regular payment occurrence still due this month, with its name and
+  /// due day, so the screen can list them.
+  final List<RegularDue> regularBands;
+
+  /// The money-out entries the everyday rate left out as one-offs. They are picked across
+  /// the whole rate window, as the rate picks them, so the list matches what was left out.
+  final Set<String> oneOffs;
 }
 
 /// The window of history the rate is worked out from: [rateWindowDays] days, ending today.
@@ -124,7 +192,7 @@ Forecast? forecastFor({
   var regularDue = 0;
   var regularLow = 0;
   var regularHigh = 0;
-  final bands = <({int low, int typical, int high})>[];
+  final bands = <RegularDue>[];
   for (final p in regular) {
     var dues = regularDuesIn(p, from: now, through: month.lastDate);
     // A payment due today that is already entered is in "spent so far"; do not add it again.
@@ -135,8 +203,16 @@ Forecast? forecastFor({
     regularDue += p.typicalAmount * occurrences;
     regularLow += p.amountLow * occurrences;
     regularHigh += p.amountHigh * occurrences;
-    for (var i = 0; i < occurrences; i++) {
-      bands.add((low: p.amountLow, typical: p.typicalAmount, high: p.amountHigh));
+    for (final due in dues) {
+      bands.add(
+        RegularDue(
+          label: p.label,
+          due: due,
+          low: p.amountLow,
+          typical: p.typicalAmount,
+          high: p.amountHigh,
+        ),
+      );
     }
   }
 
@@ -155,6 +231,7 @@ Forecast? forecastFor({
     everydayDaily: everyday.daily,
     everydayToday: spentToday ?? 0,
     regularBands: bands,
+    oneOffs: oneOffIds(windowRows),
   );
 }
 

@@ -115,6 +115,8 @@ List<SnapshotPoint> pastSnapshotPoints(
           dayInPeriod: daysBetween(fromLocalDay(s.periodStart), fromLocalDay(s.takenOn)) + 1,
           point: s.point,
           actual: total,
+          low: s.low,
+          high: s.high,
         ),
   ];
 }

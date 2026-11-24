@@ -4,6 +4,15 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
+### [bug-review] Forecast day labels shift a day after the clocks go back
+
+- **Where:** `app/lib/features/forecast/forecast_screen.dart` (the chart's `dayLabelOf`)
+- **What happens:** the labels add 24-hour durations to the month start. Across the end of daylight saving that lands on 23:00 of the day before, so each label after the change reads one day early. Africa/Kampala has no daylight saving, so it does not happen there.
+- **How to trigger:** set the phone to a zone with daylight saving (for example Europe/London) and open Forecast in October.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** `DateTime(month.start.year, month.start.month, month.start.day + i)`.
+- **Found:** 24 November 2026, Phase 3 bug review
+
 ### [bug-review] READINESS.md names the wrong scandelete path
 
 - **Where:** `docs/fdroid/READINESS.md` (section 2, "Prebuilt binaries in the source")
