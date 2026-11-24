@@ -80,7 +80,10 @@ Future<_Harness> _pump(
 
 Future<void> _type(WidgetTester tester, String pin) async {
   for (final d in pin.split('')) {
-    await tester.tap(find.bySemanticsLabel(d).last);
+    // On a short screen the keypad scrolls; bring the key up before tapping it.
+    final key = find.bySemanticsLabel(d).last;
+    await tester.ensureVisible(key);
+    await tester.tap(key);
     await tester.pump();
   }
   for (var i = 0; i < 5; i++) {

@@ -42,5 +42,6 @@ final exportBytesBuilderProvider =
 final pdfFontsProvider = FutureProvider<PdfFonts>((ref) async {
   final regular = await rootBundle.load(pdfRegularAsset);
   final semiBold = await rootBundle.load(pdfSemiBoldAsset);
-  return PdfFonts(regular: regular, semiBold: semiBold);
+  final logo = await rootBundle.load(pdfLogoAsset);
+  return PdfFonts(regular: regular, semiBold: semiBold, logo: logo.buffer.asUint8List());
 });

@@ -20,13 +20,17 @@ import 'export_report.dart';
 
 /// The two static Geist faces, as bytes from the asset bundle (or from disk in tests).
 class PdfFonts {
-  const PdfFonts({required this.regular, required this.semiBold});
+  const PdfFonts({required this.regular, required this.semiBold, this.logo});
   final ByteData regular;
   final ByteData semiBold;
+
+  /// The Akatabo logo as PNG bytes for the report header. Without it the header is the word.
+  final Uint8List? logo;
 }
 
 const pdfRegularAsset = 'assets/fonts/Geist-Regular.ttf';
 const pdfSemiBoldAsset = 'assets/fonts/Geist-SemiBold.ttf';
+const pdfLogoAsset = 'assets/brand/pdf-logo.png';
 
 PdfColor _pdf(int argb) => PdfColor.fromInt(argb);
 
@@ -123,7 +127,10 @@ Future<Uint8List> buildPdfReport(ExportReport report, PdfFonts fonts, {bool comp
         ),
       ),
       build: (ctx) => [
-        pw.Text('Akatabo', style: style(10, strong: true, colour: _brandText)),
+        if (fonts.logo case final logo?)
+          pw.Image(pw.MemoryImage(logo), height: 22, alignment: pw.Alignment.centerLeft)
+        else
+          pw.Text('Akatabo', style: style(10, strong: true, colour: _brandText)),
         pw.SizedBox(height: 6),
         pw.Text('Money report', style: style(22, strong: true)),
         pw.SizedBox(height: 2),

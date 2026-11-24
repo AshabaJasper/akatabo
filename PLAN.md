@@ -426,6 +426,8 @@ After the owner tried the app on a Pixel 8 Pro. Owner decisions: a new private G
 - **Splash:** the mark on the screen ground (#F5F6F1 light, #0E1512 dark), with `values-v31` and `values-night-v31` themes for the Android 12+ splash API and a layer-list for older Android. iOS uses the same ground and the mark as its launch image.
 - **AkLogo sizes the mark from the wordmark's font size** (1.3 x) after the phone's text scale, so the two always grow together. Screen readers hear "Akatabo" once. The name ellipsises before it pushes a neighbour (Skip on onboarding) off screen at text size 2.0.
 - **Brand files are CC BY-SA 4.0 with a trademark note;** the code stays GPL-3.0.
+- **The PDF report header takes the logo as a PNG** (`PdfFonts.logo`, loaded with the fonts). The `pdf` package's SVG support was not relied on, and a PNG can be opened and checked directly. Without a logo the header stays the word.
+- **Notifications carry a large icon** (`ic_notification_large`, the colour mark on transparent). It is named only from Dart, so it is kept in `raw/keep.xml` with the small icon.
 
 ### Phase 2 of the November plan: bigger type and money colours (24 November 2026)
 

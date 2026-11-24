@@ -49,6 +49,7 @@ class LocalNotificationsService implements NotificationsService {
       'reminders',
       'Reminders',
       channelDescription: 'Daily nudge, regular payments and the weekly summary',
+      largeIcon: DrawableResourceAndroidBitmap('ic_notification_large'),
     ),
     iOS: DarwinNotificationDetails(),
   );
@@ -58,6 +59,7 @@ class LocalNotificationsService implements NotificationsService {
       'budgets',
       'Budget warnings',
       channelDescription: 'When a budget is nearly used, and when it goes over',
+      largeIcon: DrawableResourceAndroidBitmap('ic_notification_large'),
     ),
     iOS: DarwinNotificationDetails(),
   );

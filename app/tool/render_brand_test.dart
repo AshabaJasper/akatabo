@@ -257,6 +257,8 @@ void main() {
           0.9,
         );
       }
+      // Notification large icon: the colour mark on transparent, unscaled (nodpi).
+      await mark('$res/drawable-nodpi/ic_notification_large.png', 256, colour, 0.9);
       _write('$res/values/brand_colors.xml', _colours(light.ground));
       _write('$res/values-night/brand_colors.xml', _colours(dark.ground));
 
@@ -272,6 +274,11 @@ void main() {
         '$xc/LaunchBackground.colorset/Contents.json',
         _launchColourJson(light.ground, dark.ground),
       );
+
+      // Logo for the PDF report header: mark and wordmark on transparent, for paper.
+      await _png('assets/brand/pdf-logo.png', 640, 200, (canvas) {
+        _lockup(canvas, const ui.Rect.fromLTWH(0, 0, 640, 200), colour, light.brandDeep, 96);
+      });
 
       // Store graphics: Play icon (Play applies its own mask), feature graphic, README banners.
       await mark('$_brand/store/icon-512.png', 512, colour, 0.62, background: light.ground);

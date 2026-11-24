@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../core/theme/ak_theme.dart';
+import '../../widgets/ak_logo.dart';
 import '../settings/settings_page.dart';
 
 /// The version and build of this copy of Akatabo, as "1.0.0 (1)".
@@ -36,6 +38,10 @@ class AboutSection extends ConsumerWidget {
             context: context,
             applicationName: 'Akatabo',
             applicationVersion: version.isEmpty ? null : version,
+            applicationIcon: Padding(
+              padding: const EdgeInsets.all(8),
+              child: AkLogo(style: context.type.figureXl, on: AkLogoOn.ground, wordmark: false),
+            ),
           ),
         ),
       ],

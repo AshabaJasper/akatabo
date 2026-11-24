@@ -402,6 +402,17 @@ void main() {
       expect(pages(bytes), 1);
     });
 
+    test('the header carries the logo when one is given, and the word when not', () async {
+      final logo = File(pdfLogoAsset).readAsBytesSync();
+      final withLogo = PdfFonts(regular: fonts.regular, semiBold: fonts.semiBold, logo: logo);
+      final bytes = await buildPdfReport(_report(period: november), withLogo, compress: false);
+      expect(pages(bytes), 1);
+      // The logo is one image XObject in the PDF; the word-only header has none.
+      expect(RegExp(r'/Subtype\s*/Image').allMatches(latin1.decode(bytes)), isNotEmpty);
+      final plain = await buildPdfReport(_report(period: november), fonts, compress: false);
+      expect(RegExp(r'/Subtype\s*/Image').allMatches(latin1.decode(plain)), isEmpty);
+    });
+
     test('a long history runs over many pages, past the package default of 20', () async {
       final many = [
         for (var i = 0; i < 1200; i++)
