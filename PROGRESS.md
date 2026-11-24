@@ -382,3 +382,19 @@ Four builders worked in separate git worktrees (Smart help and Reminders, the pi
 | 6 | No-budget category list could shuffle ties past 32 categories | 1 x 2 = 2 | Fixed anyway (tie-break by Settings order) |
 | 7 | Back links name a fixed screen when opened from Home | 4 x 1 = 4 | Filed in `docs/BUGS.md` |
 
+## Brand: logo, icon and splash (24 November 2026)
+
+- **Works:** the owner's pick from the ChatGPT concepts, "notebook + line", redrawn as a vector mark on a 1024 grid (`lib/core/brand/akatabo_mark.dart`). One shape feeds the in-app `AkLogo` (Home, PIN, onboarding, welcome), the launcher icons (adaptive, themed monochrome, legacy, iOS), the notification icon, the Android splash (12+ and older, light and dark), the iOS launch screen (light and dark), Play store graphics, README banners, and the SVG mark, wordmark and lockup set in `design/brand/`.
+- **Tests:** 1146 pass, analyze clean. New: `brand_mark_test.dart`, `ak_logo_test.dart`, `ios_launch_test.dart`. 16 goldens regenerated because the headers now carry the logo: shell, home (first day, home, forecast), lock, onboarding, welcome and PIN set, light and dark.
+- **On the Pixel 8 Pro:** launcher icon, cold-start splash in light and dark, Home logo in light and dark: all correct. Not seen: the themed icon (a phone setting), the status-bar icon (needs a reminder to fire), and the PIN screen logo (lock is off on the phone; covered by goldens).
+
+| # | Bug | Score | Action |
+|---|---|---|---|
+| 1 | Brand paper colour off-token (#F4F4EF instead of #F5F6F1) | fixed during build | Fixed; colours now come from `colours.json` |
+| 2 | SVG ids clashed when two marks are inlined on one page | fixed during build | Fixed; per-file ids |
+| 3 | Mark painter repainted every frame (no value equality) | fixed during build | Fixed; tested |
+| 4 | Onboarding header overflowed at text size 2.0 | fixed during build | Fixed; screen sweep test |
+| 5 | iOS launch screen had no dark version | 4 x 2 = 8 | Fixed; `ios_launch_test.dart` (needs a Mac to see) |
+| 6 | One-colour saveLayer has no bounds | 4 | Filed in `docs/BUGS.md` |
+| 7 | currentColor sentinel drops alpha | 2 | Filed |
+| 8 | `_drawSvg` matches x= inside rx= | 2 | Filed |

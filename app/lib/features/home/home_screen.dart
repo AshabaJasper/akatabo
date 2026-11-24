@@ -21,6 +21,7 @@ import '../../widgets/ak_dashed_box.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_headline_amount.dart';
 import '../../widgets/ak_hidden_amount.dart';
+import '../../widgets/ak_logo.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../add/add_providers.dart';
@@ -212,7 +213,7 @@ class _Header extends StatelessWidget {
                     spacing: AkSpace.s3,
                     runSpacing: AkSpace.s2,
                     children: [
-                      Text('Akatabo', style: t.displaySm.copyWith(color: c.onBrand)),
+                      AkLogo(style: t.displaySm.copyWith(color: c.onBrand)),
                       Semantics(
                         button: true,
                         label: '$monthName, open the calendar',

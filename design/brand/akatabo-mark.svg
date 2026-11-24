@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="240 202 544 620" role="img" aria-labelledby="akatabo-mark-title">
+  <title id="akatabo-mark-title">Akatabo</title>
+  <g>
+    <rect x="344" y="242" width="440" height="580" rx="72" fill="#3FB08A"/>
+    <rect x="240" y="280" width="104" height="44" rx="22" fill="#0F3D30"/>
+    <rect x="240" y="400" width="104" height="44" rx="22" fill="#0F3D30"/>
+    <rect x="240" y="520" width="104" height="44" rx="22" fill="#0F3D30"/>
+    <rect x="240" y="640" width="104" height="44" rx="22" fill="#0F3D30"/>
+    <rect x="304" y="202" width="440" height="580" rx="72" fill="#0F3D30"/>
+    <polyline points="390,618 498,502 578,570 694,402" fill="none" stroke="#FFC078" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

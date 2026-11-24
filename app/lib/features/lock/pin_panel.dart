@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../services/security/privacy_settings.dart';
+import '../../widgets/ak_logo.dart';
 
 /// The PIN screen as Lock.html draws it: the wordmark, a title, four dots, one line of help,
 /// the keypad, and a footer link, on `screen-deep` in both themes.
@@ -113,7 +114,7 @@ class _PinPanelState extends State<PinPanel> {
                         // upper half and the keypad rises off the bottom edge.
                         const Spacer(flex: 2),
                         ExcludeSemantics(
-                          child: Text('Akatabo', style: t.titleLg.copyWith(color: c.onBrand)),
+                          child: AkLogo(style: t.titleLg.copyWith(color: c.onBrand)),
                         ),
                         const SizedBox(height: AkSpace.s6),
                         Semantics(

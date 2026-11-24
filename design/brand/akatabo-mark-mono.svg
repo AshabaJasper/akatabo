@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="240 202 544 620" role="img" aria-labelledby="akatabo-mark-mono-title">
+  <title id="akatabo-mark-mono-title">Akatabo</title>
+  <g>
+    <mask id="akatabo-mark-mono-cut" maskUnits="userSpaceOnUse" x="174" y="136" width="676" height="752">
+      <rect x="174" y="136" width="676" height="752" fill="#FFFFFF"/>
+      <rect x="280" y="178" width="488" height="628" rx="96" fill="#000000"/>
+    </mask>
+    <rect x="344" y="242" width="440" height="580" rx="72" fill="currentColor" mask="url(#akatabo-mark-mono-cut)"/>
+    <mask id="akatabo-mark-mono-line" maskUnits="userSpaceOnUse" x="174" y="136" width="676" height="752">
+      <rect x="174" y="136" width="676" height="752" fill="#FFFFFF"/>
+      <polyline points="390,618 498,502 578,570 694,402" fill="none" stroke="#000000" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/>
+    </mask>
+    <g fill="currentColor" mask="url(#akatabo-mark-mono-line)">
+      <rect x="240" y="280" width="104" height="44" rx="22" fill="currentColor"/>
+      <rect x="240" y="400" width="104" height="44" rx="22" fill="currentColor"/>
+      <rect x="240" y="520" width="104" height="44" rx="22" fill="currentColor"/>
+      <rect x="240" y="640" width="104" height="44" rx="22" fill="currentColor"/>
+      <rect x="304" y="202" width="440" height="580" rx="72" fill="currentColor"/>
+    </g>
+  </g>
+</svg>

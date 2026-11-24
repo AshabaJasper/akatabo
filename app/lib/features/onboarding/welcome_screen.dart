@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../app/routes.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
+import '../../widgets/ak_logo.dart';
 import '../../widgets/ak_surfaces.dart';
 import 'onboarding_providers.dart';
 
@@ -76,7 +77,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                         spacing: AkSpace.s3,
                         runSpacing: AkSpace.s2,
                         children: [
-                          Text('Akatabo', style: t.titleLg.copyWith(color: c.onBrand)),
+                          AkLogo(style: t.titleLg.copyWith(color: c.onBrand)),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AkSpace.s3,

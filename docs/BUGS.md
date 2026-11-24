@@ -4,6 +4,33 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
+### [bug-review] The one-colour mark's layer has no bounds
+
+- **Where:** `app/lib/core/brand/akatabo_mark.dart` (`AkMarkPainter._paintOneColour`, `saveLayer(null, ...)`)
+- **What happens:** the layer is as big as the current clip, not the mark, so an unclipped parent can make it screen-sized.
+- **How to trigger:** show the one-colour mark in a scrolling list on a low-end phone and profile the raster thread.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** pass `AkMarkGeometry.bounds.inflate(AkMarkGeometry.lineWidth)` as the bounds; it is in grid space after the transform.
+- **Found:** 24 November 2026, brand bug review
+
+### [bug-review] The brand SVG tool treats any transparent colour as currentColor and drops alpha
+
+- **Where:** `app/tool/render_brand_test.dart` (`_hex`, the `Color(0x00000000)` sentinel in `_markShapes`)
+- **What happens:** a fully transparent colour becomes `currentColor`, and a part-transparent one becomes opaque in the SVG while the painter draws it see-through.
+- **How to trigger:** add `AkMarkInOneColour(colour.withValues(alpha: 0.6))` to the tool and compare the SVG with the PNG.
+- **Score:** frequency 1 x severity 2 = 2
+- **Suggested fix:** pass an explicit fill string (`currentColor` or hex) and write `fill-opacity` when alpha is below 255.
+- **Found:** 24 November 2026, brand bug review
+
+### [bug-review] The preview SVG reader matches `x=` inside `rx=`
+
+- **Where:** `app/tool/render_brand_test.dart` (`_drawSvg`, `attr`/`sattr`)
+- **What happens:** a rect with `rx` but no `x` is drawn shifted right by its corner radius. Today only lockups are previewed, and they never hit this.
+- **How to trigger:** call `_drawSvg` on `design/brand/akatabo-icon.svg`.
+- **Score:** frequency 1 x severity 2 = 2
+- **Suggested fix:** anchor the attribute name: `RegExp('(?:^|\s)$name="([^"]*)"')`.
+- **Found:** 24 November 2026, brand bug review
+
 ### [device check] Back links name a fixed screen, not the one you came from
 
 - **Where:** `app/lib/features/fees/fees_screen.dart`, `app/lib/features/forecast/forecast_screen.dart`, `app/lib/features/transactions/transaction_detail_screen.dart` (`AkBackLink` labels)

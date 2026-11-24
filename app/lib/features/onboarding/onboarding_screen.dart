@@ -6,6 +6,7 @@ import '../../app/routes.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
 import '../../widgets/ak_controls.dart';
+import '../../widgets/ak_logo.dart';
 import '../../widgets/ak_surfaces.dart';
 import 'reveal.dart';
 
@@ -66,8 +67,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               children: [
                 Row(
                   children: [
-                    Text('Akatabo', style: t.titleLg.copyWith(color: c.onBrand)),
-                    const Spacer(),
+                    // Expanded, so at a large text size the name ellipsises instead of
+                    // pushing Skip off the screen.
+                    Expanded(
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: AkLogo(style: t.titleLg.copyWith(color: c.onBrand)),
+                      ),
+                    ),
                     _TextButton('Skip', onTap: _toWelcome),
                   ],
                 ),

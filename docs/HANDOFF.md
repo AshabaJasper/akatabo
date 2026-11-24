@@ -43,7 +43,6 @@ These need the owner:
 - signing key
 - Play developer account
 - privacy policy facts and a contact (also for "Send feedback")
-- final icon artwork
 - store listing
 - a Mac for iOS
 

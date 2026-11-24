@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="akatabo-icon-on-brand-title">
+  <title id="akatabo-icon-on-brand-title">Akatabo</title>
+  <rect width="1024" height="1024" rx="225.28" fill="#0F3D30"/>
+  <g transform="translate(-12.29 -12.29) scale(1.02400)">
+    <rect x="344" y="242" width="440" height="580" rx="72" fill="#3FB08A"/>
+    <rect x="240" y="280" width="104" height="44" rx="22" fill="#F5F6F1"/>
+    <rect x="240" y="400" width="104" height="44" rx="22" fill="#F5F6F1"/>
+    <rect x="240" y="520" width="104" height="44" rx="22" fill="#F5F6F1"/>
+    <rect x="240" y="640" width="104" height="44" rx="22" fill="#F5F6F1"/>
+    <rect x="304" y="202" width="440" height="580" rx="72" fill="#F5F6F1"/>
+    <polyline points="390,618 498,502 578,570 694,402" fill="none" stroke="#0F3D30" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

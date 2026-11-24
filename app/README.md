@@ -53,16 +53,18 @@ The release build shrinks code and resources with R8. Keep `build/symbols` for e
 
 The release is signed with the debug key until the owner creates an upload key. Store the key and its passwords off this computer.
 
-## App icon
+## Logo, icon and splash
 
-The icon is provisional. `tool/render_icon_test.dart` draws it from the tokens, then `flutter_launcher_icons` writes the Android and iOS sizes:
+The mark is drawn in code (`lib/core/brand/akatabo_mark.dart`), so the app logo (`AkLogo`), the launcher icons, the splash and the brand files all come from one shape. To redraw everything after changing the mark or the tokens:
 
 ```powershell
-flutter test tool/render_icon_test.dart
+flutter test tool/render_brand_test.dart
+python tool/brand_lockups.py
+flutter test tool/render_brand_test.dart
 dart run flutter_launcher_icons
 ```
 
-Replace `assets/icon/*.png` with the final artwork and run the second command.
+The first run writes the mark SVGs and `design/brand/colours.json`. The Python script outlines the wordmark into the lockups, and the second run draws the previews and banners from them. The run also writes `assets/icon/*.png`, the splash and notification icons in `android/app/src/main/res/`, and the iOS launch image. `flutter_launcher_icons` then writes every launcher size. See `design/brand/README.md` for the full file list and the brand licence.
 
 ## Where things are
 

@@ -77,15 +77,16 @@ flutter:
       fonts:
         - asset: assets/fonts/Geist-Variable.ttf
 
-# PROVISIONAL app icon, drawn from the design tokens by tool/render_icon_test.dart: the
-# wordmark's "A" in accent on brand-deep. Final artwork from the owner is a launch blocker
-# (SHIP_GATE.md). To change it: replace assets/icon/*.png, then `dart run flutter_launcher_icons`.
+# App icon: the Akatabo notebook mark (design/brand/README.md) on paper. The PNGs in
+# assets/icon/ are drawn by tool/render_brand_test.dart from lib/core/brand/akatabo_mark.dart;
+# after changing the mark run `flutter test tool/render_brand_test.dart`, then
+# `dart run flutter_launcher_icons`.
 flutter_launcher_icons:
   android: true
   ios: true
   image_path: assets/icon/icon.png
   remove_alpha_ios: true
   min_sdk_android: 24
-  adaptive_icon_background: "#0F3D30"
+  adaptive_icon_background: "#F5F6F1"
   adaptive_icon_foreground: assets/icon/foreground.png
   adaptive_icon_monochrome: assets/icon/monochrome.png

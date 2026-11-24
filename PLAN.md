@@ -376,7 +376,7 @@ Routine decisions made while building, newest last. Each one marked **design che
 - **Large text:** rows that put pills beside a title are `Wrap`s, so pills move down only when there is no room. The Add category grid shows 3 across from text scale 1.6. Nothing clips at 2.0.
 - **Reduced motion:** page transitions stand still when the phone asks for less motion. The forecast "pulse" in the plan was never built, so there is nothing else to stop.
 - **States:** one shared helper (`lib/widgets/ak_message.dart`) for "could not load" and "could not be saved". A screen whose data fails to load says so instead of a blank box or "UGX 0". A failed delete or save keeps the item and says so.
-- **App icon is provisional:** the wordmark "A" in Bricolage Grotesque Bold, accent on brand-deep, drawn by `tool/render_icon_test.dart` and sized by `flutter_launcher_icons`. Final artwork is a launch blocker.
+- **App icon was provisional** (replaced 24 November 2026, see Brand below): the wordmark "A" in Bricolage Grotesque Bold, accent on brand-deep, drawn by `tool/render_icon_test.dart` and sized by `flutter_launcher_icons`. Final artwork is a launch blocker.
 - **Release build shrinks code and resources with R8** and is obfuscated, with symbols kept in `build/symbols`.
 - **Accessibility tree check on the emulator** (what TalkBack reads; a live TalkBack listen-through is still to do) found one unnamed field (the Add amount, read as "0"); text fields that carry a label now merge it onto the edit box.
 - **Home's first-day step 2, "Check your categories", now opens Categories,** like the other two steps; it was text only.
@@ -416,3 +416,14 @@ After the owner tried the app on a Pixel 8 Pro. Owner decisions: a new private G
 - **Edit account reuses New account** (`/settings/accounts/edit/:id`) without the balance field, which the Accounts page sets. MTN and Airtel show as Mobile and keep their own kind unless another is picked. Delete asks first. It is refused while any entry uses the account, paid from it or moved to it, and offers "Switch it off" instead. The only account is never deleted. If the default account is deleted, the default passes to the next account that is switched on.
 - **The "later update" note under Smart help is removed, not reworded.** The features work, and SetSmart.html draws no note there. `PlaceholderScreen` was dead code and is deleted.
 - **Tests stay hermetic:** app-level tests override every provider that reaches the database (`previousMonthRowsProvider`, `allCategoriesProvider`, `allAccountsProvider`). A live drift stream never settles under the test clock.
+
+### Brand: logo, icon, splash (24 November 2026)
+
+- **The owner picked ChatGPT concept 2, "notebook + line".** It is redrawn by hand on a 1024 grid rather than traced, so it stays sharp at 24 px and has a true one-colour form for the themed icon and the notification icon. The concept image is kept in `design/brand/concepts/`.
+- **One source for the shape:** `AkMarkGeometry` in `lib/core/brand/akatabo_mark.dart`. The in-app `AkLogo`, `tool/render_brand_test.dart` (SVGs, PNG icons, splash, store images) and `tool/brand_lockups.py` (outlined wordmark lockups) all draw from it. Colours come from the tokens and are written to `design/brand/colours.json`, so the Python tool never holds its own hex values.
+- **One-colour mark:** the cover is cut out of the back page with a 24-unit gap and the rising line is cut out of the cover (`BlendMode.clear` in a layer; SVG masks in the files). This is what Android 13 themed icons and the status-bar icon need.
+- **Sizes follow the platform safe zones:** the adaptive foreground fills 64% of the 108 dp canvas (inside the 66 dp circle), the legacy icon 62%, and the Android 12 splash icon 50% (inside its 160 dp circle).
+- **Splash:** the mark on the screen ground (#F5F6F1 light, #0E1512 dark), with `values-v31` and `values-night-v31` themes for the Android 12+ splash API and a layer-list for older Android. iOS uses the same ground and the mark as its launch image.
+- **AkLogo sizes the mark from the wordmark's font size** (1.3 x) after the phone's text scale, so the two always grow together. Screen readers hear "Akatabo" once. The name ellipsises before it pushes a neighbour (Skip on onboarding) off screen at text size 2.0.
+- **Brand files are CC BY-SA 4.0 with a trademark note;** the code stays GPL-3.0.
+
