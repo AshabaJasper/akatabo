@@ -15,6 +15,9 @@ import '../features/fees/fees_screen.dart';
 import '../features/filters/choose_dates_screen.dart';
 import '../features/filters/filters_screen.dart';
 import '../features/forecast/forecast_screen.dart';
+import '../features/goals/goal_detail_screen.dart';
+import '../features/goals/goal_edit_screen.dart';
+import '../features/goals/goals_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/insights/insights_screen.dart';
 import '../features/lock/app_lock_screen.dart';
@@ -131,6 +134,27 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
         path: '${Routes.budgets}/:id',
         parentNavigatorKey: rootKey,
         builder: (_, state) => BudgetEditScreen(categoryId: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
+        path: Routes.goals,
+        parentNavigatorKey: rootKey,
+        builder: (_, _) => const GoalsScreen(),
+      ),
+      // "new" is listed before ":id" so it is not read as a goal id.
+      GoRoute(
+        path: Routes.goalNew,
+        parentNavigatorKey: rootKey,
+        builder: (_, _) => const GoalEditScreen(),
+      ),
+      GoRoute(
+        path: '${Routes.goals}/:id',
+        parentNavigatorKey: rootKey,
+        builder: (_, state) => GoalDetailScreen(goalId: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
+        path: '${Routes.goals}/:id/edit',
+        parentNavigatorKey: rootKey,
+        builder: (_, state) => GoalEditScreen(goalId: state.pathParameters['id']),
       ),
       GoRoute(path: Routes.settingsGeneral, builder: (_, _) => const GeneralSettingsScreen()),
       GoRoute(path: Routes.settingsAppearance, builder: (_, _) => const AppearanceSettingsScreen()),

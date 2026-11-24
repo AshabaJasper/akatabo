@@ -21,11 +21,13 @@ import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_headline_amount.dart';
 import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_surfaces.dart';
+import '../goals/goals_entry.dart';
 import '../home/home_providers.dart';
 import 'budgets_providers.dart';
 
-/// Budgets for this month: what is left overall, what each day allows, and each budget's
-/// place against the day of the month. The first tab's money page.
+/// The Goals tab: savings goals first, then budgets for this month (what is left overall,
+/// what each day allows, and each budget's place against the day of the month). The route
+/// stays `/budgets` so Home's "See all" and saved links keep working.
 class BudgetsScreen extends ConsumerWidget {
   const BudgetsScreen({super.key});
 
@@ -80,9 +82,13 @@ class BudgetsScreen extends ConsumerWidget {
           children: [
             Semantics(
               header: true,
-              child: Text('Budgets', style: t.displayLg.copyWith(color: c.ink)),
+              child: Text('Goals', style: t.displayLg.copyWith(color: c.ink)),
             ),
             const SizedBox(height: AkSpace.s4),
+            const SavingsSection(),
+            const SizedBox(height: AkSpace.s5),
+            const AkSectionTitle('Budgets'),
+            const SizedBox(height: AkSpace.s2),
             if (failed)
               const AkEmptyNote('Budgets could not load. Close Akatabo and open it again.')
             else if (!ready)

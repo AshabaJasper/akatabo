@@ -77,6 +77,7 @@ class GoalProjection {
     required this.early,
     required this.late,
     required this.weeklyRate,
+    required this.windowWeeks,
   });
   final DateTime point;
   final DateTime early;
@@ -84,6 +85,10 @@ class GoalProjection {
 
   /// The average put aside a week over the window, rounded to 100.
   final int weeklyRate;
+
+  /// How many weeks the average covers: [goalProjectionWeeks], or fewer while the history is
+  /// shorter. The screens quote it, so the evidence says what was actually used.
+  final int windowWeeks;
 }
 
 /// How many weeks of history the projection looks at.
@@ -131,6 +136,11 @@ GoalProjection? projectReach({
   final sorted = [...weeks]..sort();
   final rateLow = percentile(sorted, forecastPercentileLow);
   final rateHigh = percentile(sorted, forecastPercentileHigh);
+  // Each add is taken to cover the week after it, so the window runs from the first add to a
+  // week past it, whole weeks only. A weekly saver who has not added yet this week reads a
+  // little under their usual amount, which is true: they are one add behind. Dividing by the
+  // days observed instead overstates anyone who added today (8 weekly adds would read 11,200
+  // a week, not 10,000).
   final rateMid = weeks.fold<int>(0, (a, b) => a + b) / windowWeeks;
   // Net nothing put aside (or more taken out than put in): the current pace never gets there.
   if (rateMid <= 0) return null;
@@ -145,5 +155,6 @@ GoalProjection? projectReach({
     early: rateHigh > 0 ? reach(rateHigh) : reach(rateMid),
     late: rateLow > 0 ? reach(rateLow) : null,
     weeklyRate: roundUpToHundred(rateMid.round()),
+    windowWeeks: windowWeeks,
   );
 }

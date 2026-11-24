@@ -777,6 +777,13 @@ class GoalRepository {
             ..orderBy([(g) => OrderingTerm.asc(g.sortOrder)]))
           .watch();
 
+  /// Every goal, archived or not, in the order they were set.
+  Stream<List<Goal>> watchAll() =>
+      (_db.select(_db.goals)..orderBy([(g) => OrderingTerm.asc(g.sortOrder)])).watch();
+
+  /// Every move in every goal, for the set-aside totals.
+  Stream<List<GoalMove>> watchAllMoves() => _db.select(_db.goalMoves).watch();
+
   Stream<Goal?> watchById(String id) =>
       (_db.select(_db.goals)..where((g) => g.id.equals(id))).watchSingleOrNull();
 
@@ -885,9 +892,9 @@ class GoalRepository {
   /// - money is added to an archived goal;
   /// - more is taken out than is saved.
   ///
-  /// Setting money aside may exceed what the account has free: the screen warns about that,
-  /// because balances are not always known. Returns the milestones this move crossed, so the
-  /// screen can say so.
+  /// Setting money aside may exceed what the account has free. That is allowed, because
+  /// balances are not always known; the move sheet warns when the balance is known. Returns the
+  /// milestones this move crossed, so the screen can say so.
   Future<List<int>> addMove({
     required String goalId,
     required String accountId,

@@ -8,6 +8,7 @@ import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/settings/setting_keys.dart';
 import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/budgets/budgets_providers.dart';
+import 'package:akatabo/features/goals/goals_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/home/home_screen.dart';
 import 'package:akatabo/features/insights/insights_screen.dart';
@@ -33,6 +34,8 @@ Future<void> _pumpApp(
       retry: (_, _) => null,
       overrides: [
         storedSettingsProvider.overrideWith((ref) => Stream.value(stored)),
+        goalsProvider.overrideWith((ref) => Stream.value(const <Goal>[])),
+        allGoalMovesProvider.overrideWith((ref) => Stream.value(const <GoalMove>[])),
         appearanceProvider.overrideWithValue(AkAppearance(themeMode: mode)),
         // Home reads the database; the shell test uses an empty, fixed Home instead.
         periodCalculatorProvider.overrideWithValue(const PeriodCalculator()),
@@ -57,7 +60,7 @@ void main() {
   testWidgets('opens on Home with five navigation targets', (tester) async {
     await _pumpApp(tester);
     expect(find.text('Home'), findsWidgets);
-    for (final label in ['Home', 'Insights', 'Add a transaction', 'Budgets', 'Settings']) {
+    for (final label in ['Home', 'Insights', 'Add a transaction', 'Goals', 'Settings']) {
       expect(find.bySemanticsLabel(label), findsWidgets, reason: label);
     }
   });
@@ -94,7 +97,7 @@ void main() {
 
   testWidgets('each tab opens its screen', (tester) async {
     await _pumpApp(tester);
-    for (final tab in ['Insights', 'Budgets', 'Settings', 'Home']) {
+    for (final tab in ['Insights', 'Goals', 'Settings', 'Home']) {
       await tester.tap(find.bySemanticsLabel(tab).last);
       await tester.pumpAndSettle();
       expect(find.widgetWithText(Scaffold, tab), findsWidgets, reason: tab);

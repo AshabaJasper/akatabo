@@ -10,6 +10,7 @@ import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/budgets/budget_edit_screen.dart';
 import 'package:akatabo/features/budgets/budgets_providers.dart';
 import 'package:akatabo/features/budgets/budgets_screen.dart';
+import 'package:akatabo/features/goals/goals_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,6 +62,8 @@ Future<void> _pump(
       retry: (_, _) => null,
       overrides: [
         storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+        goalsProvider.overrideWith((ref) => Stream.value(const <Goal>[])),
+        allGoalMovesProvider.overrideWith((ref) => Stream.value(const <GoalMove>[])),
         appearanceProvider.overrideWithValue(const AkAppearance()),
         appNowProvider.overrideWithValue(now ?? _now),
         periodCalculatorProvider.overrideWithValue(calc),
@@ -159,6 +162,8 @@ void main() {
           retry: (_, _) => null,
           overrides: [
             storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+            goalsProvider.overrideWith((ref) => Stream.value(const <Goal>[])),
+            allGoalMovesProvider.overrideWith((ref) => Stream.value(const <GoalMove>[])),
             appearanceProvider.overrideWithValue(const AkAppearance()),
             appNowProvider.overrideWithValue(_now),
             periodCalculatorProvider.overrideWithValue(const PeriodCalculator()),

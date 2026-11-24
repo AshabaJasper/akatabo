@@ -57,7 +57,7 @@ void main() {
     testWidgets('tabs and the Add disc have a tap action', (tester) async {
       final handle = tester.ensureSemantics();
       await pumpNav(tester);
-      for (final label in ['Home', 'Insights', 'Add a transaction', 'Budgets', 'Settings']) {
+      for (final label in ['Home', 'Insights', 'Add a transaction', 'Goals', 'Settings']) {
         expect(
           tester.getSemantics(find.bySemanticsLabel(label).last),
           isSemantics(isButton: true, hasTapAction: true),
@@ -73,7 +73,7 @@ void main() {
       await pumpNav(tester, textScale: 2);
       expect(tester.takeException(), isNull);
       const slot = 360 / 5;
-      for (final (i, label) in ['Home', 'Insights', '', 'Budgets', 'Settings'].indexed) {
+      for (final (i, label) in ['Home', 'Insights', '', 'Goals', 'Settings'].indexed) {
         if (label.isEmpty) continue;
         final rect = tester.getRect(find.text(label));
         expect(rect.left, greaterThanOrEqualTo(slot * i - 0.5), reason: label);
