@@ -105,6 +105,29 @@ void main() {
         expect(filterSettings(settingsEntries, entry.label), contains(entry));
       }
     });
+
+    test('each hidden keyword finds exactly the pages that have that thing', () {
+      // A table, so a keyword on the wrong page fails here. "password" once pointed only at
+      // App lock, though a backup also has one.
+      const expected = <String, Set<String>>{
+        'password': {'App lock', 'Data and backup'},
+        'csv': {'Data and backup'},
+        'notifications': {'Reminders', 'Phone permissions'},
+        'font': {'Appearance'},
+        'dark': {'Appearance'},
+        'ugx': {'General'},
+        'mobile money': {'Accounts'},
+        'income': {'Categories'},
+        'layout': {'Home screen'},
+        'predictions': {'Smart help'},
+        'biometric': {'App lock'},
+        'hide amounts': {'Privacy and security'},
+      };
+      expected.forEach((term, pages) {
+        final found = filterSettings(settingsEntries, term).map((e) => e.label).toSet();
+        expect(found, pages, reason: 'searching "$term"');
+      });
+    });
   });
 
   group('the Settings search field', () {

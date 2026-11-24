@@ -4,15 +4,6 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
-### [bug-review] Settings search tests do not check each keyword against its page
-
-- **Where:** `app/test/features/settings/settings_search_test.dart` ("the real entries are each found by their own name")
-- **What happens:** that test always passes, because a label is always part of its own searchable text. Nothing checks that each hidden keyword in `settings_entries.dart` names something on the page it opens, so a wrong keyword (as "password" once was, pointing only at App lock) would pass. Scrolling, going to a page and back, the hint at 1.3x and the announcements are now tested.
-- **How to trigger:** give an entry a keyword its page does not have; the suite still passes.
-- **Score:** frequency 2 x severity 2 = 4
-- **Suggested fix:** replace the test with a table of term and expected pages, for example password: App lock and Data and backup; csv: Data and backup; notifications: Reminders and Phone permissions; font: Appearance.
-- **Found:** 24 November 2026, Settings search bug review
-
 ### [bug-review] Forecast day labels shift a day after the clocks go back
 
 - **Where:** `app/lib/features/forecast/forecast_screen.dart` (the chart's `dayLabelOf`)
@@ -539,6 +530,11 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Found:** 24 November 2026, bug review of the permissions page
 
 ## Fixed
+
+### [bug-review] Settings search tests do not check each keyword against its page
+
+- **Found:** 24 November 2026, Settings search bug review. Score 2 x 2 = 4.
+- **Fixed:** 24 November 2026. A table test in `app/test/features/settings/settings_search_test.dart` ("each hidden keyword finds exactly the pages that have that thing") lists a term and the pages it must find, such as password: App lock and Data and backup. Checked by changing the CSV keyword: the test failed, then passed once it was put back.
 
 ### [states-audit] Budgets' empty state has no button
 
