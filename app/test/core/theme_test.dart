@@ -84,6 +84,63 @@ void main() {
     });
   });
 
+  group('money colours', () {
+    test('Red and green is the default', () {
+      expect(const AkAppearance().moneyColours, AkMoneyColours.redGreen);
+    });
+
+    for (final base in [akLightTokens, akDarkTokens]) {
+      test('Red and green swaps money-out, money-in and their soft partners', () {
+        final c = applyMoneyColours(base, AkMoneyColours.redGreen);
+        expect(c.moneyOut, base.moneyOutRed);
+        expect(c.moneyOutSoft, base.moneyOutRedSoft);
+        expect(c.moneyIn, base.moneyInGreen);
+        expect(c.moneyInSoft, base.moneyInGreenSoft);
+        // Nothing else moves.
+        expect(c.brand, base.brand);
+        expect(c.acctAirtel, base.acctAirtel);
+      });
+
+      test('Orange and blue leaves the drawn tokens as they are', () {
+        expect(applyMoneyColours(base, AkMoneyColours.orangeBlue), base);
+      });
+    }
+
+    testWidgets('the built theme follows the setting', (tester) async {
+      late Color out, inn;
+      Future<void> pump(AkMoneyColours mode) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: buildAkTheme(Brightness.light, AkAppearance(moneyColours: mode)),
+            home: Builder(
+              builder: (context) {
+                out = context.colors.moneyOut;
+                inn = context.colors.moneyIn;
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+        // MaterialApp animates between themes; let it land.
+        await tester.pumpAndSettle();
+      }
+
+      await pump(AkMoneyColours.redGreen);
+      expect(out, akLightTokens.moneyOutRed);
+      expect(inn, akLightTokens.moneyInGreen);
+      await pump(AkMoneyColours.orangeBlue);
+      expect(out, akLightTokens.moneyOut);
+      expect(inn, akLightTokens.moneyIn);
+    });
+  });
+
+  test('text size: Small is the old Standard and Large one more step', () {
+    // Body went from 14 to 16, so Small draws body at 14 and Large at 18.
+    expect(AkTextTokens.body.size * AkTextSize.small.factor, closeTo(14, 1e-9));
+    expect(AkTextTokens.body.size * AkTextSize.standard.factor, closeTo(16, 1e-9));
+    expect(AkTextTokens.body.size * AkTextSize.large.factor, closeTo(18, 1e-9));
+  });
+
   test('corners scale every radius and square removes them', () {
     expect(AkMetrics(AkCorners.rounded).lg, AkRadiusTokens.lg);
     expect(AkMetrics(AkCorners.slight).md, closeTo(4, 1e-9));
@@ -94,8 +151,8 @@ void main() {
   test('text size scales the type and keeps the line-height ratio', () {
     final standard = AkType.of(AkTextSize.standard, const Color(0xFF000000));
     final large = AkType.of(AkTextSize.large, const Color(0xFF000000));
-    expect(standard.body.fontSize, 14);
-    expect(large.body.fontSize, 16);
+    expect(standard.body.fontSize, 16);
+    expect(large.body.fontSize, 18);
     expect(large.body.height, standard.body.height);
   });
 

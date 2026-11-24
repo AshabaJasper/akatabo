@@ -214,8 +214,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               textAlign: TextAlign.center,
                               style: t.displaySm.copyWith(color: c.ink),
                             ),
-                            Text(
-                              loaded ? '${formatUgx(total)} out${isCurrent ? ' so far' : ''}' : '',
+                            // The figure takes the out colour; "out" stays beside it.
+                            Text.rich(
+                              TextSpan(
+                                children: loaded
+                                    ? [
+                                        TextSpan(
+                                          text: formatUgx(total),
+                                          // Nothing spent stays muted, as on Insights.
+                                          style: t.bodySm.copyWith(
+                                            color: total == 0 ? c.inkMuted : c.moneyOut,
+                                            fontWeight: total == 0 ? null : FontWeight.w600,
+                                          ),
+                                        ),
+                                        TextSpan(text: ' out${isCurrent ? ' so far' : ''}'),
+                                      ]
+                                    : const [],
+                              ),
                               textAlign: TextAlign.center,
                               style: t.bodySm.copyWith(color: c.inkMuted),
                             ),
@@ -806,7 +821,12 @@ class _DayCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(_dayName(day), style: t.caption.copyWith(color: c.inkMuted)),
-                      Text(formatUgx(amount), style: t.displaySm.copyWith(color: c.ink)),
+                      // The chosen day's total is money out: the out colour, with "out" in
+                      // the spoken label.
+                      Text(
+                        formatUgx(amount),
+                        style: t.displaySm.copyWith(color: amount == 0 ? c.ink : c.moneyOut),
+                      ),
                     ],
                   ),
                 ),

@@ -15,7 +15,7 @@ Akatabo is a free money tracker for Uganda. People add what they spend and recei
 
 - Sentence case everywhere. No exclamation marks.
 - Currency is always `UGX` before the number with comma separators: `UGX 1,284,000`. In tight spaces drop `UGX` only when the column or card is already labelled with it. Short form `1.83M` and `298k` only on chart labels and stat tiles.
-- Money out carries a minus sign and money in a plus sign: `- 45,000`, `+ 250,000`. Colour never carries the direction alone.
+- Money out carries a minus sign and money in a plus sign: `- 45,000`, `+ 250,000`. Red and green (or orange and blue) add to the sign; colour never carries the direction alone.
 - Name the network in full: `MTN MoMo`, `Airtel Money`.
 - Model outputs state confidence or range in plain terms: `87% sure`, `range 1.72M to 1.93M`. Never present a prediction as a fact.
 - Categories: Food and shopping, School fees, Transport, Bills, Family, Other.
@@ -27,7 +27,7 @@ Two themes, light and dark. Use tokens by name. The rules below describe the lig
 - `ground` is the screen. `surface` is a card on it, with a 1px `line` border and no shadow.
 - `brand` is the header block at the top of Home and the fill of anything primary: active navigation, filled bars, the selected chip. Text on it is `on-brand`; labels are `on-brand-muted`.
 - `accent` appears once per screen at most: the main button on a `brand` ground, or the one figure to notice on `brand`. Text on `accent` is `ink`.
-- `money-out` and `money-in` are reserved for direction of money. `money-out` also marks fees, over-budget states and model alerts. They are orange and blue so they stay distinct for colour-blind users, and they always travel with a sign, an icon or a word.
+- `money-out` and `money-in` are reserved for direction of money. `money-out` also marks fees, over-budget states and model alerts. By default (Settings > Appearance > Money colours > Red and green) they are red and green (`money-out-red`, `money-in-green`), tuned to differ by 20 or more L* in lightness as well as hue. Orange and blue (`money-out`, `money-in` as drawn) stays one tap away for colour-blind users. In either pair they always travel with a sign, an arrow, an icon or a word, so colour is never the only cue.
 - `brand-soft` is for secondary chart marks only. It fails contrast for text.
 - Text on `ground` and `surface` is `ink` or `ink-muted`. Nothing lighter.
 - Every account has a colour: MTN MoMo is yellow (`acct-mtn`), Airtel Money is red (`acct-airtel`), cash is olive (`acct-cash`) and a bank is blue (`acct-bank`) unless the user picks another. It appears as a dot beside the account's name, as the fill of the chosen "Paid from" chip, and as the bar in any chart split by account. These are plain colours only: never draw a network's logo or copy its lettering.
@@ -64,7 +64,7 @@ Styles: `display-xl` for the one headline on Welcome; `figure-xl` for the hero a
 - Every tappable thing is at least 44px tall.
 - Bottom navigation: Home, Insights, the Add button, Budgets, Settings. 64px tall, `surface` with a `line` top border. Active item is `brand` at weight 600; the rest are `ink-muted`. Add is a 48px `brand` disc with the `plus` icon in `on-brand`, in the centre, on every screen.
 - Inputs are 48px tall with a `line-strong` border and `radius-lg`, each with a visible label above it. The amount input is the exception: `figure-xl` on a 2px `brand` underline.
-- A list row is 48 to 52px: a 36px icon tile, a two-line text block, and a right-aligned `figure`.
+- A list row is 56px (raised from 52 on 24 Nov 2026): a 36px icon tile, a two-line text block, and a right-aligned `figure`.
 - An analysis screen opens with a `brand` block that states the finding as a `headline` sentence, with the one key figure in `accent`, and the chart that proves it directly underneath.
 
 ## Iconography
@@ -167,7 +167,7 @@ Motion is for onboarding and for a chart's first appearance. Nothing loops excep
 
 ## Settings
 
-Settings is the fifth tab. It opens on a menu of nine entries in three cards: General, Accounts, Categories; Appearance, Home screen, Smart help, Reminders; Privacy and security, Data and backup. Each entry has an icon tile, a title, a one-line summary of what is inside and a chevron, and opens its own page with a back link to Settings. On a page, rows sit in `surface` cards under uppercase `caption` headings. A row is 52px with the label on the left and one control on the right. Anything a person might want to change should be changeable: prefer adding a setting over fixing a choice.
+Settings is the fifth tab. It opens on a menu of nine entries in three cards: General, Accounts, Categories; Appearance, Home screen, Smart help, Reminders; Privacy and security, Data and backup. Each entry has an icon tile, a title, a one-line summary of what is inside and a chevron, and opens its own page with a back link to Settings. On a page, rows sit in `surface` cards under uppercase `caption` headings. A row is 56px with the label on the left and one control on the right. Anything a person might want to change should be changeable: prefer adding a setting over fixing a choice.
 
 A category is edited on its own screen: name, one of twelve `cat-` colours as 44px discs, one of the icons in a six-column grid of 44px tiles, and an optional monthly budget. The preview tile at the top updates as they choose.
 

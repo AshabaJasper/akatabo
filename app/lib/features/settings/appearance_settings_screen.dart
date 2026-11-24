@@ -12,7 +12,7 @@ import 'settings_page.dart';
 
 String _capitalised(String name) => '${name[0].toUpperCase()}${name.substring(1)}';
 
-/// Theme, main colour, category colours, text size, corners and the category chart. Each change is saved at
+/// Theme, main colour, category colours, money colours, text size, corners and the category chart. Each change is saved at
 /// once and rebuilds the app's theme, because the app reads these from storage (see
 /// storedAppearanceProvider and categoryChartProvider).
 class AppearanceSettingsScreen extends ConsumerStatefulWidget {
@@ -87,6 +87,19 @@ class _AppearanceSettingsScreenState extends ConsumerState<AppearanceSettingsScr
               ),
             ),
             _ChoiceRow(
+              label: 'Money colours',
+              note: 'Orange and blue is easier for colour-blind eyes.',
+              child: AkSegmented<AkMoneyColours>(
+                semanticLabel: 'Money colours',
+                segments: const [
+                  AkSegment(AkMoneyColours.redGreen, 'Red and green'),
+                  AkSegment(AkMoneyColours.orangeBlue, 'Orange and blue'),
+                ],
+                selected: look.moneyColours,
+                onChanged: (v) => _save(SettingKeys.moneyColours, v),
+              ),
+            ),
+            _ChoiceRow(
               label: 'Text size',
               child: AkSegmented<AkTextSize>(
                 semanticLabel: 'Text size',
@@ -129,10 +142,13 @@ class _AppearanceSettingsScreenState extends ConsumerState<AppearanceSettingsScr
 /// One choice inside the Look card: its label above the control, 12 above and below, and a
 /// `line` rule under it except on the last row, as SetAppearance.html draws it.
 class _ChoiceRow extends StatelessWidget {
-  const _ChoiceRow({required this.label, required this.child, this.divider = true});
+  const _ChoiceRow({required this.label, required this.child, this.note, this.divider = true});
 
   final String label;
   final Widget child;
+
+  /// A short line under the control that says why one might pick a choice.
+  final String? note;
   final bool divider;
 
   @override
@@ -152,6 +168,10 @@ class _ChoiceRow extends StatelessWidget {
           Text(label, style: context.type.bodyMd.copyWith(color: c.ink)),
           const SizedBox(height: AkSpace.s2),
           child,
+          if (note != null) ...[
+            const SizedBox(height: AkSpace.s1h),
+            Text(note!, style: context.type.bodySm.copyWith(color: c.inkMuted)),
+          ],
         ],
       ),
     );

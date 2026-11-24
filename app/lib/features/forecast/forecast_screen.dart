@@ -150,9 +150,27 @@ class _ForecastBody extends StatelessWidget {
       children: [
         AkHeadlineAmount(forecast.point, style: t.figureXl.copyWith(color: c.ink)),
         const SizedBox(height: AkSpace.s1),
-        Text(
-          '${range == null ? '' : '${rangeInWords(range!, formatUgx)}. '}'
-          'That is about ${formatUgx(gap.abs())} ${gap >= 0 ? 'more' : 'less'} than came in.',
+        // "more than came in" is money going out faster than it came, so it takes the out
+        // colour; "less" takes the in colour, as Forecast.html draws it. The words carry the
+        // meaning too.
+        Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text:
+                    '${range == null ? '' : '${rangeInWords(range!, formatUgx)}. '}'
+                    'That is about ',
+              ),
+              TextSpan(
+                text: '${formatUgx(gap.abs())} ${gap >= 0 ? 'more' : 'less'}',
+                style: t.bodySm.copyWith(
+                  color: gap >= 0 ? c.moneyOut : c.moneyIn,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const TextSpan(text: ' than came in.'),
+            ],
+          ),
           style: t.bodySm.copyWith(color: c.inkMuted),
         ),
         const SizedBox(height: AkSpace.s4),

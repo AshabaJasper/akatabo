@@ -403,6 +403,24 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Suggested fix:** use `PositionedDirectional(start: …)` and clamp the free room at 0.
 - **Found:** 21 November 2026, bug review of the polish round
 
+### [bug-review] Forecast reads "UGX 0 more than came in" in the out colour when the gap is zero
+
+- **Where:** `app/lib/features/forecast/forecast_screen.dart` (the gap line under the headline)
+- **What happens:** when the forecast equals money in to the shilling, `gap >= 0` picks "more" and the bold out colour.
+- **How to trigger:** a month where the forecast point equals money in, for example both zero.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** at `gap == 0` use `ink-muted`, normal weight, and say "about the same as came in".
+- **Found:** 24 November 2026, bug review of the November plan's Phase 2
+
+### [bug-review] Segment label shrink ignores the 44px floor of short labels
+
+- **Where:** `app/lib/widgets/ak_controls.dart`, `AkSegmented._flexes`
+- **What happens:** the shrink scale is worked out from the label widths alone. When a short label ("All") is held at 44px, the shrunk total is over the room and the control falls back to the even split, although a smaller scale (still 14/16 or more) would have fitted.
+- **How to trigger:** one very short label beside long ones, on a narrow phone or at large text, so shrinking is needed.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** take the held segments' 44px out of the room, work out the scale for the rest, repeat once, then apply the floor.
+- **Found:** 24 November 2026, bug review of the November plan's Phase 2
+
 ## Fixed
 
 ### [states-audit] Budgets' empty state has no button

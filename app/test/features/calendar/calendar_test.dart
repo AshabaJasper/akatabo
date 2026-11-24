@@ -127,6 +127,20 @@ void main() {
     expect(find.bySemanticsLabel('Thursday 1 October, UGX 0 out'), findsOneWidget);
   });
 
+  testWidgets('a day total takes the money-out colour, but UGX 0 stays ink', (tester) async {
+    await _pump(tester);
+    await tester.tap(find.bySemanticsLabel('Monday 16 November, UGX 398,000 out'));
+    await tester.pump();
+    final colours = tester.element(find.text('UGX 398,000')).colors;
+    expect(tester.widget<Text>(find.text('UGX 398,000')).style?.color, colours.moneyOut);
+
+    await tester.tap(find.bySemanticsLabel('Earlier'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Thursday 1 October, UGX 0 out'));
+    await tester.pump();
+    expect(tester.widget<Text>(find.text('UGX 0')).style?.color, colours.ink);
+  });
+
   testWidgets('tapping a day shows its total; days to come cannot be chosen', (tester) async {
     await _pump(tester);
     await tester.tap(find.bySemanticsLabel('Monday 16 November, UGX 398,000 out'));

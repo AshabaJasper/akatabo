@@ -89,6 +89,11 @@ abstract final class SettingKeys {
     AkCategoryColours.colourful,
     AkCategoryColours.values,
   );
+  static const moneyColours = EnumSetting(
+    'appearance.moneyColours',
+    AkMoneyColours.redGreen,
+    AkMoneyColours.values,
+  );
   static const corners = EnumSetting('appearance.corners', AkCorners.rounded, AkCorners.values);
   static const textSize = EnumSetting(
     'appearance.textSize',
