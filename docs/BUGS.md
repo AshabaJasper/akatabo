@@ -4,6 +4,24 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
+### [bug-review] Savings goal money can be set aside in an account that is switched off
+
+- **Where:** `app/lib/data/repositories/repositories.dart` (`GoalRepository.addMove`)
+- **What happens:** `addMove` only checks that the account exists, so a positive move into a switched-off account is accepted. Add stops offering that account, but a goal can still put money in it.
+- **How to trigger:** switch an account off, then `addMove(goalId: g, accountId: offAccount, amount: 1000)`. It succeeds.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** refuse with `StateError('Account … is switched off')` when `amount > 0 && !account.enabled`. Keep take-outs allowed so the money can come back out.
+- **Found:** 24 November 2026, savings goals bug review
+
+### [bug-review] GoalRepository.delete doc says "while money is set aside" but any move blocks it
+
+- **Where:** `app/lib/data/repositories/repositories.dart` (`GoalRepository.delete` doc comment)
+- **What happens:** the doc says delete is refused only while money is set aside. The code refuses whenever any move exists, even if they net to zero, which is the intended rule (test `a goal with any moves cannot be deleted`). A screen built from the doc would offer Delete on a goal at zero saved and then hit a `StateError`.
+- **How to trigger:** add 1,000, take out 1,000, then `delete(goalId)`. It throws.
+- **Score:** frequency 2 x severity 1 = 2
+- **Suggested fix:** change the doc to "Refused, and nothing changes, while the goal has any moves (its history keeps them): archive it instead."
+- **Found:** 24 November 2026, savings goals bug review
+
 ### [bug-review] Deleting an account that holds goal money fails with a misleading message
 
 - **Where:** `app/lib/data/repositories/repositories.dart` (`AccountRepository.usedBy` and `delete`); message in `app/lib/features/settings/new_account_screen.dart`

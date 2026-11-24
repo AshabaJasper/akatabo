@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/time/period.dart';
 import '../../domain/currency.dart';
+import '../../domain/goals.dart';
 import '../../smart/text_normaliser.dart';
 import '../db/app_database.dart';
 import '../seed/default_data.dart';
@@ -518,8 +519,8 @@ class AccountRepository {
     }
   });
 
-  /// How many entries use account [id], paid from it or moved to it.
-  Future<int> usedBy(String id) async {
+  /// Entries that use account [id]: paid from it or moved to it.
+  Future<int> entriesIn(String id) async {
     final count = _db.transactions.id.count();
     final row =
         await (_db.selectOnly(_db.transactions)
@@ -531,14 +532,40 @@ class AccountRepository {
     return row.read(count) ?? 0;
   }
 
+  /// Savings-goal moves with money set aside in account [id].
+  Future<int> goalMovesIn(String id) async {
+    final count = _db.goalMoves.id.count();
+    final row =
+        await (_db.selectOnly(_db.goalMoves)
+              ..addColumns([count])
+              ..where(_db.goalMoves.accountId.equals(id)))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Savings goals with any move in account [id], each goal counted once.
+  Future<int> goalsIn(String id) async {
+    final count = _db.goalMoves.goalId.count(distinct: true);
+    final row =
+        await (_db.selectOnly(_db.goalMoves)
+              ..addColumns([count])
+              ..where(_db.goalMoves.accountId.equals(id)))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Everything that uses account [id]: its entries and its savings-goal moves. Either kind
+  /// blocks deleting the account.
+  Future<int> usedBy(String id) async => await entriesIn(id) + await goalMovesIn(id);
+
   /// Deletes account [id] for good. Refused with a [StateError], and nothing changes, while
-  /// any entry uses it (switch it off instead, so those entries keep it), or when it is the
+  /// any entry or savings-goal move uses it (switch it off instead, so those keep it), or when it is the
   /// only account switched on (or the only one at all), since Add needs one to offer. If it was the account Add opens on, the next account
   /// switched on takes that over.
   Future<void> delete(String id) => _db.transaction(() async {
     final row = await (_db.select(_db.accounts)..where((a) => a.id.equals(id))).getSingleOrNull();
     if (row == null) throw StateError('No account $id');
-    if (await usedBy(id) > 0) throw StateError('Account $id is used by entries');
+    if (await usedBy(id) > 0) throw StateError('Account $id is used by entries or goal moves');
     final others =
         await (_db.select(_db.accounts)
               ..where((a) => a.id.equals(id).not())
@@ -734,4 +761,229 @@ class RegularPaymentRepository {
       (_db.update(_db.regularPayments)..where((r) => r.id.equals(id))).write(
         RegularPaymentsCompanion(dismissed: const Value(true), updatedAt: Value(clock.now())),
       );
+}
+
+/// Savings goals: what the person is saving toward, and the moves that set money aside for it
+/// inside an account (or take it back out). The saved amount is always the sum of the moves,
+/// so it cannot drift from them. Every write is one transaction.
+class GoalRepository {
+  GoalRepository(this._db);
+  final AppDatabase _db;
+
+  /// Goals the person has not put away, in the order they were set.
+  Stream<List<Goal>> watchActive() =>
+      (_db.select(_db.goals)
+            ..where((g) => g.archivedAt.isNull())
+            ..orderBy([(g) => OrderingTerm.asc(g.sortOrder)]))
+          .watch();
+
+  Stream<Goal?> watchById(String id) =>
+      (_db.select(_db.goals)..where((g) => g.id.equals(id))).watchSingleOrNull();
+
+  /// Moves for one goal, newest first.
+  Stream<List<GoalMove>> watchMoves(String goalId) =>
+      (_db.select(_db.goalMoves)
+            ..where((m) => m.goalId.equals(goalId))
+            ..orderBy([(m) => OrderingTerm.desc(m.occurredAt)]))
+          .watch();
+
+  /// Adds a goal. The name is trimmed and must not be empty; the target must be above zero; a
+  /// date, when given, must not be before today.
+  Future<String> add({
+    required String name,
+    required int target,
+    required String colourToken,
+    int? targetDay,
+    String iconKey = 'wallet',
+    GoalRemind remindEvery = GoalRemind.off,
+  }) => _db.transaction(() async {
+    final trimmed = _checkName(name);
+    _checkTarget(target);
+    final now = clock.now();
+    if (targetDay != null && targetDay < toLocalDay(now)) {
+      throw ArgumentError.value(targetDay, 'targetDay', 'must not be before today');
+    }
+    final max = _db.goals.sortOrder.max();
+    final row = await (_db.selectOnly(_db.goals)..addColumns([max])).getSingle();
+    final id = const Uuid().v4();
+    await _db
+        .into(_db.goals)
+        .insert(
+          GoalsCompanion.insert(
+            id: id,
+            createdAt: now,
+            updatedAt: now,
+            name: trimmed,
+            colourToken: colourToken,
+            target: target,
+            targetDay: Value(targetDay),
+            iconKey: Value(iconKey),
+            remindEvery: Value(remindEvery),
+            sortOrder: Value((row.read(max) ?? -1) + 1),
+          ),
+        );
+    return id;
+  });
+
+  /// Changes a goal's name, target, date, colour, icon or reminder. Its moves are untouched. The
+  /// reached-date follows the new target: set when the saved amount meets it, cleared when not.
+  Future<void> update(
+    String id, {
+    required String name,
+    required int target,
+    required String colourToken,
+    int? targetDay,
+    String iconKey = 'wallet',
+    GoalRemind remindEvery = GoalRemind.off,
+  }) => _db.transaction(() async {
+    final trimmed = _checkName(name);
+    _checkTarget(target);
+    final goal = await (_db.select(_db.goals)..where((g) => g.id.equals(id))).getSingleOrNull();
+    if (goal == null) throw StateError('No goal $id');
+    final now = clock.now();
+    final saved = await _savedFor(id);
+    await (_db.update(_db.goals)..where((g) => g.id.equals(id))).write(
+      GoalsCompanion(
+        name: Value(trimmed),
+        target: Value(target),
+        colourToken: Value(colourToken),
+        targetDay: Value(targetDay),
+        iconKey: Value(iconKey),
+        remindEvery: Value(remindEvery),
+        reachedAt: Value(saved >= target ? (goal.reachedAt ?? now) : null),
+        updatedAt: Value(now),
+      ),
+    );
+  });
+
+  /// Puts a goal away. Its moves stay, so the money stays set aside until it is taken out.
+  Future<void> archive(String id) => _setArchived(id, clock.now());
+
+  /// Brings an archived goal back.
+  Future<void> unarchive(String id) => _setArchived(id, null);
+
+  Future<void> _setArchived(String id, DateTime? when) async {
+    final changed = await (_db.update(_db.goals)..where((g) => g.id.equals(id))).write(
+      GoalsCompanion(archivedAt: Value(when), updatedAt: Value(clock.now())),
+    );
+    if (changed == 0) throw StateError('No goal $id');
+  }
+
+  /// Deletes a goal for good. Refused, and nothing changes, while money is set aside for it:
+  /// take the money out first, or archive the goal.
+  Future<void> delete(String id) => _db.transaction(() async {
+    final exists = await (_db.select(_db.goals)..where((g) => g.id.equals(id))).getSingleOrNull();
+    if (exists == null) throw StateError('No goal $id');
+    if (await _moveCount(id) > 0) throw StateError('Goal $id has moves, so archive it instead');
+    await (_db.delete(_db.goals)..where((g) => g.id.equals(id))).go();
+  });
+
+  /// Sets money aside for a goal inside an account (an amount above zero), or takes it back out
+  /// (below zero). Refused, and nothing changes, when:
+  /// - the amount is zero;
+  /// - the goal or the account does not exist;
+  /// - money is added to an archived goal;
+  /// - more is taken out than is saved.
+  ///
+  /// Setting money aside may exceed what the account has free: the screen warns about that,
+  /// because balances are not always known. Returns the milestones this move crossed, so the
+  /// screen can say so.
+  Future<List<int>> addMove({
+    required String goalId,
+    required String accountId,
+    required int amount,
+    String? note,
+  }) => _db.transaction(() async {
+    if (amount == 0) throw ArgumentError.value(amount, 'amount', 'must not be zero');
+    final goal = await (_db.select(_db.goals)..where((g) => g.id.equals(goalId))).getSingleOrNull();
+    if (goal == null) throw StateError('No goal $goalId');
+    final account = await (_db.select(
+      _db.accounts,
+    )..where((a) => a.id.equals(accountId))).getSingleOrNull();
+    if (account == null) throw StateError('No account $accountId');
+    if (amount > 0 && goal.archivedAt != null) throw StateError('Goal $goalId is archived');
+    // A take-out is checked against the account it leaves too: money saved in one account
+    // cannot be taken out of another.
+    if (amount < 0 && await _savedIn(goalId, accountId) + amount < 0) {
+      throw ArgumentError.value(
+        amount,
+        'amount',
+        'more than is saved for this goal in this account',
+      );
+    }
+    final before = await _savedFor(goalId);
+    final after = before + amount;
+    if (after < 0) {
+      throw ArgumentError.value(amount, 'amount', 'more than is saved for this goal');
+    }
+    final now = clock.now();
+    final trimmedNote = note?.trim();
+    await _db
+        .into(_db.goalMoves)
+        .insert(
+          GoalMovesCompanion.insert(
+            id: const Uuid().v4(),
+            createdAt: now,
+            updatedAt: now,
+            goalId: goalId,
+            accountId: accountId,
+            amount: amount,
+            note: Value(trimmedNote == null || trimmedNote.isEmpty ? null : trimmedNote),
+            occurredAt: now,
+            localDay: toLocalDay(now),
+          ),
+        );
+    await (_db.update(_db.goals)..where((g) => g.id.equals(goalId))).write(
+      GoalsCompanion(
+        reachedAt: Value(after >= goal.target ? (goal.reachedAt ?? now) : null),
+        updatedAt: Value(now),
+      ),
+    );
+    return milestonesCrossed(target: goal.target, before: before, after: after);
+  });
+
+  /// Money set aside for a goal now: the sum of its moves.
+  Future<int> savedFor(String goalId) => _savedFor(goalId);
+
+  Future<int> _savedFor(String goalId) async {
+    final sum = _db.goalMoves.amount.sum();
+    final row =
+        await (_db.selectOnly(_db.goalMoves)
+              ..addColumns([sum])
+              ..where(_db.goalMoves.goalId.equals(goalId)))
+            .getSingle();
+    return row.read(sum) ?? 0;
+  }
+
+  Future<int> _savedIn(String goalId, String accountId) async {
+    final sum = _db.goalMoves.amount.sum();
+    final row =
+        await (_db.selectOnly(_db.goalMoves)
+              ..addColumns([sum])
+              ..where(
+                _db.goalMoves.goalId.equals(goalId) & _db.goalMoves.accountId.equals(accountId),
+              ))
+            .getSingle();
+    return row.read(sum) ?? 0;
+  }
+
+  Future<int> _moveCount(String goalId) async {
+    final count = _db.goalMoves.id.count();
+    final row =
+        await (_db.selectOnly(_db.goalMoves)
+              ..addColumns([count])
+              ..where(_db.goalMoves.goalId.equals(goalId)))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  String _checkName(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) throw ArgumentError.value(name, 'name', 'must not be empty');
+    return trimmed;
+  }
+
+  void _checkTarget(int target) {
+    if (target <= 0) throw ArgumentError.value(target, 'target', 'must be above zero');
+  }
 }

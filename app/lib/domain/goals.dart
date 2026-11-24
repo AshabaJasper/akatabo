@@ -1,5 +1,6 @@
 import '../core/time/period.dart';
-import '../smart/forecast/forecast_range.dart' show percentile, forecastPercentileLow, forecastPercentileHigh;
+import '../smart/forecast/forecast_range.dart'
+    show percentile, forecastPercentileLow, forecastPercentileHigh;
 
 /// Savings goals: how far along a goal is, how much to put aside to reach it, and when at
 /// the current pace it would be reached. Pure Dart, so every figure here is testable and the
@@ -71,7 +72,12 @@ int? requiredPer({
 /// around it. [early] uses the strongest weeks of saving, [late] the weakest; [late] is null
 /// when the weakest weeks put nothing aside, because then no date is honest to give.
 class GoalProjection {
-  const GoalProjection({required this.point, required this.early, required this.late, required this.weeklyRate});
+  const GoalProjection({
+    required this.point,
+    required this.early,
+    required this.late,
+    required this.weeklyRate,
+  });
   final DateTime point;
   final DateTime early;
   final DateTime? late;

@@ -334,6 +334,53 @@ void main() {
       expect(a.enabled, isFalse);
     });
 
+    testWidgets('Delete names each savings goal once, however many moves it has here', (
+      tester,
+    ) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await tester.runAsync(() async {
+        final goals = GoalRepository(db);
+        final id = await goals.add(name: 'Phone', target: 100000, colourToken: 'cat-teal');
+        await goals.addMove(goalId: id, accountId: DefaultIds.airtel, amount: 20000);
+        await goals.addMove(goalId: id, accountId: DefaultIds.airtel, amount: -20000);
+      });
+      await _pump(
+        tester,
+        db,
+        screen: const NewAccountScreen(editId: DefaultIds.airtel),
+        all: await _accounts(tester, db),
+      );
+      await _settle(tester);
+
+      await tester.tap(find.text('Delete this account'));
+      await _settle(tester);
+      expect(find.text('Airtel Money is used by 1 savings goal'), findsOneWidget);
+      expect(find.textContaining('savings-goal history'), findsOneWidget);
+    });
+
+    testWidgets('Delete names entries and savings goals together', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await tester.runAsync(() async {
+        await db.into(db.transactions).insert(txRow(id: 'paid', accountId: DefaultIds.airtel));
+        final goals = GoalRepository(db);
+        final id = await goals.add(name: 'Phone', target: 100000, colourToken: 'cat-teal');
+        await goals.addMove(goalId: id, accountId: DefaultIds.airtel, amount: 20000);
+      });
+      await _pump(
+        tester,
+        db,
+        screen: const NewAccountScreen(editId: DefaultIds.airtel),
+        all: await _accounts(tester, db),
+      );
+      await _settle(tester);
+
+      await tester.tap(find.text('Delete this account'));
+      await _settle(tester);
+      expect(find.text('Airtel Money is used by 1 entry and 1 savings goal'), findsOneWidget);
+    });
+
     testWidgets('Delete on an unused account asks first, then deletes it', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
