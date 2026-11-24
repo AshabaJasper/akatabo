@@ -28,6 +28,9 @@ abstract final class Routes {
   /// Reminders: each switch, when it next fires, and a test notification.
   static const settingsReminders = '/settings/reminders';
 
+  /// Currencies and rates: the rates typed, and a converter.
+  static const settingsCurrencies = '/settings/currencies';
+
   /// Phone permissions: what the phone allows Akatabo, read live, and what it never asks for.
   static const settingsPermissions = '/settings/permissions';
 

@@ -27,6 +27,7 @@ import '../features/settings/accounts_settings_screen.dart';
 import '../features/settings/appearance_settings_screen.dart';
 import '../features/settings/categories_settings_screen.dart';
 import '../features/settings/category_edit_screen.dart';
+import '../features/settings/currencies_screen.dart';
 import '../features/settings/general_settings_screen.dart';
 import '../features/settings/home_settings_screen.dart';
 import '../features/settings/income_categories_screen.dart';
@@ -174,6 +175,7 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       GoRoute(path: Routes.settingsSmart, builder: (_, _) => const SmartHelpScreen()),
       GoRoute(path: Routes.settingsReminders, builder: (_, _) => const RemindersScreen()),
       GoRoute(path: Routes.settingsPermissions, builder: (_, _) => const PermissionsScreen()),
+      GoRoute(path: Routes.settingsCurrencies, builder: (_, _) => const CurrenciesScreen()),
       GoRoute(
         path: Routes.settingsPrivacy,
         builder: (_, state) =>

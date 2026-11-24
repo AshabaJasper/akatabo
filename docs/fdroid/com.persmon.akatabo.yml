@@ -13,7 +13,7 @@ IssueTracker: https://github.com/AshabaJasper/akatabo/issues
 Changelog: https://github.com/AshabaJasper/akatabo/releases
 
 AutoName: Akatabo
-# Summary and Description come from fastlane/metadata/android/en-US/ once it exists (waits for the logo).
+# Summary and Description come from fastlane/metadata/android/en-US/ (drafted 24 November; the logo is in place).
 
 RepoType: git
 Repo: https://github.com/AshabaJasper/akatabo.git

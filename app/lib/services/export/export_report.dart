@@ -12,6 +12,7 @@ import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
 import '../../data/seed/default_data.dart';
 import '../../domain/budget.dart';
+import '../../domain/currency.dart';
 import '../../domain/fees.dart';
 import '../../domain/spending.dart';
 
@@ -249,6 +250,9 @@ class ExportReport {
       if (options.feesColumn) ...['Fee', 'Tax'],
       'Money out',
       'Money in',
+      'Currency',
+      'Foreign amount',
+      'Rate',
       if (options.notes) 'Note',
     ],
     rows: [
@@ -264,6 +268,10 @@ class ExportReport {
           if (options.feesColumn) ...[ExportCell.amount(t.fee), ExportCell.amount(t.tax)],
           ExportCell.amount(moneyOutOf(t)),
           ExportCell.amount(moneyInOf(t)),
+          // Shillings have no foreign currency: the three cells stay empty for them.
+          ExportCell.text(t.foreignCurrency ?? ''),
+          ExportCell.text(t.foreignAmountMinor == null ? '' : plainForeign(t.foreignAmountMinor!)),
+          ExportCell.text(t.rateMicros == null ? '' : plainRate(t.rateMicros!)),
           if (options.notes) ExportCell.text(t.note ?? ''),
         ],
     ],

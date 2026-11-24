@@ -63,6 +63,16 @@ class Transactions extends Table with _Synced {
   BoolColumn get flaggedUnusual => boolean().withDefault(const Constant(false))();
   BoolColumn get flagDismissed => boolean().withDefault(const Constant(false))();
   TextColumn get regularPaymentId => text().nullable()();
+
+  /// The currency the person paid in, when it was not shillings (e.g. "USD"). Null for
+  /// shillings. [amount] is always the shillings, so totals and budgets do not change.
+  TextColumn get foreignCurrency => text().nullable()();
+
+  /// The amount in [foreignCurrency], in hundredths of its unit (100.50 USD is 10050).
+  IntColumn get foreignAmountMinor => integer().nullable()();
+
+  /// Shillings per one unit of [foreignCurrency], times a million (3,720 is 3720000000).
+  IntColumn get rateMicros => integer().nullable()();
 }
 
 class Categories extends Table with _Synced {

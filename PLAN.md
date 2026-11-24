@@ -464,3 +464,14 @@ After the owner tried the app on a Pixel 8 Pro. Owner decisions: a new private G
 - **Reminders gain "Open notification settings"**, which closes the Phase 4 gap.
 - **Phase 5 rates live in Settings.** Remembered exchange rates are stored as `rate.<ISO>` rows of the Settings table rather than a new ExchangeRates table. Settings rows already travel through backup and restore with the newest-wins merge, so no new backup table or restore path is needed.
 
+
+### Phase 5 of the November plan: Foreign currency (24 November 2026)
+
+- **Units.** A foreign amount is stored in hundredths of its unit for every currency; a currency with no small unit ends in 00. A rate is shillings per one unit times a million, so 3,720 UGX per dollar is 3720000000. `amount` stays whole shillings, so totals, budgets, forecasts and the calendar work unchanged.
+- **Rounding.** A conversion is computed with BigInt, not 64-bit integers, because a large amount times a large rate passes 64 bits and wraps silently. It rounds half up to the whole shilling. A negative amount (a reversal) rounds away from zero, so it matches its original. Typed caps: whole amounts up to 10^10 units and whole rates up to 10^7 shillings a unit. Both are far beyond real figures.
+- **Storage.** Transactions gain three nullable columns: `foreignCurrency`, `foreignAmountMinor` and `rateMicros`. Schema v3 to v4 is a drift migration that adds them. Entries from before keep null and read as shillings.
+- **Rates live in Settings**, as `rate.<ISO>` rows holding micros as text. An empty value means removed. This replaces the ExchangeRates table the plan first named, so backup and restore need no new table.
+- **Backup.** A file from before this version restores with every entry in shillings; this is tested with the foreign keys stripped. A file from a newer schema is still refused.
+- **Export.** The CSV gains Currency, Foreign amount and Rate after Money in, as plain numbers and never grouped.
+- **Add.** A currency chip sits beside the amount. A foreign currency shows a rate field, pre-filled from the last rate typed, and a live "= UGX ..." line. Saving remembers the rate typed for that currency. Switching back to UGX keeps the whole part of the amount.
+- **Settings > Currencies and rates** lists remembered rates (edit or remove) and has a converter. UGX stays the home currency; past entries keep the rate they were saved with. There are no live rates, by design, so the app stays fully offline.

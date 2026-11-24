@@ -14,7 +14,9 @@ import '../../core/time/clock_provider.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/repositories.dart';
+import '../../data/settings/remembered_rates.dart';
 import '../../data/settings/setting_keys.dart';
+import '../../domain/currency.dart';
 import '../../services/notifications/budget_warning.dart';
 import '../../smart/category/category_suggester.dart';
 import '../../widgets/ak_category_choices.dart';
@@ -24,6 +26,7 @@ import '../../widgets/ak_surfaces.dart';
 import 'add_providers.dart';
 import 'amount_text.dart';
 import 'category_suggestion_providers.dart';
+import 'currency_picker.dart';
 import 'suggestion_pill.dart';
 import 'when_text.dart';
 
@@ -48,6 +51,12 @@ class AddScreen extends ConsumerStatefulWidget {
 
 class _AddScreenState extends ConsumerState<AddScreen> {
   final _amount = TextEditingController();
+
+  /// The rate typed for a foreign currency: shillings per one unit.
+  final _rate = TextEditingController();
+
+  /// UGX, or the three-letter code of the currency the payment was in.
+  String _currency = 'UGX';
   final _what = TextEditingController();
   final _fee = TextEditingController();
   final _tax = TextEditingController();
@@ -133,7 +142,13 @@ class _AddScreenState extends ConsumerState<AddScreen> {
         _when = tx.occurredAt;
       }
       _chosenDirection = tx.direction;
-      _amount.text = formatAmount(tx.amount);
+      if (tx.foreignCurrency != null && tx.foreignAmountMinor != null && tx.rateMicros != null) {
+        _currency = tx.foreignCurrency!;
+        _amount.text = foreignFieldText(tx.foreignAmountMinor!);
+        _rate.text = formatRate(tx.rateMicros!);
+      } else {
+        _amount.text = formatAmount(tx.amount);
+      }
       _what.text = tx.description;
       _categoryId = tx.categoryId;
       _fromId = tx.accountId;
@@ -185,6 +200,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
     _tick?.cancel();
     _amountFocus.dispose();
     _amount.dispose();
+    _rate.dispose();
     _what.dispose();
     _fee.dispose();
     _tax.dispose();
@@ -219,19 +235,22 @@ class _AddScreenState extends ConsumerState<AddScreen> {
     final isTransfer = direction == Direction.transfer;
     final isMoneyIn = direction == Direction.moneyIn;
 
+    final foreignIncomplete = _foreign && (_foreignMinor == null || _rateMicros == null);
     final problems = <String>[
       if (from == null) 'Choose an account.',
       if (occurredAt.isAfter(now)) 'That time has not come yet. Choose a time up to now.',
+      if (foreignIncomplete) 'Enter the $_currency amount and its rate.',
+      // A foreign entry that is incomplete is reported above, not as a zero amount.
       ...TransactionDraft(
         direction: direction,
-        amount: parseAmount(_amount.text),
+        amount: _shillings(),
         accountId: from ?? '',
         toAccountId: isTransfer ? to : null,
         categoryId: isTransfer ? null : categoryId,
         fee: isMoneyIn ? 0 : parseAmount(_fee.text),
         tax: isMoneyIn ? 0 : parseAmount(_tax.text),
         occurredAt: occurredAt,
-      ).problems(),
+      ).problems().where((p) => !(foreignIncomplete && p == 'Enter an amount above zero.')),
     ];
     if (problems.isNotEmpty) {
       setState(() => _problems = problems);
@@ -249,7 +268,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
     final original = _original;
     final draft = TransactionDraft(
       direction: direction,
-      amount: parseAmount(_amount.text),
+      amount: _shillings(),
       description: _what.text.trim(),
       categoryId: isTransfer ? null : categoryId,
       accountId: from!,
@@ -266,6 +285,9 @@ class _AddScreenState extends ConsumerState<AddScreen> {
       suggestionConfidence: isTransfer
           ? null
           : (original != null ? original.suggestionConfidence : suggestion?.probability),
+      foreignCurrency: _foreign ? _currency : null,
+      foreignAmountMinor: _foreign ? _foreignMinor : null,
+      rateMicros: _foreign ? _rateMicros : null,
     );
     try {
       final repo = ref.read(transactionRepositoryProvider);
@@ -286,9 +308,63 @@ class _AddScreenState extends ConsumerState<AddScreen> {
       }
       return;
     }
+    // The rate typed becomes the one remembered for this currency. Saving an edit that keeps
+    // an old entry's rate leaves today's remembered rate alone. A failure here does not undo
+    // the entry, which is already saved.
+    final rate = _rateMicros;
+    final rateIsNew =
+        original == null || original.rateMicros != rate || original.foreignCurrency != _currency;
+    if (_foreign && rate != null && rateIsNew) {
+      try {
+        await ref.read(settingsRepositoryProvider).write(rateSetting(_currency), '$rate');
+      } on Object {
+        // The entry is saved; the rate simply is not remembered this time.
+      }
+    }
     // Runs on after Add closes; it reports its own failures and never undoes the save.
     unawaited(warner.afterSave(savedId, previous: original));
     if (mounted) await closeScreen(context);
+  }
+
+  bool get _foreign => _currency != 'UGX';
+
+  /// The foreign amount typed, in hundredths, or null while it is not a valid amount.
+  int? get _foreignMinor => parseForeignMinor(_amount.text);
+
+  /// The rate typed, in micros, or null while it is not a valid rate.
+  int? get _rateMicros => parseRateMicros(_rate.text);
+
+  /// The shillings this entry comes to: the amount typed, or for a foreign payment its
+  /// conversion at the rate typed. Zero while a foreign entry is incomplete.
+  int _shillings() {
+    if (!_foreign) return parseAmount(_amount.text);
+    final minor = _foreignMinor;
+    final rate = _rateMicros;
+    if (minor == null || rate == null) return 0;
+    return ugxFor(foreignMinor: minor, rateMicros: rate);
+  }
+
+  /// Changes the currency. Each foreign currency starts with the rate remembered for it, or
+  /// an empty rate: never the rate of the currency chosen before. Going back to shillings
+  /// puts the converted amount in the field when amount and rate are complete, and otherwise
+  /// keeps the whole part typed.
+  Future<void> _chooseCurrency() async {
+    final picked = await pickCurrency(context, current: _currency);
+    if (picked == null || picked == _currency || !mounted) return;
+    final remembered = rememberedRates(ref.read(storedSettingsProvider).value ?? const {});
+    setState(() {
+      if (picked == 'UGX') {
+        final converted = _shillings();
+        final whole = _amount.text.split('.').first;
+        _amount.text = converted > 0
+            ? formatAmount(converted)
+            : (whole.isEmpty ? '' : formatAmount(parseAmount(whole)));
+      } else {
+        final rate = remembered[picked];
+        _rate.text = rate == null ? '' : formatRate(rate);
+      }
+      _currency = picked;
+    });
   }
 
   @override
@@ -316,7 +392,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
       label: isTransfer ? 'Fee to move it' : 'Fee, if any',
       controller: _fee,
       keyboardType: TextInputType.number,
-      inputFormatters: const [ThousandsFormatter()],
+      inputFormatters: const [NoDecimalPointFormatter(), ThousandsFormatter()],
       onChanged: feeUpFront ? (v) => _feeTypedUpFront = v.isNotEmpty : null,
     );
     final categoriesAsync = isMoneyIn
@@ -330,7 +406,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
         ? null
         : suggester.suggest(
             _what.text,
-            amount: parseAmount(_amount.text),
+            amount: _shillings(),
             hour: (_when ?? _shownNow).hour,
             offered: {for (final cat in offered) cat.id},
           );
@@ -365,20 +441,33 @@ class _AddScreenState extends ConsumerState<AddScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const AkEyebrowLabel('Amount, UGX'),
+        Row(
+          children: [
+            Expanded(child: AkEyebrowLabel(_foreign ? 'Amount, $_currency' : 'Amount, UGX')),
+            // The currency the payment was in. UGX unless the person chooses another.
+            AkChip(label: _currency, selected: _foreign, onTap: _chooseCurrency),
+          ],
+        ),
         const SizedBox(height: AkSpace.s1),
         // Merged, so the name sits on the edit box TalkBack focuses. Without it the box
         // was announced only by its hint, "0" (found on the emulator in Phase 8).
         MergeSemantics(
           child: Semantics(
-            label: 'Amount in shillings',
+            label: _foreign ? 'Amount in $_currency' : 'Amount in shillings',
             textField: true,
             child: TextField(
               controller: _amount,
               focusNode: _amountFocus,
               autofocus: true,
-              keyboardType: TextInputType.number,
-              inputFormatters: const [ThousandsFormatter()],
+              // Shillings are whole, so their keyboard has no decimal key: the shilling
+              // formatter would drop a typed point and multiply the amount.
+              keyboardType: _foreign
+                  ? const TextInputType.numberWithOptions(decimal: true)
+                  : TextInputType.number,
+              onChanged: (_) => setState(() {}),
+              inputFormatters: _foreign
+                  ? const [ForeignAmountFormatter()]
+                  : const [NoDecimalPointFormatter(), ThousandsFormatter()],
               style: t.figureXl.copyWith(color: c.ink),
               cursorColor: c.brand,
               decoration: InputDecoration(
@@ -396,6 +485,23 @@ class _AddScreenState extends ConsumerState<AddScreen> {
             ),
           ),
         ),
+        if (_foreign) ...[
+          const SizedBox(height: AkSpace.s3),
+          AkTextField(
+            label: 'Rate, UGX for one $_currency',
+            controller: _rate,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: const [ForeignAmountFormatter(decimals: rateDecimals)],
+            hint: '3,720',
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: AkSpace.s2),
+          // The live conversion: the shillings this entry is saved as.
+          Text(
+            _shillings() > 0 ? '= ${ugxLine(_shillings())}' : 'Type the amount and its rate',
+            style: t.bodySm.copyWith(color: c.inkMuted),
+          ),
+        ],
       ],
     );
     // The kind of entry and the amount stay in view while the rest of the form scrolls under
@@ -550,7 +656,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                           label: 'Tax, if any',
                           controller: _tax,
                           keyboardType: TextInputType.number,
-                          inputFormatters: const [ThousandsFormatter()],
+                          inputFormatters: const [NoDecimalPointFormatter(), ThousandsFormatter()],
                         ),
                         const SizedBox(height: AkSpace.s4),
                       ],

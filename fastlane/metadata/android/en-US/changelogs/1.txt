@@ -1,0 +1,7 @@
+First public release.
+
+- Money out, money in and moves between accounts, with fees and tax kept per entry.
+- Budgets, a month forecast, insights, a calendar and regular payments.
+- Foreign payments with a typed rate, kept in shillings.
+- PDF and CSV reports; encrypted backups and restore.
+- App lock with PIN, fingerprint or face; reminders.

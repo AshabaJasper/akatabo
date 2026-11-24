@@ -1,6 +1,6 @@
 // dart format width=80
 // ignore_for_file: unused_local_variable, unused_import
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:akatabo/data/db/app_database.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +10,7 @@ import 'generated/schema.dart';
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
+import 'generated/schema_v4.dart' as v4;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -155,4 +156,30 @@ void main() {
       },
     );
   });
+
+  test(
+    'v3 to v4 keeps every entry in shillings, with no foreign currency',
+    () async {
+      await verifier.testWithDataIntegrity(
+        oldVersion: 3,
+        newVersion: 4,
+        createOld: v3.DatabaseAtV3.new,
+        createNew: v4.DatabaseAtV4.new,
+        openTestedDatabase: AppDatabase.new,
+        createItems: (batch, oldDb) => batch.customStatement(
+          "INSERT INTO transactions (id, created_at, updated_at, direction, amount, "
+          "account_id, occurred_at, local_day) VALUES "
+          "('tx.1', 0, 0, 'moneyOut', 5000, 'acct.cash', 0, 20261120)",
+        ),
+        validateItems: (newDb) async {
+          final rows = await newDb.select(newDb.transactions).get();
+          expect(rows, hasLength(1));
+          expect(rows.single.amount, 5000);
+          expect(rows.single.foreignCurrency, isNull);
+          expect(rows.single.foreignAmountMinor, isNull);
+          expect(rows.single.rateMicros, isNull);
+        },
+      );
+    },
+  );
 }

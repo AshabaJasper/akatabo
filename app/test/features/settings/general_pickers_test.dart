@@ -117,17 +117,14 @@ void main() {
     expect(await _stored(tester, db, SettingKeys.weekStartsOn.name), isNull);
   });
 
-  testWidgets('Currency and Language are plain rows that say why they cannot change', (
-    tester,
-  ) async {
+  testWidgets('Language is a plain row that says why it cannot change', (tester) async {
     final handle = tester.ensureSemantics();
     await _pumpGeneral(tester);
-    for (final value in ['UGX, Ugandan shilling', 'English']) {
-      expect(
-        tester.getSemantics(find.text(value)),
-        isSemantics(hasTapAction: false, isButton: false),
-      );
-    }
+    expect(find.text('UGX only'), findsOneWidget, reason: 'Currencies and rates shows its value');
+    expect(
+      tester.getSemantics(find.text('English')),
+      isSemantics(hasTapAction: false, isButton: false),
+    );
     expect(find.textContaining('cannot be changed'), findsOneWidget);
     await tester.tap(find.text('English'));
     await tester.pumpAndSettle();

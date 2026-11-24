@@ -1,0 +1,23 @@
+Akatabo is a money tracker for Uganda. You write down what you spend and what you receive, and it shows where the money went, what it cost in fees and tax, how your budgets are doing, and where the month is heading.
+
+What it does
+- Money out, money in, and moving money between your own accounts (Cash, MTN MoMo, Airtel Money, a bank, or your own).
+- Fees and tax are kept with each entry, so you can see what moving money really cost.
+- Budgets per category, with a warning as you near the limit. Budgets can carry over what is left.
+- A forecast for the month: a likely range, what is still to come, and how close past forecasts were.
+- Insights on your spending over time, and a calendar of each day's money.
+- Regular payments you set up, such as rent or school fees, so they show up before they are due.
+- Payments in another currency: type the rate once, and the entry is kept in shillings with the foreign amount beside it.
+- Reports you can export as a PDF, or as a CSV for a spreadsheet.
+- Backups you can encrypt with a password, and restore on the same or another phone.
+- An app lock with a PIN, and fingerprint or face where the phone has them.
+- Reminders for each day, for budgets, for regular payments and for a weekly summary.
+- Suggestions for categories, unusual payments and regular payments, worked out on the phone.
+
+Your money stays on your phone
+- No account and no sign-in.
+- No adverts and no tracking.
+- The app does not ask for the internet. Your entries are stored only on this phone, unless you export or back them up yourself.
+- Akatabo is free and open source under the GNU General Public License v3.0.
+
+Akatabo counts in Ugandan shillings and is in English.

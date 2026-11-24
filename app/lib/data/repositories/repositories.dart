@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/time/period.dart';
+import '../../domain/currency.dart';
 import '../../smart/text_normaliser.dart';
 import '../db/app_database.dart';
 import '../seed/default_data.dart';
@@ -25,10 +26,21 @@ class TransactionDraft {
     this.note,
     this.suggestedCategoryId,
     this.suggestionConfidence,
+    this.foreignCurrency,
+    this.foreignAmountMinor,
+    this.rateMicros,
   });
 
   final Direction direction;
+
+  /// The shillings. For a foreign payment, this is the converted amount.
   final int amount;
+
+  /// The currency paid in when it was not shillings, with its amount in hundredths and the
+  /// rate used. All three are null, or all set together.
+  final String? foreignCurrency;
+  final int? foreignAmountMinor;
+  final int? rateMicros;
   final String description;
   final String? categoryId;
   final String accountId;
@@ -48,6 +60,9 @@ class TransactionDraft {
     if (direction == Direction.transfer && toAccountId == accountId)
       'Choose two different accounts.',
     if (direction != Direction.transfer && categoryId == null) 'Choose a category.',
+    if (foreignCurrency != null &&
+        (foreignAmountMinor == null || rateMicros == null || !isForeignCode(foreignCurrency!)))
+      'Enter the foreign amount and its rate.',
   ];
 }
 
@@ -74,6 +89,9 @@ class TransactionRepository {
       localDay: Value(toLocalDay(d.occurredAt)),
       suggestedCategoryId: Value(d.suggestedCategoryId),
       suggestionConfidence: Value(d.suggestionConfidence),
+      foreignCurrency: Value(d.foreignCurrency),
+      foreignAmountMinor: Value(d.foreignAmountMinor),
+      rateMicros: Value(d.rateMicros),
       categoryWasCorrected: Value(
         d.suggestedCategoryId != null && d.categoryId != d.suggestedCategoryId,
       ),
