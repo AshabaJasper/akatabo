@@ -1,86 +1,76 @@
+import 'dart:async';
+
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../app/routes.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
+import '../../widgets/ak_controls.dart';
+import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_surfaces.dart';
 import '../privacy/about_section.dart';
+import 'settings_entries.dart';
 import 'settings_page.dart';
+import 'settings_search.dart';
 
-/// The Settings tab (Settings.html): the pages in three groups, each row with a tile, a
-/// name, a line saying what it holds and a chevron.
-class SettingsScreen extends ConsumerWidget {
+/// The Settings tab (Settings.html): a search field, then the pages in three groups, each row
+/// with a tile, a name, a line saying what it holds and a chevron.
+///
+/// The search field is undrawn (flagged in PLAN.md). Typing keeps only the matching rows, in
+/// their own cards; a card with no match is left out.
+/// Short enough to fit on one line at 1.3 times text size on a 390px phone.
+const settingsSearchHint = 'Reminders, backup, PIN';
+
+const _announceDelay = Duration(milliseconds: 500);
+
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
-  static const _groups = <List<_Entry>>[
-    [
-      _Entry(
-        AkIcons.sliders,
-        'General',
-        'Currency, language, dates, number style',
-        Routes.settingsGeneral,
-      ),
-      _Entry(
-        AkIcons.wallet,
-        'Accounts',
-        'Cash, MTN MoMo, Airtel Money, bank',
-        Routes.settingsAccounts,
-      ),
-      _Entry(
-        AkIcons.tag,
-        'Categories',
-        'Names, icons, colours, order, budgets',
-        Routes.settingsCategories,
-      ),
-    ],
-    [
-      _Entry(
-        AkIcons.sun,
-        'Appearance',
-        'Theme, colours, text size, charts',
-        Routes.settingsAppearance,
-      ),
-      _Entry(AkIcons.house, 'Home screen', 'Choose the cards and their order', Routes.settingsHome),
-      _Entry(
-        AkIcons.trend,
-        'Smart help',
-        'Suggestions, forecast, unusual payments',
-        Routes.settingsSmart,
-      ),
-      _Entry(
-        AkIcons.bell,
-        'Reminders',
-        'Daily nudge, budget warnings, weekly summary',
-        Routes.settingsReminders,
-      ),
-    ],
-    [
-      _Entry(AkIcons.lock, 'App lock', 'PIN, fingerprint or face, lock after', Routes.settingsLock),
-      _Entry(
-        AkIcons.check,
-        'Phone permissions',
-        'What this phone allows Akatabo',
-        Routes.settingsPermissions,
-      ),
-      _Entry(
-        AkIcons.phone,
-        'Privacy and security',
-        'Hidden amounts, the app switcher',
-        Routes.settingsPrivacy,
-      ),
-      _Entry(
-        AkIcons.download,
-        'Data and backup',
-        'Export, back up, restore, delete',
-        Routes.settingsData,
-      ),
-    ],
-  ];
+  @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  /// Holds the search words in this State, next to the filter, so the field and the list
+  /// cannot disagree when the field scrolls out of the list and is rebuilt.
+  final _search = TextEditingController();
+  Timer? _announceTimer;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _announceTimer?.cancel();
+    _search.dispose();
+    super.dispose();
+  }
+
+  void _onSearch(String _) {
+    setState(() {});
+    // Says how many pages are left once typing pauses, so a screen reader user hears the
+    // result without each key interrupting the last.
+    _announceTimer?.cancel();
+    _announceTimer = Timer(_announceDelay, () {
+      if (!mounted) return;
+      final count = filterSettings(settingsEntries, _search.text).length;
+      final message = switch (count) {
+        0 => 'No settings match',
+        1 => '1 setting',
+        _ => '$count settings',
+      };
+      SemanticsService.sendAnnouncement(View.of(context), message, TextDirection.ltr);
+    });
+  }
+
+  /// Leaves the search field before opening a page, so the keyboard does not come back up
+  /// over the results when the person returns.
+  void _open(String route) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    context.push(route);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final c = context.colors;
     // The version appears once it is known; until then, and if it cannot be read, the line
     // is the same without it.
@@ -88,29 +78,49 @@ class SettingsScreen extends ConsumerWidget {
     final footer = version == null || version.isEmpty
         ? 'Free, with no account and no adverts.'
         : 'Akatabo $version. Free, with no account and no adverts.';
+    final shown = filterSettings(settingsEntries, _search.text);
+    final groups = <List<SettingsEntry>>[
+      for (final g in {for (final e in shown) e.group}) [...shown.where((e) => e.group == g)],
+    ];
     return Scaffold(
       body: SafeArea(
         child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s4, AkSpace.s6, AkSpace.s6),
           children: [
             Semantics(header: true, child: Text('Settings', style: context.type.displayLg)),
             const SizedBox(height: AkSpace.s4),
-            for (final group in _groups) ...[
-              AkCard(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: [
-                    for (var i = 0; i < group.length; i++)
-                      _SettingsRow(
-                        entry: group[i],
-                        divider: i < group.length - 1,
-                        onTap: () => context.push(group[i].route),
-                      ),
-                  ],
-                ),
+            // Merged, so TalkBack reads the name on the edit box itself, not only its hint.
+            MergeSemantics(
+              child: AkTextField(
+                label: 'Search settings',
+                hint: settingsSearchHint,
+                controller: _search,
+                textInputAction: TextInputAction.search,
+                onChanged: _onSearch,
               ),
-              const SizedBox(height: AkSpace.s3),
-            ],
+            ),
+            const SizedBox(height: AkSpace.s4),
+            // The result count, including none, is announced from _onSearch.
+            if (groups.isEmpty)
+              const AkEmptyNote('No settings match. Try another word.')
+            else
+              for (final group in groups) ...[
+                AkCard(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < group.length; i++)
+                        _SettingsRow(
+                          entry: group[i],
+                          divider: i < group.length - 1,
+                          onTap: () => _open(group[i].route),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AkSpace.s3),
+              ],
             const SizedBox(height: AkSpace.s1),
             Text(
               footer,
@@ -127,7 +137,7 @@ class SettingsScreen extends ConsumerWidget {
 class _SettingsRow extends StatelessWidget {
   const _SettingsRow({required this.entry, required this.divider, required this.onTap});
 
-  final _Entry entry;
+  final SettingsEntry entry;
   final bool divider;
   final VoidCallback onTap;
 
@@ -138,7 +148,7 @@ class _SettingsRow extends StatelessWidget {
       button: true,
       container: true,
       excludeSemantics: true,
-      label: '${entry.title}, ${entry.subtitle}',
+      label: '${entry.label}, ${entry.description}',
       onTap: onTap,
       child: AkListRow(
         leading: AkIconTile(
@@ -147,8 +157,8 @@ class _SettingsRow extends StatelessWidget {
           foreground: c.brandText,
           iconSize: AkSize.icon,
         ),
-        title: entry.title,
-        subtitle: entry.subtitle,
+        title: entry.label,
+        subtitle: entry.description,
         titleWeight: FontWeight.w600,
         trailing: AkIcon(AkIcons.chevron, size: AkSize.iconSm, color: c.inkMuted),
         divider: divider,
@@ -157,12 +167,4 @@ class _SettingsRow extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Entry {
-  const _Entry(this.icon, this.title, this.subtitle, this.route);
-  final AkIcons icon;
-  final String title;
-  final String subtitle;
-  final String route;
 }

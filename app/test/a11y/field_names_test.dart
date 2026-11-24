@@ -18,6 +18,7 @@ void main() {
   for (final (screen, route, name) in [
     ('Add', Routes.add, 'Amount in shillings'),
     ('All transactions', Routes.transactions, 'Search transactions'),
+    ('Settings', Routes.settings, 'Search settings'),
   ]) {
     testWidgets('the first field on $screen is named on its own edit box', (tester) async {
       await _expectFieldNamed(tester, route, name);

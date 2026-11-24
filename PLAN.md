@@ -187,7 +187,7 @@ Each is recorded in `PLAN.md` and flagged in `PROGRESS.md` for a design check.
 
 ## Undrawn things to build from the rules and flag
 
-Calendar Day, Week, Quarter and Year views; onboarding steps 2 and 3; Add in "Money in" and "Move money" states and with note and tax; set, change and forgot PIN (with no account, forgot PIN can only offer "delete everything, then restore a backup"); backup password entry; restore steps 1 and 3 and its three errors; edit and delete an account; pickers behind value rows; every confirmation dialog; the unusual-payment card with "This was me"; the suggestion pill before there is enough history to give a percentage; empty states for every list, chart and total; scrolling and large text on screens drawn at a fixed 844px.
+Calendar Day, Week, Quarter and Year views; onboarding steps 2 and 3; Add in "Money in" and "Move money" states and with note and tax; set, change and forgot PIN (with no account, forgot PIN can only offer "delete everything, then restore a backup"); backup password entry; restore steps 1 and 3 and its three errors; edit and delete an account; pickers behind value rows; every confirmation dialog; the unusual-payment card with "This was me"; the suggestion pill before there is enough history to give a percentage; empty states for every list, chart and total; scrolling and large text on screens drawn at a fixed 844px; the search field at the top of the Settings hub (an `AkTextField` labelled "Search settings", hint "Reminders, backup, PIN"; matching rows stay in their own cards, a card with no match is left out, and no match shows "No settings match. Try another word.").
 
 ## Build phases
 

@@ -151,7 +151,13 @@ void main() {
       expect(find.byType(AkCard), findsNWidgets(3));
       expect(find.byType(AkIconTile), findsNWidgets(11));
       expect(find.byType(AkIcon), findsNWidgets(22), reason: 'a tile icon and a chevron per row');
-      // The version cannot be read in a test, so the footer is the plain line.
+      // The version cannot be read in a test, so the footer is the plain line. It sits below
+      // the search field and three cards, past the bottom of the test screen.
+      await tester.scrollUntilVisible(
+        find.text('Free, with no account and no adverts.'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Free, with no account and no adverts.'), findsOneWidget);
       // Text sits inside the card, not against its edge.
       final card = tester.getTopLeft(find.byType(AkCard).first);
@@ -207,7 +213,13 @@ void main() {
         ),
       );
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Akatabo 1.0.0 (1). Free, with no account and no adverts.'), findsOneWidget);
+      const footer = 'Akatabo 1.0.0 (1). Free, with no account and no adverts.';
+      await tester.scrollUntilVisible(
+        find.text(footer),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(footer), findsOneWidget);
     });
 
     testWidgets('General shows the defaults until something is chosen', (tester) async {
