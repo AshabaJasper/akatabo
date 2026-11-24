@@ -22,11 +22,11 @@ abstract final class Routes {
   static const settingsIncomeCategories = '$settingsCategories/income';
   static const settingsIncomeCategoryNew = '$settingsIncomeCategories/new';
 
-  /// Smart help and Reminders, one page reached from both hub rows.
+  /// Smart help: what Akatabo learns, and the switches for it.
   static const settingsSmart = '/settings/smart';
 
-  /// The same page, scrolled to its Reminders section.
-  static const settingsReminders = '$settingsSmart?section=reminders';
+  /// Reminders: each switch, when it next fires, and a test notification.
+  static const settingsReminders = '/settings/reminders';
 
   /// Privacy and data: app lock, hidden amounts, data and backup, about. One page reached
   /// from both hub rows; the Data and backup row opens it at that section.

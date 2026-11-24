@@ -83,6 +83,12 @@ class LockController extends Notifier<LockStatus> {
     state = hasPin ? LockStatus.locked : LockStatus.unlocked;
   }
 
+  /// "Lock now" in App lock: covers the app at once, when the lock is on and the app is open.
+  void lockNow() {
+    if (state != LockStatus.unlocked || !_lockOn) return;
+    state = LockStatus.locked;
+  }
+
   /// The app went out of sight. Hidden figures are dotted again either way.
   void wentAway() {
     ref.read(amountsRevealedProvider.notifier).hideAgain();

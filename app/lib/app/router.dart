@@ -31,8 +31,9 @@ import '../features/settings/general_settings_screen.dart';
 import '../features/settings/home_settings_screen.dart';
 import '../features/settings/income_categories_screen.dart';
 import '../features/settings/new_account_screen.dart';
+import '../features/settings/reminders_screen.dart';
 import '../features/settings/settings_screen.dart';
-import '../features/settings/smart_settings_screen.dart';
+import '../features/settings/smart_help_screen.dart';
 import '../features/transactions/transaction_detail_screen.dart';
 import '../features/transactions/transactions_screen.dart';
 import 'routes.dart';
@@ -169,12 +170,8 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
           from: CategoryEditFrom.income,
         ),
       ),
-      GoRoute(
-        path: Routes.settingsSmart,
-        builder: (_, state) => SmartSettingsScreen(
-          openAtReminders: state.uri.queryParameters['section'] == 'reminders',
-        ),
-      ),
+      GoRoute(path: Routes.settingsSmart, builder: (_, _) => const SmartHelpScreen()),
+      GoRoute(path: Routes.settingsReminders, builder: (_, _) => const RemindersScreen()),
       GoRoute(
         path: Routes.settingsPrivacy,
         builder: (_, state) =>
@@ -182,11 +179,8 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       ),
       GoRoute(
         path: Routes.settingsLock,
-        builder: (_, state) => AppLockScreen(
-          backLabel: state.uri.queryParameters['from'] == 'privacy'
-              ? 'Privacy and data'
-              : 'Settings',
-        ),
+        builder: (_, state) =>
+            AppLockScreen(fromPrivacy: state.uri.queryParameters['from'] == 'privacy'),
       ),
       GoRoute(
         path: Routes.dataExport,

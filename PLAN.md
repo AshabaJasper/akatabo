@@ -445,3 +445,13 @@ After the owner tried the app on a Pixel 8 Pro. Owner decisions: a new private G
 - **Today's figure on the chart** is drawn only beside a forecast; without one it repeats the top gridline.
 - **Hidden amounts** cover every figure on the Forecast page and the Insights Forecast card; the charts keep their shape and drop their money labels.
 - **Not done yet:** the 18% money-out band in Forecast.html (which band it means is unclear, so it is not guessed) and the top-3 categories strip on Insights (needs Home's private `_WhereItWent` moved to a shared widget).
+
+### Phase 4 of the November plan: App lock, Smart help and Reminders (24 November 2026)
+
+- **App lock shows every row.** Rows that cannot act yet are dimmed and say what they wait for ("Turn on Lock the app first"), instead of being hidden. A status card at the top says whether the lock is on, how it unlocks and when it locks.
+- **"Set a PIN" whenever the lock is off; "Change PIN" only while it is on.** A PIN left behind with the lock off (a failed clear) is replaced without asking for it, as before. Switching the lock on is the same flow, so the switch is never blocked.
+- **Unlock with is always shown.** On a phone with no fingerprint or face set up, it says to add one in the phone's settings; until then the PIN is used.
+- **Lock now** covers the app at once, only while the lock is on. **Wrong PIN tries** shows the free tries left, or that a wait is running; the waits themselves are unchanged (4 free, then 30 seconds up to an hour).
+- **No "Use PIN" label on the lock screen.** Lock.html draws none: the fingerprint prompt starts on its own, and the PIN keypad stays on screen under it as the fallback, with the fingerprint key to ask again.
+- **Smart help and Reminders are two pages.** `openAtReminders` is gone; the hub links to each. Reminders show their next time ("Next: tonight, 20:00"), whether the phone allows notifications, and send a test notification (id 99, beside the reminders' 1, 2 and 100 up). Smart help shows forecast accuracy (a month forecast at zero is left out of the average) and how many regular payments it noticed.
+- **Not done:** inline time and day pickers (the shared modal pickers stay); a button that opens the phone's notification settings (needs a native channel); suggestion counts and recent unusual payments in Smart help (nothing records them yet).

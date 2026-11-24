@@ -1,15 +1,19 @@
-import 'package:akatabo/app/routes.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
+import 'package:akatabo/core/time/clock_provider.dart';
 import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
 import 'package:akatabo/data/settings/setting_keys.dart';
+import 'package:akatabo/features/forecast/forecast_providers.dart';
+import 'package:akatabo/features/regular/regular_providers.dart';
+import 'package:akatabo/features/settings/reminders_screen.dart';
 import 'package:akatabo/features/settings/settings_page.dart';
-import 'package:akatabo/features/settings/smart_settings_screen.dart';
+import 'package:akatabo/features/settings/smart_help_screen.dart';
 import 'package:akatabo/services/notifications/notifications_service.dart';
 import 'package:akatabo/services/notifications/reminder_plan.dart';
 import 'package:akatabo/services/notifications/reminder_scheduler.dart';
 import 'package:akatabo/services/notifications/reminder_switch.dart';
+import 'package:akatabo/smart/forecast/forecast_range.dart';
 import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:clock/clock.dart';
 import 'package:drift/native.dart';
@@ -22,7 +26,7 @@ import '../../support/fixtures.dart';
 
 typedef _FakeNotifications = FakeNotifications;
 
-/// The drawn state: every switch on, Balanced, 80%, 20:00, Sunday evening.
+/// The drawn state: every reminder on, Balanced, 20:00, Sunday evening.
 final _drawn = {
   SettingKeys.dailyReminder.name: '1',
   SettingKeys.budgetWarn.name: '1',
@@ -34,7 +38,9 @@ Future<void> _pump(
   WidgetTester tester,
   AppDatabase db,
   _FakeNotifications fake, {
+  Widget page = const SmartHelpScreen(),
   Map<String, String> settings = const {},
+  List<SnapshotPoint> history = const [],
   Brightness brightness = Brightness.light,
   Size size = const Size(390, 3000),
   double textScale = 1,
@@ -48,6 +54,12 @@ Future<void> _pump(
       retry: (_, _) => null,
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
+        // A fixed day, as every screen test has: the real one sets a timer for midnight.
+        appNowProvider.overrideWithValue(DateTime(2026, 11, 24, 10)),
+        // Fixed data, as every screen test has: a live database watch keeps timers the
+        // test's fake clock never runs, so closing the database would wait forever.
+        forecastHistoryProvider.overrideWithValue(history),
+        activeRegularProvider.overrideWith((ref) => Stream.value(const [])),
         storedSettingsProvider.overrideWith((ref) => Stream.value(settings)),
         notificationsServiceProvider.overrideWithValue(fake),
       ],
@@ -57,7 +69,7 @@ Future<void> _pump(
           data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
           child: child!,
         ),
-        home: const SmartSettingsScreen(),
+        home: page,
       ),
     ),
   );
@@ -96,6 +108,10 @@ void main() {
         'Smart help',
         'Akatabo learns from your own entries, on this phone only. Switch off anything you '
             'do not want.',
+        'WHAT IT HAS LEARNED',
+        'Forecast accuracy',
+        'No saved months yet',
+        'Regular payments noticed',
         'WHAT IT DOES FOR YOU',
         'Suggest a category',
         'From the words you type when you add',
@@ -107,26 +123,39 @@ void main() {
         'Notice regular payments',
         'Such as Yaka, data bundles and rent',
         'Forget everything it has learned',
-        'REMINDERS',
-        'Remind me to add each day',
-        '20:00',
-        'Warn me when a budget is nearly used',
-        "At each budget's own warn level, and again if it goes over",
-        'Tell me before a regular payment',
-        'Weekly summary',
-        'Sunday evening',
       ]) {
         expect(find.text(text), findsOneWidget, reason: text);
       }
-      // The smart features work now; no "later update" note is left under them.
-      expect(find.textContaining('later update'), findsNothing);
       for (final label in ['Rarely', 'Balanced', 'Often']) {
         expect(find.text(label), findsOneWidget, reason: label);
       }
-      // Smart help starts on; reminders start off until permission is given.
+      // The smart features work now; no "later update" note is left under them.
+      expect(find.textContaining('later update'), findsNothing);
       expect(tester.widget<AkSwitch>(_switch('Suggest a category')).value, isTrue);
-      expect(tester.widget<AkSwitch>(_switch('Remind me to add each day')).value, isFalse);
+      // Reminders are not on this page any more.
+      expect(find.text('Remind me to add each day'), findsNothing);
     });
+
+    testWidgets(
+      'forecast accuracy averages the saved months, leaving out one forecast at nothing',
+      (tester) async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await _pump(
+          tester,
+          db,
+          _FakeNotifications(),
+          history: const [
+            SnapshotPoint(periodStart: 20260801, dayInPeriod: 24, point: 100000, actual: 110000),
+            SnapshotPoint(periodStart: 20260901, dayInPeriod: 24, point: 200000, actual: 180000),
+            // Dividing by a forecast of nothing would crash the page.
+            SnapshotPoint(periodStart: 20261001, dayInPeriod: 24, point: 0, actual: 5000),
+          ],
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.text('Within about 10%'), findsOneWidget);
+      },
+    );
 
     testWidgets('a Smart help switch saves without asking for notifications', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
@@ -145,11 +174,118 @@ void main() {
       expect(fake.replaces, 0);
     });
 
+    testWidgets('forgetting asks first, then stores when it happened', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(tester, db, _FakeNotifications());
+
+      await tester.tap(find.text('Forget everything it has learned'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Cancel'));
+      await _settle(tester);
+      expect(await _stored(tester, db, SettingKeys.learningResetAt.name), isNull);
+
+      await tester.tap(find.text('Forget everything it has learned'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Forget'));
+      await _settle(tester);
+      final stored = int.parse((await _stored(tester, db, SettingKeys.learningResetAt.name))!);
+      expect(stored, greaterThan(0));
+      expect(find.text(forgotMessage), findsOneWidget);
+    });
+
+    testWidgets('every row in a card starts 14 from the card edge', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(tester, db, _FakeNotifications());
+
+      final left = <String, double>{
+        for (final text in [
+          'Suggest a category', // noted switch row
+          'How often it points them out', // segment row
+          'Forget everything it has learned', // action row
+        ])
+          text: tester.getTopLeft(find.text(text)).dx,
+      };
+      // The page has 24 at the sides; the card's border is drawn inside its edge.
+      for (final e in left.entries) {
+        expect(e.value, AkSpace.s6 + settingsRowSide, reason: e.key);
+      }
+    });
+
+    testWidgets('large text on a small phone does not overflow', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(tester, db, _FakeNotifications(), size: const Size(320, 4000), textScale: 2);
+      expect(tester.takeException(), isNull);
+      expect(find.text('Forget everything it has learned'), findsOneWidget);
+    });
+
+    for (final b in Brightness.values) {
+      testWidgets('smart help golden, ${b.name}', (tester) async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await _pump(tester, db, _FakeNotifications(), brightness: b, size: const Size(390, 844));
+        await expectLater(
+          find.byType(SmartHelpScreen),
+          matchesGoldenFile('goldens/smart_help_${b.name}.png'),
+        );
+      });
+    }
+  });
+
+  group('Reminders page', () {
+    testWidgets('shows the drawn rows, each with its next time', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(
+        tester,
+        db,
+        _FakeNotifications(),
+        page: const RemindersScreen(),
+        settings: _drawn,
+      );
+      await _settle(tester);
+
+      for (final text in [
+        'Reminders',
+        'A reminder is sent only when you switch it on. Each one shows when it next fires.',
+        'REMINDERS',
+        'Remind me to add each day',
+        '20:00',
+        'Warn me when a budget is nearly used',
+        "At each budget's own warn level, and again if it goes over",
+        'Tell me before a regular payment',
+        'The morning before it is due',
+        'Weekly summary',
+        'Sunday evening',
+        'CHECK',
+        'Notifications on this phone',
+        'Send a test notification',
+      ]) {
+        expect(find.text(text), findsOneWidget, reason: text);
+      }
+      // Each switched-on reminder shows its next time, as words and a clock time.
+      expect(find.textContaining('Next: '), findsNWidgets(2));
+      expect(tester.widget<AkSwitch>(_switch('Remind me to add each day')).value, isTrue);
+    });
+
+    testWidgets('reminders start off, with no next time shown', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(tester, db, _FakeNotifications(), page: const RemindersScreen());
+      await _settle(tester);
+
+      expect(tester.widget<AkSwitch>(_switch('Remind me to add each day')).value, isFalse);
+      expect(find.text('Off'), findsWidgets);
+      expect(find.textContaining('Next: '), findsNothing);
+    });
+
     testWidgets('switching a reminder on asks once, saves it and schedules it', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       final fake = _FakeNotifications();
-      await _pump(tester, db, fake);
+      await _pump(tester, db, fake, page: const RemindersScreen());
 
       await tester.tap(_switch('Remind me to add each day'));
       await _settle(tester);
@@ -165,7 +301,7 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       final fake = _FakeNotifications(allow: false);
-      await _pump(tester, db, fake);
+      await _pump(tester, db, fake, page: const RemindersScreen());
 
       await tester.tap(_switch('Weekly summary'));
       await _settle(tester);
@@ -182,14 +318,43 @@ void main() {
     ) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
-      await _pump(tester, db, _FakeNotifications(allowedNow: false), settings: _drawn);
+      await _pump(
+        tester,
+        db,
+        _FakeNotifications(allowedNow: false),
+        page: const RemindersScreen(),
+        settings: _drawn,
+      );
+      await _settle(tester);
+      expect(find.text('Blocked'), findsOneWidget);
       expect(find.text(notificationsBlockedMessage), findsOneWidget);
+    });
+
+    testWidgets('allowing notifications in the phone settings shows when Akatabo comes back', (
+      tester,
+    ) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final fake = _FakeNotifications(allowedNow: false);
+      await _pump(tester, db, fake, page: const RemindersScreen(), settings: _drawn);
+      await _settle(tester);
+      expect(find.text('Blocked'), findsOneWidget);
+
+      // The person allows notifications in the phone's settings, then returns.
+      fake.allowedNow = true;
+      tester.binding
+        ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+        ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await _settle(tester);
+      expect(find.text('Allowed'), findsOneWidget);
+      expect(find.text(notificationsBlockedMessage), findsNothing);
     });
 
     testWidgets('with every reminder off there is nothing to warn about', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
-      await _pump(tester, db, _FakeNotifications(allowedNow: false));
+      await _pump(tester, db, _FakeNotifications(allowedNow: false), page: const RemindersScreen());
+      await _settle(tester);
       expect(find.text(notificationsBlockedMessage), findsNothing);
     });
 
@@ -197,7 +362,7 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       final fake = _FakeNotifications();
-      await _pump(tester, db, fake, settings: _drawn);
+      await _pump(tester, db, fake, page: const RemindersScreen(), settings: _drawn);
 
       await tester.tap(_switch('Tell me before a regular payment'));
       await _settle(tester);
@@ -214,7 +379,7 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       final fake = _FakeNotifications();
-      await _pump(tester, db, fake);
+      await _pump(tester, db, fake, page: const RemindersScreen());
 
       await tester.tap(_switch('Warn me when a budget is nearly used'));
       await _settle(tester);
@@ -226,33 +391,12 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       final fake = _FakeNotifications(allow: false);
-      await _pump(tester, db, fake);
+      await _pump(tester, db, fake, page: const RemindersScreen());
 
       await tester.tap(_switch('Warn me when a budget is nearly used'));
       await _settle(tester);
       expect(await _stored(tester, db, SettingKeys.budgetWarn.name), isNull);
       expect(find.text(notificationsRefusedMessage), findsOneWidget);
-    });
-
-    testWidgets('every row in a card starts 14 from the card edge', (tester) async {
-      final db = AppDatabase(NativeDatabase.memory());
-      addTearDown(db.close);
-      await _pump(tester, db, _FakeNotifications());
-
-      final left = <String, double>{
-        for (final text in [
-          'Suggest a category', // noted switch row
-          'How often it points them out', // segment row
-          'Forget everything it has learned', // action row
-          'Remind me to add each day', // shared switch row
-          'At', // shared value row
-        ])
-          text: tester.getTopLeft(find.text(text)).dx,
-      };
-      // The page has 24 at the sides; the card's border is drawn inside its edge.
-      for (final e in left.entries) {
-        expect(e.value, AkSpace.s6 + settingsRowSide, reason: e.key);
-      }
     });
 
     testWidgets('the weekly summary day is chosen from the week, current day ticked', (
@@ -261,7 +405,7 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       final fake = _FakeNotifications();
-      await _pump(tester, db, fake);
+      await _pump(tester, db, fake, page: const RemindersScreen());
 
       await tester.tap(find.text('Sunday evening'));
       await tester.pumpAndSettle();
@@ -287,7 +431,7 @@ void main() {
     testWidgets('the time picker saves the chosen time', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
-      await _pump(tester, db, _FakeNotifications());
+      await _pump(tester, db, _FakeNotifications(), page: const RemindersScreen());
 
       await tester.tap(find.text('20:00'));
       await tester.pumpAndSettle();
@@ -301,57 +445,49 @@ void main() {
       expect(await _stored(tester, db, SettingKeys.dailyReminderAt.name), '${7 * 60 + 30}');
     });
 
-    testWidgets('forgetting asks first, then stores when it happened', (tester) async {
+    testWidgets('the test notification is sent now, when the phone allows it', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
-      await _pump(tester, db, _FakeNotifications());
+      final fake = _FakeNotifications();
+      await _pump(tester, db, fake, page: const RemindersScreen());
 
-      await tester.tap(find.text('Forget everything it has learned'));
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text('Send a test notification'));
       await _settle(tester);
-      expect(await _stored(tester, db, SettingKeys.learningResetAt.name), isNull);
 
-      await tester.tap(find.text('Forget everything it has learned'));
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Forget'));
-      await _settle(tester);
-      final stored = int.parse((await _stored(tester, db, SettingKeys.learningResetAt.name))!);
-      expect(stored, greaterThan(0));
-      expect(find.text(forgotMessage), findsOneWidget);
+      expect(fake.shown, hasLength(1));
+      expect(fake.shown.single.title, 'Akatabo');
+      expect(find.text('Sent. It should appear at the top of your phone.'), findsOneWidget);
     });
 
-    testWidgets('opened from the Reminders row, it starts at Reminders', (tester) async {
+    testWidgets('the test notification says why it cannot be sent when blocked', (tester) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
-      tester.view
-        ..physicalSize = const Size(390, 844)
-        ..devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await tester.pumpWidget(
-        ProviderScope(
-          retry: (_, _) => null,
-          overrides: [
-            appDatabaseProvider.overrideWithValue(db),
-            storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
-            notificationsServiceProvider.overrideWithValue(_FakeNotifications()),
-          ],
-          child: MaterialApp(
-            theme: buildAkTheme(Brightness.light, const AkAppearance()),
-            home: const SmartSettingsScreen(openAtReminders: true),
-          ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump(const Duration(milliseconds: 300));
-      // Scrolled as far as the list goes: the whole Reminders card is on screen.
-      expect(
-        tester.state<ScrollableState>(find.byType(Scrollable)).position.pixels,
-        greaterThan(0),
-      );
-      expect(tester.getBottomLeft(find.text('Sunday evening')).dy, lessThan(844));
-      expect(tester.getTopLeft(find.text('REMINDERS')).dy, greaterThan(0));
-      expect(Routes.settingsReminders, startsWith(Routes.settingsSmart));
+      final fake = _FakeNotifications(allowedNow: false);
+      await _pump(tester, db, fake, page: const RemindersScreen());
+
+      await tester.tap(find.text('Send a test notification'));
+      await _settle(tester);
+
+      expect(fake.shown, isEmpty);
+      expect(find.text(notificationsBlockedMessage), findsOneWidget);
+    });
+
+    testWidgets('every row in a card starts 14 from the card edge', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _pump(tester, db, _FakeNotifications(), page: const RemindersScreen());
+
+      final left = <String, double>{
+        for (final text in [
+          'Remind me to add each day', // noted switch row
+          'At', // shared value row
+          'Send a test notification', // action row
+        ])
+          text: tester.getTopLeft(find.text(text)).dx,
+      };
+      for (final e in left.entries) {
+        expect(e.value, AkSpace.s6 + settingsRowSide, reason: e.key);
+      }
     });
 
     testWidgets('large text on a small phone does not overflow', (tester) async {
@@ -361,39 +497,95 @@ void main() {
         tester,
         db,
         _FakeNotifications(),
+        page: const RemindersScreen(),
         settings: _drawn,
         size: const Size(320, 4000),
         textScale: 2,
       );
+      await _settle(tester);
       expect(tester.takeException(), isNull);
       expect(find.text('Sunday evening'), findsOneWidget);
     });
 
     for (final b in Brightness.values) {
-      testWidgets('smart help golden, ${b.name}', (tester) async {
+      testWidgets('reminders golden, ${b.name}', (tester) async {
         final db = AppDatabase(NativeDatabase.memory());
         addTearDown(db.close);
-        await _pump(
-          tester,
-          db,
-          _FakeNotifications(),
-          settings: _drawn,
-          brightness: b,
-          size: const Size(390, 844),
-        );
-        await expectLater(
-          find.byType(SmartSettingsScreen),
-          matchesGoldenFile('goldens/smart_help_${b.name}.png'),
-        );
-        // The Reminders card sits below the fold at 844px.
-        await tester.drag(find.byType(ListView), const Offset(0, -2000));
-        await tester.pump(const Duration(milliseconds: 500));
-        await expectLater(
-          find.byType(SmartSettingsScreen),
-          matchesGoldenFile('goldens/smart_help_reminders_${b.name}.png'),
-        );
+        // A fixed time of day: "Next: tonight" would read "tomorrow" after 20:00.
+        await withClock(Clock.fixed(DateTime(2026, 11, 24, 10)), () async {
+          await _pump(
+            tester,
+            db,
+            _FakeNotifications(),
+            page: const RemindersScreen(),
+            settings: _drawn,
+            brightness: b,
+            size: const Size(390, 844),
+          );
+          await _settle(tester);
+          await expectLater(
+            find.byType(RemindersScreen),
+            matchesGoldenFile('goldens/reminders_${b.name}.png'),
+          );
+          // The Check card sits below the fold at 844px.
+          await tester.drag(find.byType(ListView), const Offset(0, -2000));
+          await tester.pump(const Duration(milliseconds: 500));
+          await expectLater(
+            find.byType(RemindersScreen),
+            matchesGoldenFile('goldens/reminders_check_${b.name}.png'),
+          );
+        });
       });
     }
+  });
+
+  group('Reminder times', () {
+    // Tuesday 24 November 2026, 10:00.
+    final now = DateTime(2026, 11, 24, 10);
+
+    test('a daily time later today is today', () {
+      expect(nextReminderAt(now, hour: 20, minute: 0), DateTime(2026, 11, 24, 20));
+    });
+
+    test('a daily time already passed is tomorrow, and so is the exact time now', () {
+      expect(nextReminderAt(now, hour: 7, minute: 30), DateTime(2026, 11, 25, 7, 30));
+      expect(
+        nextReminderAt(DateTime(2026, 11, 24, 20), hour: 20, minute: 0),
+        DateTime(2026, 11, 25, 20),
+      );
+    });
+
+    test('a weekday is the next day that matches it, today when it is still to come', () {
+      expect(
+        nextReminderAt(now, hour: 19, minute: 0, weekday: DateTime.sunday),
+        DateTime(2026, 11, 29, 19),
+      );
+      expect(
+        nextReminderAt(now, hour: 19, minute: 0, weekday: DateTime.tuesday),
+        DateTime(2026, 11, 24, 19),
+      );
+      expect(
+        nextReminderAt(now, hour: 9, minute: 0, weekday: DateTime.tuesday),
+        DateTime(2026, 12, 1, 9),
+      );
+    });
+
+    test('the next time is said in words a person would use', () {
+      expect(nextReminderWords(DateTime(2026, 11, 24, 20), now), 'tonight, 20:00');
+      expect(
+        nextReminderWords(DateTime(2026, 11, 24, 9), DateTime(2026, 11, 24, 7)),
+        'today, 09:00',
+      );
+      expect(nextReminderWords(DateTime(2026, 11, 25, 7, 30), now), 'tomorrow, 07:30');
+      expect(nextReminderWords(DateTime(2026, 11, 29, 19), now), 'Sunday, 19:00');
+    });
+
+    test('on the summary day after it was sent, the next one is "next Sunday"', () {
+      final sundayEvening = DateTime(2026, 11, 29, 20);
+      final next = nextReminderAt(sundayEvening, hour: 19, minute: 0, weekday: DateTime.sunday);
+      expect(next, DateTime(2026, 12, 6, 19));
+      expect(nextReminderWords(next, sundayEvening), 'next Sunday, 19:00');
+    });
   });
 
   group('rescheduling', () {

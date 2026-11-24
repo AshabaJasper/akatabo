@@ -149,4 +149,20 @@ void main() {
     c.read(lockControllerProvider.notifier).wentAway();
     expect(c.read(amountsRevealedProvider), isFalse);
   });
+
+  test('Lock now covers an open app at once, when the lock is on', () async {
+    final c = await _container(_on, await valuesWithPin('2580'));
+    final lock = c.read(lockControllerProvider.notifier);
+    await lock.unlockWithPin('2580');
+    expect(c.read(lockControllerProvider), LockStatus.unlocked);
+
+    lock.lockNow();
+    expect(c.read(lockControllerProvider), LockStatus.locked);
+  });
+
+  test('Lock now does nothing while the lock is off', () async {
+    final c = await _container(const {}, await valuesWithPin('2580'));
+    c.read(lockControllerProvider.notifier).lockNow();
+    expect(c.read(lockControllerProvider), LockStatus.unlocked);
+  });
 }

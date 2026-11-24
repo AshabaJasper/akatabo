@@ -150,5 +150,16 @@ void main() {
       expect(values.values, isEmpty);
       expect(await store.hasPin(), isFalse);
     });
+
+    test('wrong tries count the wrong PINs since the last right one', () async {
+      final values = await valuesWithPin('2580');
+      final store = PinStore(values, fastHasher());
+      expect(await store.wrongTries(), 0);
+      await store.check('0000');
+      await store.check('1111');
+      expect(await store.wrongTries(), 2);
+      await store.check('2580');
+      expect(await store.wrongTries(), 0);
+    });
   });
 }

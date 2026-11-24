@@ -502,6 +502,15 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Suggested fix:** take the held segments' 44px out of the room, work out the scale for the rest, repeat once, then apply the floor.
 - **Found:** 24 November 2026, bug review of the November plan's Phase 2
 
+### [bug-review] App lock's "Wrong PIN tries" row goes stale while the page is open
+
+- **Where:** `app/lib/features/lock/app_lock_screen.dart`, `pinTriesProvider` and the Wrong PIN tries row
+- **What happens:** the wrong-try count and the wait are read once when the page opens, and again only after a PIN screen closes. A wait that ends while the page is open still shows "Waiting", and wrong tries made on the lock screen after "Lock now" (then a fingerprint unlock) are not counted until the page is reopened.
+- **How to trigger:** lock on with fingerprint unlock; open App lock, tap Lock now, enter two wrong PINs, unlock with a fingerprint: the row still says "4 free".
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** have `pinTriesProvider` watch `lockControllerProvider`, so it reads again when the app opens; while a wait runs, a one-off timer for the time left refreshes it (cancelled in `ref.onDispose`).
+- **Found:** 24 November 2026, bug review of the November plan's Phase 4
+
 ## Fixed
 
 ### [states-audit] Budgets' empty state has no button

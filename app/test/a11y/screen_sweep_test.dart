@@ -67,6 +67,7 @@ final _screens = <String, String>{
   'Edit a category': '${Routes.settingsCategories}/${DefaultIds.food}/edit',
   'Money-in categories': Routes.settingsIncomeCategories,
   'Smart help': Routes.settingsSmart,
+  'Reminders': Routes.settingsReminders,
   'Privacy and data': Routes.settingsPrivacy,
   'Export and backup': Routes.dataExport,
   'Restore': Routes.dataRestore,

@@ -120,6 +120,9 @@ class PinStore {
 
   Future<bool> hasPin() async => (await _values.read(_hashKey)) != null;
 
+  /// Wrong tries in a row, for the App lock rows. Zero after a right PIN.
+  Future<int> wrongTries() async => int.tryParse(await _values.read(_failuresKey) ?? '') ?? 0;
+
   /// Stores a new PIN in place of any old one and forgets wrong tries.
   Future<void> setPin(String pin) async {
     final record = await _hasher.hash(pin);

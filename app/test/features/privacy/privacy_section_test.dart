@@ -10,13 +10,22 @@ import 'package:akatabo/features/settings/settings_page.dart';
 import 'package:akatabo/services/security/biometrics.dart';
 import 'package:akatabo/services/security/lock_controller.dart';
 import 'package:akatabo/services/security/privacy_settings.dart';
+import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../support/fake_security.dart';
+
+/// The App lock switch, found by its label. Other rows mention the lock in their text, so a
+/// plain text search would match more than one widget.
+final _lockSwitch = find.byWidgetPredicate(
+  (w) => w is AkSwitch && w.label == 'Lock the app',
+  description: 'Lock the app switch',
+);
 
 /// The drawn state: lock on with fingerprint, one minute, amounts shown, blank switcher.
 final _drawn = {
@@ -96,7 +105,7 @@ void main() {
     expect(find.text('Set a PIN'), findsOneWidget, reason: 'always in reach, lock on or off');
     expect(find.text('Change PIN'), findsNothing);
     expect(find.textContaining('the only way back in is to delete everything'), findsOneWidget);
-    expect(find.text('Off'), findsOneWidget, reason: "Privacy's App lock row says the state");
+    expect(_lockSwitch, findsOneWidget, reason: 'always shown; a PIN is set from it');
 
     await tester.tap(find.text('Set a PIN'));
     await _settle(tester);
@@ -138,15 +147,17 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.text('Change PIN'), findsOneWidget);
-    expect(find.text('On'), findsOneWidget);
+    expect(find.text('Locked when you leave'), findsOneWidget);
   });
 
   testWidgets('switching the lock on sets a PIN, entered twice', (tester) async {
     final values = MapSecureValues();
     await _pump(tester, db, values);
-    expect(find.text('Lock after'), findsNothing, reason: 'shown only while the lock is on');
+    expect(find.text('Lock after'), findsOneWidget, reason: 'always shown, dimmed while off');
+    // Lock now, Unlock with and Lock after each say what they wait for.
+    expect(find.text('Turn on Lock the app first'), findsNWidgets(3));
 
-    await tester.tap(find.bySemanticsLabel('Lock the app'));
+    await tester.tap(_lockSwitch);
     await tester.pumpAndSettle();
     expect(find.text('Choose a 4-digit PIN'), findsOneWidget);
     await _type(tester, '1357');
@@ -172,7 +183,7 @@ void main() {
     expect(find.text('Lock after'), findsOneWidget);
     expect(find.text('Change PIN'), findsOneWidget);
 
-    await tester.tap(find.bySemanticsLabel('Lock the app'));
+    await tester.tap(_lockSwitch);
     await tester.pumpAndSettle();
     expect(find.text('Enter your current PIN'), findsOneWidget);
     await _type(tester, '1111');
@@ -241,7 +252,7 @@ void main() {
     expect(await _stored(tester, db, PrivacyKeys.unlockWith.name), UnlockMethod.biometric.name);
   });
 
-  testWidgets('no "Unlock with" on a phone without fingerprint or face', (tester) async {
+  testWidgets('without fingerprint or face, Unlock with says how to add one', (tester) async {
     await _pump(
       tester,
       db,
@@ -250,14 +261,68 @@ void main() {
       biometrics: FakeBiometrics(available: false),
     );
     await _settle(tester);
-    expect(find.text('Unlock with'), findsNothing);
+    expect(find.text('Unlock with'), findsOneWidget, reason: 'always shown, with the reason');
+    expect(find.textContaining('needs one set up in your phone'), findsOneWidget);
+  });
+
+  testWidgets('from Privacy and data, the Hide amounts link goes back, not to a second copy', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: '/privacy',
+      routes: [
+        GoRoute(
+          path: '/privacy',
+          builder: (_, _) => const Scaffold(body: Text('Privacy page')),
+        ),
+        GoRoute(path: '/lock', builder: (_, _) => const AppLockScreen(fromPrivacy: true)),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+          ...securityOverrides(values: MapSecureValues()),
+        ],
+        child: MaterialApp.router(
+          theme: buildAkTheme(Brightness.light, const AkAppearance()),
+          routerConfig: router,
+        ),
+      ),
+    );
+    unawaited(router.push('/lock'));
+    await _settle(tester);
+    expect(find.text('Privacy and data'), findsOneWidget, reason: 'the back link names it');
+
+    await tester.ensureVisible(find.text('Hide amounts'));
+    await tester.pump();
+    await tester.tap(find.text('Hide amounts'));
+    await _settle(tester);
+    expect(find.text('Privacy page'), findsOneWidget);
+    expect(find.byType(AppLockScreen), findsNothing);
+    expect(router.canPop(), isFalse, reason: 'one Privacy page, nothing stacked on it');
   });
 
   testWidgets('Hide amounts and the app switcher switches save', (tester) async {
     await _pump(tester, db, MapSecureValues());
-    await tester.tap(find.bySemanticsLabel('Hide amounts'));
     await _settle(tester);
-    await tester.tap(find.bySemanticsLabel('Blank the screen in the app switcher'));
+    // App lock sits above Privacy on this test page, so its switches start below the fold.
+    final hide = find.byWidgetPredicate((w) => w is AkSwitch && w.label == 'Hide amounts');
+    final blank = find.byWidgetPredicate(
+      (w) => w is AkSwitch && w.label == 'Blank the screen in the app switcher',
+    );
+    await tester.scrollUntilVisible(hide, 200);
+    await tester.ensureVisible(hide);
+    await tester.pump();
+    await tester.tap(hide);
+    await _settle(tester);
+    await tester.scrollUntilVisible(blank, 200);
+    await tester.ensureVisible(blank);
+    await tester.pump();
+    await tester.tap(blank);
     await _settle(tester);
     expect(await _stored(tester, db, PrivacyKeys.hideAmounts.name), '1');
     expect(await _stored(tester, db, PrivacyKeys.blankInSwitcher.name), '0');
@@ -284,7 +349,7 @@ void main() {
   for (final b in Brightness.values) {
     testWidgets('PIN set screen (undrawn), ${b.name}', (tester) async {
       await _pump(tester, db, MapSecureValues(), brightness: b);
-      await tester.tap(find.bySemanticsLabel('Lock the app'));
+      await tester.tap(_lockSwitch);
       await tester.pumpAndSettle();
       await expectLater(
         find.byType(PinFlowScreen),
