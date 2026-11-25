@@ -49,6 +49,13 @@ class LockController extends Notifier<LockStatus> {
       unawaited(Future.microtask(_decideFromPin));
       return LockStatus.checking;
     }
+    // Already failed when the lock starts (for example, a database this build cannot open).
+    // A listener only hears about changes, so decide now from the PIN, as below.
+    if (now.hasError) {
+      _decided = true;
+      unawaited(Future.microtask(_decideFromPin));
+      return LockStatus.checking;
+    }
     ref.listen(storedSettingsProvider, (_, next) {
       if (_decided || next.isLoading) return;
       _decided = true;

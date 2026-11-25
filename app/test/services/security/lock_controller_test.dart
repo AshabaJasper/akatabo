@@ -40,6 +40,42 @@ Future<ProviderContainer> _container(
 void main() {
   final start = DateTime(2026, 11, 19, 9, 14);
 
+  // The phone case: the stored settings cannot be read (here, the database is a newer
+  // version than this build), and that error is already there when the lock starts. The
+  // lock must still decide from the PIN, not wait forever on "checking" with a blank screen.
+  Future<ProviderContainer> unreadable(MapSecureValues values) async {
+    final container = ProviderContainer(
+      retry: (_, _) => null,
+      overrides: [
+        storedSettingsProvider.overrideWith(
+          (ref) => Stream<Map<String, String>>.error(StateError('database is a newer version')),
+        ),
+        ...securityOverrides(values: values),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.listen(storedSettingsProvider, (_, _) {});
+    for (var i = 0; i < 5; i++) {
+      await Future<void>.delayed(Duration.zero);
+    }
+    // Only now does the lock start, so it finds the error already in place.
+    container.listen(lockControllerProvider, (_, _) {});
+    for (var i = 0; i < 5; i++) {
+      await Future<void>.delayed(Duration.zero);
+    }
+    return container;
+  }
+
+  test('settings that cannot be read: the lock falls back to the PIN and locks', () async {
+    final c = await unreadable(await valuesWithPin('2580'));
+    expect(c.read(lockControllerProvider), LockStatus.locked);
+  });
+
+  test('settings that cannot be read, and no PIN: the app opens, not stuck', () async {
+    final c = await unreadable(MapSecureValues());
+    expect(c.read(lockControllerProvider), LockStatus.unlocked);
+  });
+
   test('locks on start when the lock is on and a PIN is stored', () async {
     final c = await _container(_on, await valuesWithPin('2580'));
     expect(c.read(lockControllerProvider), LockStatus.locked);
