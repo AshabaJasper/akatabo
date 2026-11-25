@@ -23,7 +23,7 @@ An iOS project is in place but has not been built, because the work so far has b
 ## What it does
 
 - **Record every shilling.** Money out, money in and moves between accounts (cash, mobile money, bank), with fees and tax kept on each entry.
-- **Budgets** per category, with a warning before you reach the limit and an option to carry over what is left.
+- **Goals.** Savings goals with a target, a date and the pace you need, and budgets per category with a warning before you reach the limit and an option to carry over what is left. Both sit on the Goals tab.
 - **A forecast for the month:** where spending is heading, a safe amount to spend per day, and the regular payments it is counting.
 - **Insights and a calendar** that show where the money went, what changed against last month, and which fees you paid.
 - **Regular payments** such as rent and airtime, noticed from your history, with a reminder the day before.

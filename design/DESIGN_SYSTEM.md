@@ -62,7 +62,7 @@ Styles: `display-xl` for the one headline on Welcome; `figure-xl` (40px) for the
 - Phone frame 390 by 844. Top padding 52 to 60px so the real status bar has room. Never draw a status bar.
 - Screen side padding `space-6`. Cards use `radius-lg` and `space-4` padding, `space-3` apart.
 - Every tappable thing is at least 44px tall.
-- Bottom navigation: Home, Insights, the Add button, Budgets, Settings. 64px tall, `surface` with a `line` top border. Active item is `brand` at weight 600; the rest are `ink-muted`. Add is a 48px `brand` disc with the `plus` icon in `on-brand`, in the centre, on every screen.
+- Bottom navigation: Home, Insights, the Add button, Goals, Settings. Goals opens on a Savings | Budgets switch. 64px tall, `surface` with a `line` top border. Active item is `brand` at weight 600; the rest are `ink-muted`. Add is a 48px `brand` disc with the `plus` icon in `on-brand`, in the centre, on every screen.
 - Inputs are 48px tall with a `line-strong` border and `radius-lg`, each with a visible label above it. The amount input is the exception: `figure-xl` on a 2px `brand` underline.
 - A list row is 56px (raised from 52 on 24 Nov 2026): a 36px icon tile, a two-line text block, and a right-aligned `figure`.
 - An analysis screen opens with a `brand` block that states the finding as a `headline` sentence, with the one key figure in `accent`, and the chart that proves it directly underneath.
@@ -79,7 +79,7 @@ The set. Each entry is the content of `<svg viewBox="0 0 24 24" fill="none" stro
 | --- | --- | --- |
 | home | navigation | `<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>` |
 | chart | Insights | `<path d="M5 20V10"/><path d="M12 20V4"/><path d="M19 20v-7"/>` |
-| target | Budgets | `<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>` |
+| target | Budgets (the Budgets side of Goals) | `<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>` |
 | chip | Models, anything computed by a model | `<rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/>` |
 | sent | money sent | `<path d="M7 17L17 7"/><path d="M9 7h8v8"/>` |
 | received | money received | `<path d="M17 7L7 17"/><path d="M15 17H7V9"/>` |
@@ -187,7 +187,7 @@ A category is edited on its own screen: name, one of twelve `cat-` colours as 44
 
 ## Model surfaces
 
-Akatabo has four on-device models: a category classifier, a month-end forecast, an unusual-payment detector and a recurring-payment detector. Users never see the word "model" and there is no Models screen: the app calls this Smart help, and its results appear where they are useful (the Add screen, Home, Insights, Budgets). Wherever one speaks:
+Akatabo has four on-device models: a category classifier, a month-end forecast, an unusual-payment detector and a recurring-payment detector. Users never see the word "model" and there is no Models screen: the app calls this Smart help, and its results appear where they are useful (the Add screen, Home, Insights, Goals). Wherever one speaks:
 
 - Mark it with the `chip` icon or the model's own icon so users learn what is computed and what is recorded.
 - Give the evidence in the same card: how many transactions, what range, which signals.
@@ -200,11 +200,11 @@ Thirty-four screens, each drawn in the light and the dark theme. Besides the gro
 
 1. Core loop: Onboarding, Welcome, Home on the first day (empty), Home, Add a transaction, All transactions, One transaction.
 2. Understanding: Insights, Categories, Inside a category, Fees and tax, Forecast, Regular payments.
-3. Planning: Budgets, Set a budget.
+3. Planning: Goals (Savings goals, a goal, New and Edit goal; Budgets, Set a budget).
 4. Customising: Settings, General and accounts, Categories (manage), Edit a category, Appearance and Home screen, Smart help and reminders, Privacy and data.
 5. Keeping data safe: Export and back up, Restore.
 
-The five tabs are Home, Insights, Add, Budgets, Settings. Every other screen is reached from one of them and has a back link to where it came from.
+The five tabs are Home, Insights, Add, Goals, Settings. Every other screen is reached from one of them and has a back link to where it came from.
 
 ## Storage
 

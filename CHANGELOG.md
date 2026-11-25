@@ -10,6 +10,7 @@ The first public release. The app is built for Android; it is not on a store yet
 
 ### Added
 
+- **Goals.** The Budgets tab is now Goals, with a Savings | Budgets switch. Savings goals have a target amount and an optional date, and show progress, the pace needed and when you will reach them at the current pace. Each amount you set aside or take out notes the account the money sits in. Goals appear on Home and in the calendar, and they are in backups and in Delete everything.
 - **Payments in other currencies.** Type the amount and the rate you were given. The entry is kept in whole shillings, so totals, budgets and the forecast work as before, and it remembers the amount and rate. A new Currencies and rates page lists the rates you have typed. Backups and CSV exports carry the new columns, and older backup files still restore.
 - **A fuller forecast.** The month's forecast now shows a safe amount to spend each day, the pace against the same days last month, each regular payment it is counting, the one-off payments it left out, and how close past forecasts were.
 - **A fuller App lock page.** A status card, fingerprint or face unlock where the phone has it (offered automatically on the lock screen, with a PIN fallback), the waiting times after wrong PINs, and Lock now.
@@ -23,6 +24,8 @@ The first public release. The app is built for Android; it is not on a store yet
 
 ### Changed
 
+- The database moves to version 5 for savings goals. Phones on an earlier version are moved over when the app opens, and nothing is lost.
+- If the stored settings cannot be read when the app opens, the lock now decides from the PIN instead of leaving a blank screen.
 - Text and rows are one step larger throughout.
 - On Add, each problem now shows under the field it is about (the amount, the rate, or the account), clears once that field is fixed, scrolls into view when you tap Save, and is read aloud to screen reader users.
 
