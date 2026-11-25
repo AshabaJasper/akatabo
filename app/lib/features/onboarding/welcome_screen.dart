@@ -99,7 +99,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                         header: true,
                         child: Text(
                           'Know where your money goes.',
-                          style: t.displayXl.copyWith(color: c.onBrand),
+                          style: t.displayXl.copyWith(color: c.onBrandFigure),
                         ),
                       ),
                       const SizedBox(height: AkSpace.s3h),

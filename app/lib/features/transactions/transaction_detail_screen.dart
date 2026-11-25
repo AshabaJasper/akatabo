@@ -94,10 +94,19 @@ class TransactionDetailScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
           children: [
-            Row(
+            // A Wrap, not a Row: at large text sizes the Edit pill (with its pencil) moves to
+            // its own line instead of squeezing the back link off the screen.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              runSpacing: AkSpace.s2,
               children: [
-                Expanded(child: AkBackLink('Transactions', onTap: () => closeScreen(context))),
-                AkPillButton(label: 'Edit', onTap: () => context.push(Routes.addEdit(tx.id))),
+                AkBackLink('Transactions', onTap: () => closeScreen(context)),
+                AkPillButton(
+                  label: 'Edit',
+                  icon: AkIcons.pencil,
+                  onTap: () => context.push(Routes.addEdit(tx.id)),
+                ),
               ],
             ),
             const SizedBox(height: AkSpace.s5),

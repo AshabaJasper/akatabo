@@ -62,7 +62,18 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
             routes: [GoRoute(path: Routes.insights, builder: (_, _) => const InsightsScreen())],
           ),
           StatefulShellBranch(
-            routes: [GoRoute(path: Routes.budgets, builder: (_, _) => const BudgetsScreen())],
+            routes: [
+              GoRoute(
+                path: Routes.budgets,
+                builder: (_, state) => BudgetsScreen(
+                  initialView: switch (state.uri.queryParameters['view']) {
+                    'budgets' => GoalsView.budgets,
+                    'savings' => GoalsView.savings,
+                    _ => null,
+                  },
+                ),
+              ),
+            ],
           ),
           StatefulShellBranch(
             routes: [GoRoute(path: Routes.settings, builder: (_, _) => const SettingsScreen())],

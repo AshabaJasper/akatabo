@@ -10,6 +10,7 @@ import '../../core/theme/ak_theme.dart';
 import '../../core/time/clock_provider.dart';
 import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
+import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_surfaces.dart';
@@ -19,15 +20,35 @@ import 'goal_widgets.dart';
 import 'goals_providers.dart';
 
 /// Savings goals: the total set aside across accounts, then each goal with its pace. Reached
-/// goals and archived goals sit below. Reached from Budgets.
-class GoalsScreen extends ConsumerStatefulWidget {
+/// goals and archived goals sit below. Opened from deep links; the Goals tab shows the same
+/// list through [SavingsList].
+class GoalsScreen extends StatelessWidget {
   const GoalsScreen({super.key});
 
   @override
-  ConsumerState<GoalsScreen> createState() => _GoalsScreenState();
+  Widget build(BuildContext context) => _Frame(
+    action: AkAddButton(label: 'New savings goal', onTap: () => context.push(Routes.goalNew)),
+    child: ListView(
+      padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
+      children: [
+        Text('Savings goals', style: context.type.displayLg),
+        const SizedBox(height: AkSpace.s3),
+        const SavingsList(),
+      ],
+    ),
+  );
 }
 
-class _GoalsScreenState extends ConsumerState<GoalsScreen> {
+/// Every savings goal, grouped: the total set aside, goals still being saved for, reached
+/// goals, then archived ones behind a fold. No row cap, so a long list never hides a goal.
+class SavingsList extends ConsumerStatefulWidget {
+  const SavingsList({super.key});
+
+  @override
+  ConsumerState<SavingsList> createState() => _SavingsListState();
+}
+
+class _SavingsListState extends ConsumerState<SavingsList> {
   bool _showArchived = false;
 
   @override
@@ -43,11 +64,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
     final failed = goalsAsync.hasError || movesAsync.hasError || accountsAsync.hasError;
 
     if (failed) {
-      return const _Frame(
-        child: AkEmptyNote('Savings goals could not be loaded. Close this and try again.'),
-      );
+      return const AkEmptyNote('Savings goals could not be loaded. Close this and try again.');
     }
-    if (!ready) return const _Frame(child: SizedBox.shrink());
+    if (!ready) return const SizedBox.shrink();
 
     final goals = goalsAsync.value!;
     final moves = movesAsync.value!;
@@ -89,107 +108,87 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
 
     void open(Goal g) => context.push(Routes.goal(g.id));
 
-    return _Frame(
-      action: Semantics(
-        button: true,
-        label: 'New savings goal',
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: () => context.push(Routes.goalNew),
-          child: Container(
-            width: 44,
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: c.surface,
-              border: Border.all(color: c.lineStrong),
-            ),
-            child: AkIcon(AkIcons.plus, size: 20, color: c.brandText),
-          ),
-        ),
-      ),
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
-        children: [
-          Text('Savings goals', style: t.displayLg),
-          const SizedBox(height: AkSpace.s3),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // No total before the first goal: a large "UGX 0" says nothing a first visit needs.
+        if (goals.isNotEmpty) ...[
           _SummaryBlock(total: total, breakdown: breakdown),
           const SizedBox(height: AkSpace.s5),
-          if (goals.isEmpty)
-            AkEmptyNote(
-              'Set money aside for something you want. It stays in the account it came from, '
-              'and your balances do not change.',
-              actionLabel: 'New goal',
-              onAction: () => context.push(Routes.goalNew),
-            )
-          else ...[
-            if (saving.isNotEmpty) ...[
-              Text('Saving now', style: t.title.copyWith(color: c.ink)),
-              const SizedBox(height: AkSpace.s2),
-              for (final g in saving) ...[
-                GoalRow(goal: g, summary: summaries[g.id]!, onTap: () => open(g)),
-                const SizedBox(height: AkSpace.s3),
-              ],
-            ],
-            if (reached.isNotEmpty) ...[
-              const SizedBox(height: AkSpace.s2),
-              Text('Reached', style: t.title.copyWith(color: c.ink)),
-              const SizedBox(height: AkSpace.s2),
-              for (final g in reached) ...[
-                GoalRow(goal: g, summary: summaries[g.id]!, onTap: () => open(g)),
-                const SizedBox(height: AkSpace.s3),
-              ],
-            ],
-            if (archived.isNotEmpty) ...[
-              const SizedBox(height: AkSpace.s2),
-              AkCard(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: [
-                    InkWell(
-                      borderRadius: BorderRadius.circular(context.metrics.lg),
-                      onTap: () => setState(() => _showArchived = !_showArchived),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AkSpace.s4),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Archived, ${archived.length} ${archived.length == 1 ? 'goal' : 'goals'}',
-                                style: t.bodyStrong,
-                              ),
-                            ),
-                            AkIcon(AkIcons.chevron, size: 18, color: c.inkMuted),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (_showArchived)
-                      for (final g in archived)
-                        InkWell(
-                          onTap: () => open(g),
-                          child: Padding(
-                            padding: const EdgeInsets.all(AkSpace.s4),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(g.name, style: t.bodyStrong),
-                                Text(
-                                  '${shownUgx(summaries[g.id]!.saved, hidden: hidden)} still set aside',
-                                  style: t.caption.copyWith(color: c.inkMuted),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                  ],
-                ),
-              ),
+        ],
+        if (goals.isEmpty)
+          AkEmptyNote(
+            'Set money aside for something you want. It stays in the account it came from, '
+            'and your balances do not change.',
+            actionLabel: 'New goal',
+            onAction: () => context.push(Routes.goalNew),
+          )
+        else ...[
+          if (saving.isNotEmpty) ...[
+            Text('Saving now', style: t.title.copyWith(color: c.ink)),
+            const SizedBox(height: AkSpace.s2),
+            for (final g in saving) ...[
+              GoalRow(goal: g, summary: summaries[g.id]!, onTap: () => open(g)),
+              const SizedBox(height: AkSpace.s3),
             ],
           ],
+          if (reached.isNotEmpty) ...[
+            const SizedBox(height: AkSpace.s2),
+            Text('Reached', style: t.title.copyWith(color: c.ink)),
+            const SizedBox(height: AkSpace.s2),
+            for (final g in reached) ...[
+              GoalRow(goal: g, summary: summaries[g.id]!, onTap: () => open(g)),
+              const SizedBox(height: AkSpace.s3),
+            ],
+          ],
+          if (archived.isNotEmpty) ...[
+            const SizedBox(height: AkSpace.s2),
+            AkCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  InkWell(
+                    borderRadius: BorderRadius.circular(context.metrics.lg),
+                    onTap: () => setState(() => _showArchived = !_showArchived),
+                    child: Padding(
+                      padding: const EdgeInsets.all(AkSpace.s4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Archived, ${archived.length} ${archived.length == 1 ? 'goal' : 'goals'}',
+                              style: t.bodyStrong,
+                            ),
+                          ),
+                          AkIcon(AkIcons.chevron, size: 18, color: c.inkMuted),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_showArchived)
+                    for (final g in archived)
+                      InkWell(
+                        onTap: () => open(g),
+                        child: Padding(
+                          padding: const EdgeInsets.all(AkSpace.s4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(g.name, style: t.bodyStrong),
+                              Text(
+                                '${shownUgx(summaries[g.id]!.saved, hidden: hidden)} still set aside',
+                                style: t.caption.copyWith(color: c.inkMuted),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                ],
+              ),
+            ),
+          ],
         ],
-      ),
+      ],
     );
   }
 }
@@ -216,7 +215,7 @@ class _SummaryBlock extends StatelessWidget {
         children: [
           Text('Set aside in your accounts', style: t.bodySm.copyWith(color: c.onBrandMuted)),
           const SizedBox(height: AkSpace.s1),
-          AkHiddenAmount(formatUgx(total), style: t.figureXl.copyWith(color: c.onBrand)),
+          AkHiddenAmount(formatUgx(total), style: t.figureXl.copyWith(color: c.onBrandFigure)),
           if (breakdown.isNotEmpty) ...[
             const SizedBox(height: AkSpace.s1),
             Text(breakdown, style: t.caption.copyWith(color: c.onBrandMuted)),

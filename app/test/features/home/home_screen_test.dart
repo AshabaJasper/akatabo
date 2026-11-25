@@ -11,6 +11,7 @@ import 'package:akatabo/domain/forecast.dart';
 import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/budgets/budgets_providers.dart';
 import 'package:akatabo/features/forecast/forecast_providers.dart';
+import 'package:akatabo/features/goals/goals_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/home/home_screen.dart';
 import 'package:akatabo/features/regular/regular_providers.dart';
@@ -44,6 +45,7 @@ Future<void> _pumpHome(
   Map<String, String> settings = const {},
   List<Override> extra = const [],
   List<Category>? categories,
+  List<Goal> goals = const [],
 }) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -64,6 +66,8 @@ Future<void> _pumpHome(
         allCategoriesProvider.overrideWith((ref) => Stream.value(categories ?? _categories)),
         previousMonthRowsProvider.overrideWith((ref) => Stream.value(const <Transaction>[])),
         enabledAccountsProvider.overrideWith((ref) => Stream.value(_accounts)),
+        goalsProvider.overrideWith((ref) => Stream.value(goals)),
+        allGoalMovesProvider.overrideWith((ref) => Stream.value(const <GoalMove>[])),
         ...extra,
       ],
       child: MaterialApp(
@@ -266,6 +270,55 @@ void main() {
       );
       expect(find.text('Over budget'), findsOneWidget);
       expect(find.text('5,000'), findsOneWidget);
+    });
+
+    testWidgets('Savings shows on Home once a goal exists, and its switch hides it', (
+      tester,
+    ) async {
+      final (a, b, c, oct) = _filled();
+      Goal goal({DateTime? archivedAt}) => Goal(
+        id: 'g1',
+        createdAt: _now,
+        updatedAt: _now,
+        name: 'School fees term 1',
+        iconKey: 'book',
+        colourToken: 'cat-teal',
+        target: 500000,
+        remindEvery: GoalRemind.off,
+        sortOrder: 0,
+        archivedAt: archivedAt,
+      );
+      Future<void> pump({
+        List<Goal> goals = const [],
+        Map<String, String> settings = const {},
+      }) async {
+        // A fresh scope each time: Riverpod keeps the first overrides when a scope rebuilds.
+        await tester.pumpWidget(const SizedBox());
+        await _pumpHome(
+          tester,
+          latest: [a, b, c],
+          month: [a, b, c],
+          previous: [oct],
+          goals: goals,
+          settings: settings,
+        );
+      }
+
+      final savings = find.text('School fees term 1');
+      await pump();
+      expect(find.text('Savings'), findsNothing, reason: 'no goal yet');
+
+      await pump(goals: [goal(archivedAt: _now)]);
+      expect(find.text('Savings'), findsNothing, reason: 'only archived goals');
+
+      await pump(goals: [goal()]);
+      await tester.dragUntilVisible(savings, find.byType(ListView), const Offset(0, -200));
+      expect(find.text('Savings'), findsOneWidget);
+      expect(find.text('See all'), findsWidgets);
+
+      await pump(goals: [goal()], settings: {SettingKeys.homeShowSavings.name: '0'});
+      expect(find.text('Savings'), findsNothing, reason: 'switched off in Settings');
+      expect(savings, findsNothing);
     });
 
     testWidgets('Budgets at a glance is off until chosen, then lists the budgets', (tester) async {

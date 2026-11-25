@@ -25,7 +25,7 @@ Akatabo is a free money tracker for Uganda. People add what they spend and recei
 Two themes, light and dark. Use tokens by name. The rules below describe the light theme; the Dark theme section says what changes.
 
 - `ground` is the screen. `surface` is a card on it, with a 1px `line` border and no shadow.
-- `brand` is the header block at the top of Home and the fill of anything primary: active navigation, filled bars, the selected chip. Text on it is `on-brand`; labels are `on-brand-muted`.
+- `brand` is the header block at the top of Home and the fill of anything primary: active navigation, filled bars, the selected chip. Text on it is `on-brand`; labels are `on-brand-muted`. Large figures on it (the Home total, the Savings goals total, a goal's saved figure, the Welcome and onboarding heroes) use `on-brand-figure`, a softer white, so big numbers do not glare.
 - `accent` appears once per screen at most: the main button on a `brand` ground, or the one figure to notice on `brand`. Text on `accent` is `ink`.
 - `money-out` and `money-in` are reserved for direction of money. `money-out` also marks fees, over-budget states and model alerts. By default (Settings > Appearance > Money colours > Red and green) they are red and green (`money-out-red`, `money-in-green`), tuned to differ by 20 or more L* in lightness as well as hue. Orange and blue (`money-out`, `money-in` as drawn) stays one tap away for colour-blind users. In either pair they always travel with a sign, an arrow, an icon or a word, so colour is never the only cue.
 - `brand-soft` is for secondary chart marks only. It fails contrast for text.
@@ -38,7 +38,7 @@ Two themes, light and dark. Use tokens by name. The rules below describe the lig
 Every colour token has a light and a dark value. Build both themes from tokens only; never invert colours in code.
 
 - The ground is near-black green (`ground`), cards are one step lighter (`surface`), tracks and icon tiles one step lighter again (`surface-sunk`). There are no shadows in either theme.
-- Text is `ink` and `ink-muted`; both pass contrast on `ground` and `surface`.
+- Text is `ink` and `ink-muted`; both pass contrast on `ground` and `surface`. Dark `ink` is a soft grey-white (`#DCE3DE`), not near-white: the brightest text read as shouting (owner, 25 November 2026). It stays at 7:1 or more on every dark surface.
 - In the light theme `brand` does every job. In the dark theme those jobs split, because one dark green cannot be both a background and a readable mark: `brand` fills buttons and selected chips, `brand-deep` is the Home header and summary cards, `brand-bright` is for bars, lines and selected borders, `brand-text` is for links, and `switch-on` is the switch track and the Add disc. Use these five tokens by job in both themes; in light they all resolve to the same green.
 - `money-out` and `money-in` become lighter so they read as text on dark. As bar fills they keep their light-theme values.
 - Category colours are the same in both themes. Tiles in `cat-amber` keep an `ink`-dark icon in both.
@@ -48,14 +48,14 @@ Every colour token has a light and a dark value. Build both themes from tokens o
 
 ## Type
 
-Two sans families, each with one job. Both load from Google Fonts.
+Two sans families, each with one job. Both are bundled with the app, so nothing loads from the network.
 
-- Bricolage Grotesque (`display`): the wordmark, screen titles, section headings, the hero amount and the one-sentence headline of an insight. Weights 600 and 700. It is narrow and characterful, so it is for short lines only, never for paragraphs or anything under 18px.
+- Bricolage Grotesque (`display`): the wordmark, screen titles, section headings, the hero amount and the one-sentence headline of an insight. Weight 600 for every style (since 25 November 2026, one step lighter than drawn, at the owner's request; needs a design check). It is narrow and characterful, so it is for short lines only, never for paragraphs or anything under 18px.
 - Geist (`sans`): all running text, labels, buttons, inputs and every amount in a row or table. Weights 400, 500, 600. Amounts use `font-variant-numeric: tabular-nums` and right-align in a column.
 
 Bricolage Grotesque carries the voice and the big numbers; Geist carries the data. Do not add a third family.
 
-Styles: `display-xl` for the one headline on Welcome; `figure-xl` for the hero amount and the amount input; `display-lg` for screen titles; `headline` for an insight sentence; `title` for section headings; `body` and `body-strong` for text; `figure` for amounts in rows; `caption` for secondary lines and chart labels. Section eyebrows and field labels are `caption` in uppercase with 0.06em tracking, in `ink-muted`.
+Styles: `display-xl` for the one headline on Welcome; `figure-xl` (40px) for the hero amount and the amount input; `display-lg` (28px) for screen titles; `headline` for an insight sentence; `title` for section headings; `body` and `body-strong` for text; `figure` for amounts in rows; `caption` for secondary lines and chart labels. Section eyebrows and field labels are `caption` in uppercase with 0.06em tracking, in `ink-muted`.
 
 ## Layout
 
@@ -133,6 +133,7 @@ The set. Each entry is the content of `<svg viewBox="0 0 24 24" fill="none" stro
 | star | Fun | `<path d="M12 3l2.7 5.6 6.3.9-4.5 4.3 1.1 6.2L12 17l-5.6 3 1.1-6.2L3 9.5l6.3-.9L12 3z"/>` |
 | farm | Farm | `<path d="M12 21v-9"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 15c0-3-2-5-6-5 0 3 2 5 6 5z"/>` |
 | bank | Bank | `<path d="M4 10l8-5 8 5M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18"/>` |
+| pencil | edit something | `<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>` |
 
 The rows from `chevron` down were added on 19 November 2026 from icons the screens already draw (found by `tools/design/find_icons.py`) and need a design check. `grip` is drawn filled in the screens; here it is six stroked dots, like `dots`, because icons are never filled.
 
@@ -229,6 +230,7 @@ Reached from the month button on Home and from All transactions. One screen with
 - Month: a grid of days, each showing its day number and money out in thousands, shaded in four steps by amount. Tapping a day shows its total and links to that day's transactions. Days that have not happened are outlined and empty.
 - Week: one bar per day. Day: bars by hour, then that day's transactions. Quarter: one bar per week under month labels. Year: one bar per month with highest, lowest and usual month.
 - In every period the current day, week or month is the darkest mark, and periods that have not happened are dashed outlines, never zeros.
+- Under every period, cards say how it went (added 25 November 2026, not drawn; needs a design check): Spent and received (money out and in, what that leaves, and the change against the same days of the period before), Top categories (up to three, each opening its page), and Savings (goal money set aside in the period, shown once any goal exists; it opens Goals on Savings). With nothing in or out, the money cards are left out because the view already says so. A zero figure reads "None", never `0`. The page scrolls; the selected-day card sits under the grid.
 
 ### More charts
 

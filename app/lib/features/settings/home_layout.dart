@@ -12,6 +12,7 @@ class HomeLayout {
     required this.whereItWent,
     required this.latest,
     required this.budgets,
+    required this.savings,
   });
 
   /// "Money in", "Left in budgets" and "Fees and tax" under the header total.
@@ -24,6 +25,9 @@ class HomeLayout {
 
   /// Budgets at a glance: the three most used budgets.
   final bool budgets;
+
+  /// Savings: the total set aside and up to three goals, once a goal exists.
+  final bool savings;
 }
 
 final homeLayoutProvider = Provider<HomeLayout>((ref) {
@@ -35,6 +39,7 @@ final homeLayoutProvider = Provider<HomeLayout>((ref) {
     whereItWent: read(SettingKeys.homeShowWhereItWent),
     latest: read(SettingKeys.homeShowLatest),
     budgets: read(SettingKeys.homeShowBudgets),
+    savings: read(SettingKeys.homeShowSavings),
   );
 });
 

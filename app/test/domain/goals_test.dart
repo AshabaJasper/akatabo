@@ -54,7 +54,13 @@ void main() {
 
     test('is zero once the target is reached', () {
       expect(
-        requiredPer(target: 100000, saved: 100000, targetDay: 20270202, today: today, periodDays: 7),
+        requiredPer(
+          target: 100000,
+          saved: 100000,
+          targetDay: 20270202,
+          today: today,
+          periodDays: 7,
+        ),
         0,
       );
     });
@@ -109,10 +115,7 @@ void main() {
         move(10000, today.subtract(const Duration(days: 30))),
         move(10000, today.subtract(const Duration(days: 40))),
       ];
-      expect(
-        projectReach(target: 200000, saved: 20000, moves: moves, today: today),
-        isNull,
-      );
+      expect(projectReach(target: 200000, saved: 20000, moves: moves, today: today), isNull);
     });
 
     test('gives no date with less than three weeks of history', () {
@@ -121,10 +124,7 @@ void main() {
         move(10000, today.subtract(const Duration(days: 1))),
         move(10000, today),
       ];
-      expect(
-        projectReach(target: 200000, saved: 30000, moves: moves, today: today),
-        isNull,
-      );
+      expect(projectReach(target: 200000, saved: 30000, moves: moves, today: today), isNull);
     });
 
     test('projects a steady saver exactly, with no spread', () {
@@ -174,20 +174,14 @@ void main() {
         move(50000, today.subtract(const Duration(days: 14))),
         move(-60000, today.subtract(const Duration(days: 7))),
       ];
-      expect(
-        projectReach(target: 200000, saved: 20000, moves: moves, today: today),
-        isNull,
-      );
+      expect(projectReach(target: 200000, saved: 20000, moves: moves, today: today), isNull);
     });
 
     test('gives no projection once the goal is reached', () {
       final moves = [
         for (var k = 0; k < 8; k++) move(10000, today.subtract(Duration(days: 7 * k))),
       ];
-      expect(
-        projectReach(target: 80000, saved: 80000, moves: moves, today: today),
-        isNull,
-      );
+      expect(projectReach(target: 80000, saved: 80000, moves: moves, today: today), isNull);
     });
   });
 }

@@ -4,6 +4,24 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
+### [bug-review] Calendar Savings card leaves the Calendar behind
+
+- **Where:** `app/lib/features/calendar/period_cards.dart` (`_SavingsCard`, `openGoalsTab`)
+- **What happens:** tapping the Savings card switches to the Goals tab with `go`, so the Calendar and the period chosen on it are gone; back lands on Home. The Top category rows on the same screen use `push` and come back.
+- **How to trigger:** Home, Calendar, step back to an earlier month, tap Savings, press back.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** push the full-screen Savings goals list (`Routes.goals`) from Calendar, or keep the tab switch and say so in the design notes.
+- **Found:** 25 November 2026, bug review of the Home savings, Goals switch and Calendar cards
+
+### [bug-review] Calendar money card hints at figures while amounts are hidden
+
+- **Where:** `app/lib/features/calendar/period_cards.dart` (`_Figure` colour, `_MoneyCard` net sentence)
+- **What happens:** with Hide amounts on, the Out and In figures are still muted for nothing and coloured otherwise, and the sentence still says "more in than out" or "more out than in". Someone looking over a shoulder can tell whether money came in and which side was bigger.
+- **How to trigger:** hide amounts, open Calendar on a period with spending and no income.
+- **Score:** frequency 3 x severity 1 = 3
+- **Suggested fix:** while hidden, draw both figures in `ink-muted` (as Insights does) and leave the net sentence out.
+- **Found:** 25 November 2026, bug review of the Home savings, Goals switch and Calendar cards
+
 ### [bug-review] Goal moves list order is not stable for moves on the same day
 
 - **Where:** `app/lib/features/goals/goal_detail_screen.dart` (`_MovesCard`, the sort of moves by day)

@@ -10,16 +10,17 @@ import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
 import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_surfaces.dart';
+import '../budgets/budgets_screen.dart' show GoalsView, openGoalsTab;
 import 'goal_summary.dart';
 import 'goal_widgets.dart';
 import 'goals_providers.dart';
 
-/// How many goals the Goals tab shows before "See all".
+/// How many goals Home shows before "See all".
 const _shown = 3;
 
-/// The Savings half of the Goals tab: what is set aside in total, then the goals being saved
-/// toward, reached ones after them. "See all" opens Savings goals; with none yet, "New goal".
-/// It loads on its own, so a goal error never hides the budgets below it.
+/// Savings on Home: what is set aside in total, then up to three goals being saved toward,
+/// reached ones after them. "See all" opens the Goals tab on Savings; with none yet, "New
+/// goal". It loads on its own, so a goal error never hides the sections around it.
 class SavingsSection extends ConsumerWidget {
   const SavingsSection({super.key});
 
@@ -104,7 +105,9 @@ class SavingsSection extends ConsumerWidget {
           actionLabel: !ready ? null : (goals.isEmpty ? 'New goal' : 'See all'),
           onAction: !ready
               ? null
-              : () => context.push(goals.isEmpty ? Routes.goalNew : Routes.goals),
+              : () => goals.isEmpty
+                    ? context.push(Routes.goalNew)
+                    : openGoalsTab(context, GoalsView.savings),
         ),
         const SizedBox(height: AkSpace.s2),
         body,

@@ -45,6 +45,7 @@ final _screens = <String, String>{
   'Home': Routes.home,
   'Insights': Routes.insights,
   'Goals': Routes.budgets,
+  'Goals, budgets': Routes.budgetsList,
   'Settings': Routes.settings,
   'Add': Routes.add,
   'All transactions': Routes.transactions,

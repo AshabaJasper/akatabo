@@ -109,6 +109,11 @@ void main() {
           'on-brand text on brand-raised (Home tiles)': (c.onBrand, c.brandRaised, _text),
           'on-brand text on brand-deep (Home header)': (c.onBrand, c.brandDeep, _text),
           'on-brand-muted text on brand-deep (Home header)': (c.onBrandMuted, c.brandDeep, _text),
+          // The softer white for big figures, 25 Nov 2026: still readable on every fill.
+          'on-brand-figure on brand-deep (Home total)': (c.onBrandFigure, c.brandDeep, _text),
+          'on-brand-figure on brand (Savings goals total)': (c.onBrandFigure, c.brand, _text),
+          'on-brand-figure on brand-raised': (c.onBrandFigure, c.brandRaised, _text),
+          'on-brand-figure on screen-deep (Welcome)': (c.onBrandFigure, c.screenDeep, _text),
           'accent text on brand-deep (Home comparison)': (c.accent, c.brandDeep, _text),
           'on-brand-muted text on brand-raised': (c.onBrandMuted, c.brandRaised, _text),
           'money-in-on-brand on brand-raised (Money in tile)': (

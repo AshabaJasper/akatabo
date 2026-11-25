@@ -60,6 +60,7 @@ class GoalDetailScreen extends ConsumerWidget {
                       onTap: () => context.push(Routes.goalEdit(goal.id)),
                       child: AkTextLink(
                         'Edit',
+                        icon: AkIcons.pencil,
                         onTap: () => context.push(Routes.goalEdit(goal.id)),
                       ),
                     ),
@@ -207,7 +208,10 @@ class _Block extends StatelessWidget {
         children: [
           Text(goal.name, style: t.displaySm.copyWith(color: c.onBrand)),
           const SizedBox(height: AkSpace.s2),
-          AkHiddenAmount(formatUgx(summary.saved), style: t.figureXl.copyWith(color: c.onBrand)),
+          AkHiddenAmount(
+            formatUgx(summary.saved),
+            style: t.figureXl.copyWith(color: c.onBrandFigure),
+          ),
           const SizedBox(height: AkSpace.s1),
           Text(
             'saved of ${shownUgx(summary.target, hidden: hidden)}. '
