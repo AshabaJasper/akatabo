@@ -4194,6 +4194,1197 @@ class ForecastSnapshotsCompanion extends UpdateCompanion<ForecastSnapshot> {
   }
 }
 
+class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GoalsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _iconKeyMeta = const VerificationMeta('iconKey');
+  @override
+  late final GeneratedColumn<String> iconKey = GeneratedColumn<String>(
+    'icon_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('wallet'),
+  );
+  static const VerificationMeta _colourTokenMeta = const VerificationMeta('colourToken');
+  @override
+  late final GeneratedColumn<String> colourToken = GeneratedColumn<String>(
+    'colour_token',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetMeta = const VerificationMeta('target');
+  @override
+  late final GeneratedColumn<int> target = GeneratedColumn<int>(
+    'target',
+    aliasedName,
+    false,
+    check: () => ComparableExpr(target).isBiggerThanValue(0),
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetDayMeta = const VerificationMeta('targetDay');
+  @override
+  late final GeneratedColumn<int> targetDay = GeneratedColumn<int>(
+    'target_day',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<GoalRemind, String> remindEvery =
+      GeneratedColumn<String>(
+        'remind_every',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: Constant(GoalRemind.off.name),
+      ).withConverter<GoalRemind>($GoalsTable.$converterremindEvery);
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta('sortOrder');
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _reachedAtMeta = const VerificationMeta('reachedAt');
+  @override
+  late final GeneratedColumn<DateTime> reachedAt = GeneratedColumn<DateTime>(
+    'reached_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _archivedAtMeta = const VerificationMeta('archivedAt');
+  @override
+  late final GeneratedColumn<DateTime> archivedAt = GeneratedColumn<DateTime>(
+    'archived_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    name,
+    iconKey,
+    colourToken,
+    target,
+    targetDay,
+    remindEvery,
+    sortOrder,
+    reachedAt,
+    archivedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'goals';
+  @override
+  VerificationContext validateIntegrity(Insertable<Goal> instance, {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(_nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('icon_key')) {
+      context.handle(_iconKeyMeta, iconKey.isAcceptableOrUnknown(data['icon_key']!, _iconKeyMeta));
+    }
+    if (data.containsKey('colour_token')) {
+      context.handle(
+        _colourTokenMeta,
+        colourToken.isAcceptableOrUnknown(data['colour_token']!, _colourTokenMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_colourTokenMeta);
+    }
+    if (data.containsKey('target')) {
+      context.handle(_targetMeta, target.isAcceptableOrUnknown(data['target']!, _targetMeta));
+    } else if (isInserting) {
+      context.missing(_targetMeta);
+    }
+    if (data.containsKey('target_day')) {
+      context.handle(
+        _targetDayMeta,
+        targetDay.isAcceptableOrUnknown(data['target_day']!, _targetDayMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('reached_at')) {
+      context.handle(
+        _reachedAtMeta,
+        reachedAt.isAcceptableOrUnknown(data['reached_at']!, _reachedAtMeta),
+      );
+    }
+    if (data.containsKey('archived_at')) {
+      context.handle(
+        _archivedAtMeta,
+        archivedAt.isAcceptableOrUnknown(data['archived_at']!, _archivedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Goal map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Goal(
+      id: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      name: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      iconKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon_key'],
+      )!,
+      colourToken: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}colour_token'],
+      )!,
+      target: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target'],
+      )!,
+      targetDay: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_day'],
+      ),
+      remindEvery: $GoalsTable.$converterremindEvery.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}remind_every'],
+        )!,
+      ),
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      reachedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}reached_at'],
+      ),
+      archivedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}archived_at'],
+      ),
+    );
+  }
+
+  @override
+  $GoalsTable createAlias(String alias) {
+    return $GoalsTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<GoalRemind, String, String> $converterremindEvery =
+      const EnumNameConverter<GoalRemind>(GoalRemind.values);
+}
+
+class Goal extends DataClass implements Insertable<Goal> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String name;
+
+  /// A name from the icon table in DESIGN_SYSTEM.md; `wallet` is the "Savings" icon.
+  final String iconKey;
+
+  /// A `cat-` colour token name.
+  final String colourToken;
+
+  /// Whole shillings to reach, above zero.
+  final int target;
+
+  /// The local day (yyyymmdd) the person wants to reach it by. Null with no date.
+  final int? targetDay;
+  final GoalRemind remindEvery;
+  final int sortOrder;
+
+  /// When the saved amount first reached [target]. Cleared if money is taken out below it.
+  final DateTime? reachedAt;
+
+  /// When the person put the goal away. Its moves stay, so its money stays set aside until
+  /// it is taken out.
+  final DateTime? archivedAt;
+  const Goal({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.name,
+    required this.iconKey,
+    required this.colourToken,
+    required this.target,
+    this.targetDay,
+    required this.remindEvery,
+    required this.sortOrder,
+    this.reachedAt,
+    this.archivedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['name'] = Variable<String>(name);
+    map['icon_key'] = Variable<String>(iconKey);
+    map['colour_token'] = Variable<String>(colourToken);
+    map['target'] = Variable<int>(target);
+    if (!nullToAbsent || targetDay != null) {
+      map['target_day'] = Variable<int>(targetDay);
+    }
+    {
+      map['remind_every'] = Variable<String>($GoalsTable.$converterremindEvery.toSql(remindEvery));
+    }
+    map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || reachedAt != null) {
+      map['reached_at'] = Variable<DateTime>(reachedAt);
+    }
+    if (!nullToAbsent || archivedAt != null) {
+      map['archived_at'] = Variable<DateTime>(archivedAt);
+    }
+    return map;
+  }
+
+  GoalsCompanion toCompanion(bool nullToAbsent) {
+    return GoalsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      name: Value(name),
+      iconKey: Value(iconKey),
+      colourToken: Value(colourToken),
+      target: Value(target),
+      targetDay: targetDay == null && nullToAbsent ? const Value.absent() : Value(targetDay),
+      remindEvery: Value(remindEvery),
+      sortOrder: Value(sortOrder),
+      reachedAt: reachedAt == null && nullToAbsent ? const Value.absent() : Value(reachedAt),
+      archivedAt: archivedAt == null && nullToAbsent ? const Value.absent() : Value(archivedAt),
+    );
+  }
+
+  factory Goal.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Goal(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      name: serializer.fromJson<String>(json['name']),
+      iconKey: serializer.fromJson<String>(json['iconKey']),
+      colourToken: serializer.fromJson<String>(json['colourToken']),
+      target: serializer.fromJson<int>(json['target']),
+      targetDay: serializer.fromJson<int?>(json['targetDay']),
+      remindEvery: $GoalsTable.$converterremindEvery.fromJson(
+        serializer.fromJson<String>(json['remindEvery']),
+      ),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      reachedAt: serializer.fromJson<DateTime?>(json['reachedAt']),
+      archivedAt: serializer.fromJson<DateTime?>(json['archivedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'name': serializer.toJson<String>(name),
+      'iconKey': serializer.toJson<String>(iconKey),
+      'colourToken': serializer.toJson<String>(colourToken),
+      'target': serializer.toJson<int>(target),
+      'targetDay': serializer.toJson<int?>(targetDay),
+      'remindEvery': serializer.toJson<String>(
+        $GoalsTable.$converterremindEvery.toJson(remindEvery),
+      ),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'reachedAt': serializer.toJson<DateTime?>(reachedAt),
+      'archivedAt': serializer.toJson<DateTime?>(archivedAt),
+    };
+  }
+
+  Goal copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? name,
+    String? iconKey,
+    String? colourToken,
+    int? target,
+    Value<int?> targetDay = const Value.absent(),
+    GoalRemind? remindEvery,
+    int? sortOrder,
+    Value<DateTime?> reachedAt = const Value.absent(),
+    Value<DateTime?> archivedAt = const Value.absent(),
+  }) => Goal(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    name: name ?? this.name,
+    iconKey: iconKey ?? this.iconKey,
+    colourToken: colourToken ?? this.colourToken,
+    target: target ?? this.target,
+    targetDay: targetDay.present ? targetDay.value : this.targetDay,
+    remindEvery: remindEvery ?? this.remindEvery,
+    sortOrder: sortOrder ?? this.sortOrder,
+    reachedAt: reachedAt.present ? reachedAt.value : this.reachedAt,
+    archivedAt: archivedAt.present ? archivedAt.value : this.archivedAt,
+  );
+  Goal copyWithCompanion(GoalsCompanion data) {
+    return Goal(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      name: data.name.present ? data.name.value : this.name,
+      iconKey: data.iconKey.present ? data.iconKey.value : this.iconKey,
+      colourToken: data.colourToken.present ? data.colourToken.value : this.colourToken,
+      target: data.target.present ? data.target.value : this.target,
+      targetDay: data.targetDay.present ? data.targetDay.value : this.targetDay,
+      remindEvery: data.remindEvery.present ? data.remindEvery.value : this.remindEvery,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      reachedAt: data.reachedAt.present ? data.reachedAt.value : this.reachedAt,
+      archivedAt: data.archivedAt.present ? data.archivedAt.value : this.archivedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Goal(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('name: $name, ')
+          ..write('iconKey: $iconKey, ')
+          ..write('colourToken: $colourToken, ')
+          ..write('target: $target, ')
+          ..write('targetDay: $targetDay, ')
+          ..write('remindEvery: $remindEvery, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('reachedAt: $reachedAt, ')
+          ..write('archivedAt: $archivedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    name,
+    iconKey,
+    colourToken,
+    target,
+    targetDay,
+    remindEvery,
+    sortOrder,
+    reachedAt,
+    archivedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Goal &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.name == this.name &&
+          other.iconKey == this.iconKey &&
+          other.colourToken == this.colourToken &&
+          other.target == this.target &&
+          other.targetDay == this.targetDay &&
+          other.remindEvery == this.remindEvery &&
+          other.sortOrder == this.sortOrder &&
+          other.reachedAt == this.reachedAt &&
+          other.archivedAt == this.archivedAt);
+}
+
+class GoalsCompanion extends UpdateCompanion<Goal> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> name;
+  final Value<String> iconKey;
+  final Value<String> colourToken;
+  final Value<int> target;
+  final Value<int?> targetDay;
+  final Value<GoalRemind> remindEvery;
+  final Value<int> sortOrder;
+  final Value<DateTime?> reachedAt;
+  final Value<DateTime?> archivedAt;
+  final Value<int> rowid;
+  const GoalsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.name = const Value.absent(),
+    this.iconKey = const Value.absent(),
+    this.colourToken = const Value.absent(),
+    this.target = const Value.absent(),
+    this.targetDay = const Value.absent(),
+    this.remindEvery = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.reachedAt = const Value.absent(),
+    this.archivedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GoalsCompanion.insert({
+    required String id,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required String name,
+    this.iconKey = const Value.absent(),
+    required String colourToken,
+    required int target,
+    this.targetDay = const Value.absent(),
+    this.remindEvery = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.reachedAt = const Value.absent(),
+    this.archivedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       name = Value(name),
+       colourToken = Value(colourToken),
+       target = Value(target);
+  static Insertable<Goal> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? name,
+    Expression<String>? iconKey,
+    Expression<String>? colourToken,
+    Expression<int>? target,
+    Expression<int>? targetDay,
+    Expression<String>? remindEvery,
+    Expression<int>? sortOrder,
+    Expression<DateTime>? reachedAt,
+    Expression<DateTime>? archivedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (name != null) 'name': name,
+      if (iconKey != null) 'icon_key': iconKey,
+      if (colourToken != null) 'colour_token': colourToken,
+      if (target != null) 'target': target,
+      if (targetDay != null) 'target_day': targetDay,
+      if (remindEvery != null) 'remind_every': remindEvery,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (reachedAt != null) 'reached_at': reachedAt,
+      if (archivedAt != null) 'archived_at': archivedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GoalsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? name,
+    Value<String>? iconKey,
+    Value<String>? colourToken,
+    Value<int>? target,
+    Value<int?>? targetDay,
+    Value<GoalRemind>? remindEvery,
+    Value<int>? sortOrder,
+    Value<DateTime?>? reachedAt,
+    Value<DateTime?>? archivedAt,
+    Value<int>? rowid,
+  }) {
+    return GoalsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      name: name ?? this.name,
+      iconKey: iconKey ?? this.iconKey,
+      colourToken: colourToken ?? this.colourToken,
+      target: target ?? this.target,
+      targetDay: targetDay ?? this.targetDay,
+      remindEvery: remindEvery ?? this.remindEvery,
+      sortOrder: sortOrder ?? this.sortOrder,
+      reachedAt: reachedAt ?? this.reachedAt,
+      archivedAt: archivedAt ?? this.archivedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (iconKey.present) {
+      map['icon_key'] = Variable<String>(iconKey.value);
+    }
+    if (colourToken.present) {
+      map['colour_token'] = Variable<String>(colourToken.value);
+    }
+    if (target.present) {
+      map['target'] = Variable<int>(target.value);
+    }
+    if (targetDay.present) {
+      map['target_day'] = Variable<int>(targetDay.value);
+    }
+    if (remindEvery.present) {
+      map['remind_every'] = Variable<String>(
+        $GoalsTable.$converterremindEvery.toSql(remindEvery.value),
+      );
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (reachedAt.present) {
+      map['reached_at'] = Variable<DateTime>(reachedAt.value);
+    }
+    if (archivedAt.present) {
+      map['archived_at'] = Variable<DateTime>(archivedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoalsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('name: $name, ')
+          ..write('iconKey: $iconKey, ')
+          ..write('colourToken: $colourToken, ')
+          ..write('target: $target, ')
+          ..write('targetDay: $targetDay, ')
+          ..write('remindEvery: $remindEvery, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('reachedAt: $reachedAt, ')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $GoalMovesTable extends GoalMoves with TableInfo<$GoalMovesTable, GoalMove> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GoalMovesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _goalIdMeta = const VerificationMeta('goalId');
+  @override
+  late final GeneratedColumn<String> goalId = GeneratedColumn<String>(
+    'goal_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('REFERENCES goals (id)'),
+  );
+  static const VerificationMeta _accountIdMeta = const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
+    'account_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('REFERENCES accounts (id)'),
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<int> amount = GeneratedColumn<int>(
+    'amount',
+    aliasedName,
+    false,
+    check: () => BooleanExpressionOperators(amount.equals(0)).not(),
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _occurredAtMeta = const VerificationMeta('occurredAt');
+  @override
+  late final GeneratedColumn<DateTime> occurredAt = GeneratedColumn<DateTime>(
+    'occurred_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localDayMeta = const VerificationMeta('localDay');
+  @override
+  late final GeneratedColumn<int> localDay = GeneratedColumn<int>(
+    'local_day',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    goalId,
+    accountId,
+    amount,
+    note,
+    occurredAt,
+    localDay,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'goal_moves';
+  @override
+  VerificationContext validateIntegrity(Insertable<GoalMove> instance, {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('goal_id')) {
+      context.handle(_goalIdMeta, goalId.isAcceptableOrUnknown(data['goal_id']!, _goalIdMeta));
+    } else if (isInserting) {
+      context.missing(_goalIdMeta);
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(
+        _accountIdMeta,
+        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(_amountMeta, amount.isAcceptableOrUnknown(data['amount']!, _amountMeta));
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(_noteMeta, note.isAcceptableOrUnknown(data['note']!, _noteMeta));
+    }
+    if (data.containsKey('occurred_at')) {
+      context.handle(
+        _occurredAtMeta,
+        occurredAt.isAcceptableOrUnknown(data['occurred_at']!, _occurredAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_occurredAtMeta);
+    }
+    if (data.containsKey('local_day')) {
+      context.handle(
+        _localDayMeta,
+        localDay.isAcceptableOrUnknown(data['local_day']!, _localDayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localDayMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GoalMove map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GoalMove(
+      id: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      goalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}goal_id'],
+      )!,
+      accountId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}account_id'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}amount'],
+      )!,
+      note: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}note']),
+      occurredAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}occurred_at'],
+      )!,
+      localDay: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}local_day'],
+      )!,
+    );
+  }
+
+  @override
+  $GoalMovesTable createAlias(String alias) {
+    return $GoalMovesTable(attachedDatabase, alias);
+  }
+}
+
+class GoalMove extends DataClass implements Insertable<GoalMove> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String goalId;
+  final String accountId;
+
+  /// Whole shillings, never zero: above zero sets money aside, below zero takes it out.
+  final int amount;
+  final String? note;
+  final DateTime occurredAt;
+
+  /// The local calendar day of [occurredAt] as yyyymmdd, written at save time.
+  final int localDay;
+  const GoalMove({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.goalId,
+    required this.accountId,
+    required this.amount,
+    this.note,
+    required this.occurredAt,
+    required this.localDay,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['goal_id'] = Variable<String>(goalId);
+    map['account_id'] = Variable<String>(accountId);
+    map['amount'] = Variable<int>(amount);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['occurred_at'] = Variable<DateTime>(occurredAt);
+    map['local_day'] = Variable<int>(localDay);
+    return map;
+  }
+
+  GoalMovesCompanion toCompanion(bool nullToAbsent) {
+    return GoalMovesCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      goalId: Value(goalId),
+      accountId: Value(accountId),
+      amount: Value(amount),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      occurredAt: Value(occurredAt),
+      localDay: Value(localDay),
+    );
+  }
+
+  factory GoalMove.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GoalMove(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      goalId: serializer.fromJson<String>(json['goalId']),
+      accountId: serializer.fromJson<String>(json['accountId']),
+      amount: serializer.fromJson<int>(json['amount']),
+      note: serializer.fromJson<String?>(json['note']),
+      occurredAt: serializer.fromJson<DateTime>(json['occurredAt']),
+      localDay: serializer.fromJson<int>(json['localDay']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'goalId': serializer.toJson<String>(goalId),
+      'accountId': serializer.toJson<String>(accountId),
+      'amount': serializer.toJson<int>(amount),
+      'note': serializer.toJson<String?>(note),
+      'occurredAt': serializer.toJson<DateTime>(occurredAt),
+      'localDay': serializer.toJson<int>(localDay),
+    };
+  }
+
+  GoalMove copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? goalId,
+    String? accountId,
+    int? amount,
+    Value<String?> note = const Value.absent(),
+    DateTime? occurredAt,
+    int? localDay,
+  }) => GoalMove(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    goalId: goalId ?? this.goalId,
+    accountId: accountId ?? this.accountId,
+    amount: amount ?? this.amount,
+    note: note.present ? note.value : this.note,
+    occurredAt: occurredAt ?? this.occurredAt,
+    localDay: localDay ?? this.localDay,
+  );
+  GoalMove copyWithCompanion(GoalMovesCompanion data) {
+    return GoalMove(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      goalId: data.goalId.present ? data.goalId.value : this.goalId,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      note: data.note.present ? data.note.value : this.note,
+      occurredAt: data.occurredAt.present ? data.occurredAt.value : this.occurredAt,
+      localDay: data.localDay.present ? data.localDay.value : this.localDay,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoalMove(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('goalId: $goalId, ')
+          ..write('accountId: $accountId, ')
+          ..write('amount: $amount, ')
+          ..write('note: $note, ')
+          ..write('occurredAt: $occurredAt, ')
+          ..write('localDay: $localDay')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, createdAt, updatedAt, goalId, accountId, amount, note, occurredAt, localDay);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GoalMove &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.goalId == this.goalId &&
+          other.accountId == this.accountId &&
+          other.amount == this.amount &&
+          other.note == this.note &&
+          other.occurredAt == this.occurredAt &&
+          other.localDay == this.localDay);
+}
+
+class GoalMovesCompanion extends UpdateCompanion<GoalMove> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> goalId;
+  final Value<String> accountId;
+  final Value<int> amount;
+  final Value<String?> note;
+  final Value<DateTime> occurredAt;
+  final Value<int> localDay;
+  final Value<int> rowid;
+  const GoalMovesCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.goalId = const Value.absent(),
+    this.accountId = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.note = const Value.absent(),
+    this.occurredAt = const Value.absent(),
+    this.localDay = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GoalMovesCompanion.insert({
+    required String id,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required String goalId,
+    required String accountId,
+    required int amount,
+    this.note = const Value.absent(),
+    required DateTime occurredAt,
+    required int localDay,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       goalId = Value(goalId),
+       accountId = Value(accountId),
+       amount = Value(amount),
+       occurredAt = Value(occurredAt),
+       localDay = Value(localDay);
+  static Insertable<GoalMove> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? goalId,
+    Expression<String>? accountId,
+    Expression<int>? amount,
+    Expression<String>? note,
+    Expression<DateTime>? occurredAt,
+    Expression<int>? localDay,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (goalId != null) 'goal_id': goalId,
+      if (accountId != null) 'account_id': accountId,
+      if (amount != null) 'amount': amount,
+      if (note != null) 'note': note,
+      if (occurredAt != null) 'occurred_at': occurredAt,
+      if (localDay != null) 'local_day': localDay,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GoalMovesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? goalId,
+    Value<String>? accountId,
+    Value<int>? amount,
+    Value<String?>? note,
+    Value<DateTime>? occurredAt,
+    Value<int>? localDay,
+    Value<int>? rowid,
+  }) {
+    return GoalMovesCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      goalId: goalId ?? this.goalId,
+      accountId: accountId ?? this.accountId,
+      amount: amount ?? this.amount,
+      note: note ?? this.note,
+      occurredAt: occurredAt ?? this.occurredAt,
+      localDay: localDay ?? this.localDay,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (goalId.present) {
+      map['goal_id'] = Variable<String>(goalId.value);
+    }
+    if (accountId.present) {
+      map['account_id'] = Variable<String>(accountId.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(amount.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (occurredAt.present) {
+      map['occurred_at'] = Variable<DateTime>(occurredAt.value);
+    }
+    if (localDay.present) {
+      map['local_day'] = Variable<int>(localDay.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoalMovesCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('goalId: $goalId, ')
+          ..write('accountId: $accountId, ')
+          ..write('amount: $amount, ')
+          ..write('note: $note, ')
+          ..write('occurredAt: $occurredAt, ')
+          ..write('localDay: $localDay, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4203,6 +5394,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $RegularPaymentsTable regularPayments = $RegularPaymentsTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
   late final $ForecastSnapshotsTable forecastSnapshots = $ForecastSnapshotsTable(this);
+  late final $GoalsTable goals = $GoalsTable(this);
+  late final $GoalMovesTable goalMoves = $GoalMovesTable(this);
   late final Index txLocalDay = Index(
     'tx_local_day',
     'CREATE INDEX tx_local_day ON transactions (local_day)',
@@ -4212,6 +5405,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'CREATE INDEX tx_category ON transactions (category_id)',
   );
   late final Index txPayee = Index('tx_payee', 'CREATE INDEX tx_payee ON transactions (payee_key)');
+  late final Index goalMoveGoal = Index(
+    'goal_move_goal',
+    'CREATE INDEX goal_move_goal ON goal_moves (goal_id)',
+  );
+  late final Index goalMoveAccount = Index(
+    'goal_move_account',
+    'CREATE INDEX goal_move_account ON goal_moves (account_id)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4223,9 +5424,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     regularPayments,
     settings,
     forecastSnapshots,
+    goals,
+    goalMoves,
     txLocalDay,
     txCategory,
     txPayee,
+    goalMoveGoal,
+    goalMoveAccount,
   ];
 }
 
@@ -4776,6 +5981,23 @@ final class $$AccountsTableReferences
     final cache = $_typedResult.readTableOrNull(_movedToTable($_db));
     return ProcessedTableManager(manager.$state.copyWith(prefetchedData: cache));
   }
+
+  static MultiTypedResultKey<$GoalMovesTable, List<GoalMove>> _goalMovesRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.goalMoves,
+    aliasName: 'accounts__id__goal_moves__account_id',
+  );
+
+  $$GoalMovesTableProcessedTableManager get goalMovesRefs {
+    final manager = $$GoalMovesTableTableManager(
+      $_db,
+      $_db.goalMoves,
+    ).filter((f) => f.accountId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_goalMovesRefsTable($_db));
+    return ProcessedTableManager(manager.$state.copyWith(prefetchedData: cache));
+  }
 }
 
 class $$AccountsTableFilterComposer extends Composer<_$AppDatabase, $AccountsTable> {
@@ -4855,6 +6077,24 @@ class $$AccountsTableFilterComposer extends Composer<_$AppDatabase, $AccountsTab
           $$TransactionsTableFilterComposer(
             $db: $db,
             $table: $db.transactions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer: $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> goalMovesRefs(Expression<bool> Function($$GoalMovesTableFilterComposer f) f) {
+    final $$GoalMovesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.goalMoves,
+      getReferencedColumn: (t) => t.accountId,
+      builder: (joinBuilder, {$addJoinBuilderToRootComposer, $removeJoinBuilderFromRootComposer}) =>
+          $$GoalMovesTableFilterComposer(
+            $db: $db,
+            $table: $db.goalMoves,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer: $removeJoinBuilderFromRootComposer,
@@ -5004,6 +6244,26 @@ class $$AccountsTableAnnotationComposer extends Composer<_$AppDatabase, $Account
     );
     return f(composer);
   }
+
+  Expression<T> goalMovesRefs<T extends Object>(
+    Expression<T> Function($$GoalMovesTableAnnotationComposer a) f,
+  ) {
+    final $$GoalMovesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.goalMoves,
+      getReferencedColumn: (t) => t.accountId,
+      builder: (joinBuilder, {$addJoinBuilderToRootComposer, $removeJoinBuilderFromRootComposer}) =>
+          $$GoalMovesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.goalMoves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer: $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$AccountsTableTableManager
@@ -5019,7 +6279,7 @@ class $$AccountsTableTableManager
           $$AccountsTableUpdateCompanionBuilder,
           (Account, $$AccountsTableReferences),
           Account,
-          PrefetchHooks Function({bool paidFrom, bool movedTo})
+          PrefetchHooks Function({bool paidFrom, bool movedTo, bool goalMovesRefs})
         > {
   $$AccountsTableTableManager(_$AppDatabase db, $AccountsTable table)
     : super(
@@ -5102,12 +6362,13 @@ class $$AccountsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({paidFrom = false, movedTo = false}) {
+          prefetchHooksCallback: ({paidFrom = false, movedTo = false, goalMovesRefs = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (paidFrom) db.transactions,
                 if (movedTo) db.transactions,
+                if (goalMovesRefs) db.goalMoves,
               ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
@@ -5142,6 +6403,21 @@ class $$AccountsTableTableManager
                       referencedColumn: 'to_account_id',
                       typedResults: items,
                     ),
+                  if (goalMovesRefs)
+                    await $_getPrefetchedDataByColumns<
+                      Account,
+                      $AccountsTable,
+                      GoalMove,
+                      $GoalMovesTable
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AccountsTableReferences._goalMovesRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$AccountsTableReferences(db, table, p0).goalMovesRefs,
+                      currentColumn: 'id',
+                      referencedColumn: 'account_id',
+                      typedResults: items,
+                    ),
                 ];
               },
             );
@@ -5162,7 +6438,7 @@ typedef $$AccountsTableProcessedTableManager =
       $$AccountsTableUpdateCompanionBuilder,
       (Account, $$AccountsTableReferences),
       Account,
-      PrefetchHooks Function({bool paidFrom, bool movedTo})
+      PrefetchHooks Function({bool paidFrom, bool movedTo, bool goalMovesRefs})
     >;
 typedef $$TransactionsTableCreateCompanionBuilder = TransactionsCompanion Function({
   required String id,
@@ -6668,6 +7944,764 @@ typedef $$ForecastSnapshotsTableProcessedTableManager =
       ForecastSnapshot,
       PrefetchHooks Function()
     >;
+typedef $$GoalsTableCreateCompanionBuilder = GoalsCompanion Function({
+  required String id,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  required String name,
+  Value<String> iconKey,
+  required String colourToken,
+  required int target,
+  Value<int?> targetDay,
+  Value<GoalRemind> remindEvery,
+  Value<int> sortOrder,
+  Value<DateTime?> reachedAt,
+  Value<DateTime?> archivedAt,
+  Value<int> rowid,
+});
+typedef $$GoalsTableUpdateCompanionBuilder = GoalsCompanion Function({
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> name,
+  Value<String> iconKey,
+  Value<String> colourToken,
+  Value<int> target,
+  Value<int?> targetDay,
+  Value<GoalRemind> remindEvery,
+  Value<int> sortOrder,
+  Value<DateTime?> reachedAt,
+  Value<DateTime?> archivedAt,
+  Value<int> rowid,
+});
+
+final class $$GoalsTableReferences extends BaseReferences<_$AppDatabase, $GoalsTable, Goal> {
+  $$GoalsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$GoalMovesTable, List<GoalMove>> _goalMovesRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(db.goalMoves, aliasName: 'goals__id__goal_moves__goal_id');
+
+  $$GoalMovesTableProcessedTableManager get goalMovesRefs {
+    final manager = $$GoalMovesTableTableManager(
+      $_db,
+      $_db.goalMoves,
+    ).filter((f) => f.goalId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_goalMovesRefsTable($_db));
+    return ProcessedTableManager(manager.$state.copyWith(prefetchedData: cache));
+  }
+}
+
+class $$GoalsTableFilterComposer extends Composer<_$AppDatabase, $GoalsTable> {
+  $$GoalsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get iconKey =>
+      $composableBuilder(column: $table.iconKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get colourToken =>
+      $composableBuilder(column: $table.colourToken, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get target =>
+      $composableBuilder(column: $table.target, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get targetDay =>
+      $composableBuilder(column: $table.targetDay, builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<GoalRemind, GoalRemind, String> get remindEvery =>
+      $composableBuilder(
+        column: $table.remindEvery,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get reachedAt =>
+      $composableBuilder(column: $table.reachedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get archivedAt =>
+      $composableBuilder(column: $table.archivedAt, builder: (column) => ColumnFilters(column));
+
+  Expression<bool> goalMovesRefs(Expression<bool> Function($$GoalMovesTableFilterComposer f) f) {
+    final $$GoalMovesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.goalMoves,
+      getReferencedColumn: (t) => t.goalId,
+      builder: (joinBuilder, {$addJoinBuilderToRootComposer, $removeJoinBuilderFromRootComposer}) =>
+          $$GoalMovesTableFilterComposer(
+            $db: $db,
+            $table: $db.goalMoves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer: $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$GoalsTableOrderingComposer extends Composer<_$AppDatabase, $GoalsTable> {
+  $$GoalsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get iconKey =>
+      $composableBuilder(column: $table.iconKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get colourToken =>
+      $composableBuilder(column: $table.colourToken, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get target =>
+      $composableBuilder(column: $table.target, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get targetDay =>
+      $composableBuilder(column: $table.targetDay, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get remindEvery =>
+      $composableBuilder(column: $table.remindEvery, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get reachedAt =>
+      $composableBuilder(column: $table.reachedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get archivedAt =>
+      $composableBuilder(column: $table.archivedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$GoalsTableAnnotationComposer extends Composer<_$AppDatabase, $GoalsTable> {
+  $$GoalsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get iconKey =>
+      $composableBuilder(column: $table.iconKey, builder: (column) => column);
+
+  GeneratedColumn<String> get colourToken =>
+      $composableBuilder(column: $table.colourToken, builder: (column) => column);
+
+  GeneratedColumn<int> get target =>
+      $composableBuilder(column: $table.target, builder: (column) => column);
+
+  GeneratedColumn<int> get targetDay =>
+      $composableBuilder(column: $table.targetDay, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<GoalRemind, String> get remindEvery =>
+      $composableBuilder(column: $table.remindEvery, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get reachedAt =>
+      $composableBuilder(column: $table.reachedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get archivedAt =>
+      $composableBuilder(column: $table.archivedAt, builder: (column) => column);
+
+  Expression<T> goalMovesRefs<T extends Object>(
+    Expression<T> Function($$GoalMovesTableAnnotationComposer a) f,
+  ) {
+    final $$GoalMovesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.goalMoves,
+      getReferencedColumn: (t) => t.goalId,
+      builder: (joinBuilder, {$addJoinBuilderToRootComposer, $removeJoinBuilderFromRootComposer}) =>
+          $$GoalMovesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.goalMoves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer: $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$GoalsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $GoalsTable,
+          Goal,
+          $$GoalsTableFilterComposer,
+          $$GoalsTableOrderingComposer,
+          $$GoalsTableAnnotationComposer,
+          $$GoalsTableCreateCompanionBuilder,
+          $$GoalsTableUpdateCompanionBuilder,
+          (Goal, $$GoalsTableReferences),
+          Goal,
+          PrefetchHooks Function({bool goalMovesRefs})
+        > {
+  $$GoalsTableTableManager(_$AppDatabase db, $GoalsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () => $$GoalsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$GoalsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => $$GoalsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> iconKey = const Value.absent(),
+                Value<String> colourToken = const Value.absent(),
+                Value<int> target = const Value.absent(),
+                Value<int?> targetDay = const Value.absent(),
+                Value<GoalRemind> remindEvery = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<DateTime?> reachedAt = const Value.absent(),
+                Value<DateTime?> archivedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => GoalsCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                name: name,
+                iconKey: iconKey,
+                colourToken: colourToken,
+                target: target,
+                targetDay: targetDay,
+                remindEvery: remindEvery,
+                sortOrder: sortOrder,
+                reachedAt: reachedAt,
+                archivedAt: archivedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                required String name,
+                Value<String> iconKey = const Value.absent(),
+                required String colourToken,
+                required int target,
+                Value<int?> targetDay = const Value.absent(),
+                Value<GoalRemind> remindEvery = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<DateTime?> reachedAt = const Value.absent(),
+                Value<DateTime?> archivedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => GoalsCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                name: name,
+                iconKey: iconKey,
+                colourToken: colourToken,
+                target: target,
+                targetDay: targetDay,
+                remindEvery: remindEvery,
+                sortOrder: sortOrder,
+                reachedAt: reachedAt,
+                archivedAt: archivedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) =>
+                    (e.readTable<$GoalsTable, Goal>(table), $$GoalsTableReferences(db, table, e)),
+              )
+              .toList(),
+          prefetchHooksCallback: ({goalMovesRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (goalMovesRefs) db.goalMoves],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (goalMovesRefs)
+                    await $_getPrefetchedDataByColumns<
+                      Goal,
+                      $GoalsTable,
+                      GoalMove,
+                      $GoalMovesTable
+                    >(
+                      currentTable: table,
+                      referencedTable: $$GoalsTableReferences._goalMovesRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$GoalsTableReferences(db, table, p0).goalMovesRefs,
+                      currentColumn: 'id',
+                      referencedColumn: 'goal_id',
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$GoalsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $GoalsTable,
+      Goal,
+      $$GoalsTableFilterComposer,
+      $$GoalsTableOrderingComposer,
+      $$GoalsTableAnnotationComposer,
+      $$GoalsTableCreateCompanionBuilder,
+      $$GoalsTableUpdateCompanionBuilder,
+      (Goal, $$GoalsTableReferences),
+      Goal,
+      PrefetchHooks Function({bool goalMovesRefs})
+    >;
+typedef $$GoalMovesTableCreateCompanionBuilder = GoalMovesCompanion Function({
+  required String id,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  required String goalId,
+  required String accountId,
+  required int amount,
+  Value<String?> note,
+  required DateTime occurredAt,
+  required int localDay,
+  Value<int> rowid,
+});
+typedef $$GoalMovesTableUpdateCompanionBuilder = GoalMovesCompanion Function({
+  Value<String> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> goalId,
+  Value<String> accountId,
+  Value<int> amount,
+  Value<String?> note,
+  Value<DateTime> occurredAt,
+  Value<int> localDay,
+  Value<int> rowid,
+});
+
+final class $$GoalMovesTableReferences
+    extends BaseReferences<_$AppDatabase, $GoalMovesTable, GoalMove> {
+  $$GoalMovesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $GoalsTable _goalIdTable(_$AppDatabase db) =>
+      db.goals.createAlias('goal_moves__goal_id__goals__id');
+
+  $$GoalsTableProcessedTableManager get goalId {
+    final $_column = $_itemColumn<String>('goal_id')!;
+
+    final manager = $$GoalsTableTableManager(
+      $_db,
+      $_db.goals,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_goalIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static $AccountsTable _accountIdTable(_$AppDatabase db) =>
+      db.accounts.createAlias('goal_moves__account_id__accounts__id');
+
+  $$AccountsTableProcessedTableManager get accountId {
+    final $_column = $_itemColumn<String>('account_id')!;
+
+    final manager = $$AccountsTableTableManager(
+      $_db,
+      $_db.accounts,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_accountIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$GoalMovesTableFilterComposer extends Composer<_$AppDatabase, $GoalMovesTable> {
+  $$GoalMovesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get occurredAt =>
+      $composableBuilder(column: $table.occurredAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get localDay =>
+      $composableBuilder(column: $table.localDay, builder: (column) => ColumnFilters(column));
+
+  $$GoalsTableFilterComposer get goalId {
+    final $$GoalsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.goalId,
+      referencedTable: $db.goals,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, {$addJoinBuilderToRootComposer, $removeJoinBuilderFromRootComposer}) =>
+          $$GoalsTableFilterComposer(
+            $db: $db,
+            $table: $db.goals,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer: $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AccountsTableFilterComposer get accountId {
+    final $$AccountsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.accountId,
+      referencedTable: $db.accounts,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, {$addJoinBuilderToRootComposer, $removeJoinBuilderFromRootComposer}) =>
+          $$AccountsTableFilterComposer(
+            $db: $db,
+            $table: $db.accounts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer: $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$GoalMovesTableOrderingComposer extends Composer<_$AppDatabase, $GoalMovesTable> {
+  $$GoalMovesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get occurredAt =>
+      $composableBuilder(column: $table.occurredAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get localDay =>
+      $composableBuilder(column: $table.localDay, builder: (column) => ColumnOrderings(column));
+
+  $$GoalsTableOrderingComposer get goalId {
+    final $$GoalsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.goalId,
+      referencedTable: $db.goals,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, {$addJoinBuilderToRootComposer, $removeJoinBuilderFromRootComposer}) =>
+          $$GoalsTableOrderingComposer(
+            $db: $db,
+            $table: $db.goals,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer: $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AccountsTableOrderingComposer get accountId {
+    final $$AccountsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.accountId,
+      referencedTable: $db.accounts,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, {$addJoinBuilderToRootComposer, $removeJoinBuilderFromRootComposer}) =>
+          $$AccountsTableOrderingComposer(
+            $db: $db,
+            $table: $db.accounts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer: $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$GoalMovesTableAnnotationComposer extends Composer<_$AppDatabase, $GoalMovesTable> {
+  $$GoalMovesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get occurredAt =>
+      $composableBuilder(column: $table.occurredAt, builder: (column) => column);
+
+  GeneratedColumn<int> get localDay =>
+      $composableBuilder(column: $table.localDay, builder: (column) => column);
+
+  $$GoalsTableAnnotationComposer get goalId {
+    final $$GoalsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.goalId,
+      referencedTable: $db.goals,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, {$addJoinBuilderToRootComposer, $removeJoinBuilderFromRootComposer}) =>
+          $$GoalsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.goals,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer: $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AccountsTableAnnotationComposer get accountId {
+    final $$AccountsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.accountId,
+      referencedTable: $db.accounts,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, {$addJoinBuilderToRootComposer, $removeJoinBuilderFromRootComposer}) =>
+          $$AccountsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.accounts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer: $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$GoalMovesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $GoalMovesTable,
+          GoalMove,
+          $$GoalMovesTableFilterComposer,
+          $$GoalMovesTableOrderingComposer,
+          $$GoalMovesTableAnnotationComposer,
+          $$GoalMovesTableCreateCompanionBuilder,
+          $$GoalMovesTableUpdateCompanionBuilder,
+          (GoalMove, $$GoalMovesTableReferences),
+          GoalMove,
+          PrefetchHooks Function({bool goalId, bool accountId})
+        > {
+  $$GoalMovesTableTableManager(_$AppDatabase db, $GoalMovesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () => $$GoalMovesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$GoalMovesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GoalMovesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> goalId = const Value.absent(),
+                Value<String> accountId = const Value.absent(),
+                Value<int> amount = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<DateTime> occurredAt = const Value.absent(),
+                Value<int> localDay = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => GoalMovesCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                goalId: goalId,
+                accountId: accountId,
+                amount: amount,
+                note: note,
+                occurredAt: occurredAt,
+                localDay: localDay,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                required String goalId,
+                required String accountId,
+                required int amount,
+                Value<String?> note = const Value.absent(),
+                required DateTime occurredAt,
+                required int localDay,
+                Value<int> rowid = const Value.absent(),
+              }) => GoalMovesCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                goalId: goalId,
+                accountId: accountId,
+                amount: amount,
+                note: note,
+                occurredAt: occurredAt,
+                localDay: localDay,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$GoalMovesTable, GoalMove>(table),
+                  $$GoalMovesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({goalId = false, accountId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (goalId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.goalId,
+                        referencedTable: $$GoalMovesTableReferences._goalIdTable(db),
+                        referencedColumn: $$GoalMovesTableReferences._goalIdTable(db).id,
+                      ) as T;
+                    }
+                    if (accountId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.accountId,
+                        referencedTable: $$GoalMovesTableReferences._accountIdTable(db),
+                        referencedColumn: $$GoalMovesTableReferences._accountIdTable(db).id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$GoalMovesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $GoalMovesTable,
+      GoalMove,
+      $$GoalMovesTableFilterComposer,
+      $$GoalMovesTableOrderingComposer,
+      $$GoalMovesTableAnnotationComposer,
+      $$GoalMovesTableCreateCompanionBuilder,
+      $$GoalMovesTableUpdateCompanionBuilder,
+      (GoalMove, $$GoalMovesTableReferences),
+      GoalMove,
+      PrefetchHooks Function({bool goalId, bool accountId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6682,4 +8716,6 @@ class $AppDatabaseManager {
   $$SettingsTableTableManager get settings => $$SettingsTableTableManager(_db, _db.settings);
   $$ForecastSnapshotsTableTableManager get forecastSnapshots =>
       $$ForecastSnapshotsTableTableManager(_db, _db.forecastSnapshots);
+  $$GoalsTableTableManager get goals => $$GoalsTableTableManager(_db, _db.goals);
+  $$GoalMovesTableTableManager get goalMoves => $$GoalMovesTableTableManager(_db, _db.goalMoves);
 }

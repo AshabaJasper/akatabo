@@ -87,6 +87,7 @@ class _AccountsSettingsScreenState extends ConsumerState<AccountsSettingsScreen>
                   onTap: () => context.push(Routes.settingsAccountEdit(a.id)),
                   child: AkTextLink(
                     'Edit',
+                    icon: AkIcons.pencil,
                     onTap: () => context.push(Routes.settingsAccountEdit(a.id)),
                   ),
                 ),

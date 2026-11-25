@@ -17,22 +17,126 @@ import '../../data/seed/default_data.dart';
 import '../../domain/budget.dart';
 import '../../domain/spending.dart';
 import '../../widgets/ak_category_choices.dart';
+import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_headline_amount.dart';
 import '../../widgets/ak_hidden_amount.dart';
+import '../../widgets/ak_pickers.dart';
 import '../../widgets/ak_surfaces.dart';
+import '../goals/goals_screen.dart';
 import '../home/home_providers.dart';
 import 'budgets_providers.dart';
 
-/// Budgets for this month: what is left overall, what each day allows, and each budget's
-/// place against the day of the month. The first tab's money page.
-class BudgetsScreen extends ConsumerWidget {
-  const BudgetsScreen({super.key});
+/// Which side of the Goals tab is showing.
+enum GoalsView { savings, budgets }
+
+/// The side last chosen on the Goals tab, kept while the app runs so going to Home and back
+/// does not flip it. Not saved: a fresh start opens on Savings.
+final goalsViewProvider = NotifierProvider<GoalsViewNotifier, GoalsView>(GoalsViewNotifier.new);
+
+class GoalsViewNotifier extends Notifier<GoalsView> {
+  @override
+  GoalsView build() => GoalsView.savings;
+
+  void show(GoalsView view) => state = view;
+}
+
+/// Opens the Goals tab on [view]. The side is stored first, so a link works even when the
+/// tab is already open on the other side with the same address.
+void openGoalsTab(BuildContext context, GoalsView view) {
+  ProviderScope.containerOf(context, listen: false).read(goalsViewProvider.notifier).show(view);
+  context.go(view == GoalsView.budgets ? Routes.budgetsList : Routes.savingsList);
+}
+
+/// The Goals tab: a Savings | Budgets switch, so many savings goals never push budgets out of
+/// reach. Each side has its own + to add one. The route stays `/budgets` so saved links keep
+/// working; `?view=budgets` or `?view=savings` opens a side directly.
+class BudgetsScreen extends ConsumerStatefulWidget {
+  const BudgetsScreen({super.key, this.initialView});
+
+  /// The side asked for by the link, or null to keep the last one chosen.
+  final GoalsView? initialView;
+
+  @override
+  ConsumerState<BudgetsScreen> createState() => _BudgetsScreenState();
+}
+
+class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
+  /// The side a cold link asked for, shown until it is stored after the first frame.
+  GoalsView? _asked;
+
+  @override
+  void initState() {
+    super.initState();
+    // The provider is the one record of the side. A provider cannot change while the tree
+    // builds, so a link's side is stored after the first frame. Links from inside the app
+    // store it themselves (openGoalsTab) before they go.
+    final asked = _asked = widget.initialView;
+    if (asked != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(goalsViewProvider.notifier).show(asked);
+        setState(() => _asked = null);
+      });
+    }
+  }
+
+  void _pick(GoalsView view) => ref.read(goalsViewProvider.notifier).show(view);
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = context.type;
+    final stored = ref.watch(goalsViewProvider);
+    final view = _asked ?? stored;
+    return Scaffold(
+      backgroundColor: c.ground,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
+          children: [
+            Semantics(
+              header: true,
+              child: Text('Goals', style: t.displayLg.copyWith(color: c.ink)),
+            ),
+            const SizedBox(height: AkSpace.s3),
+            AkSegmented<GoalsView>(
+              semanticLabel: 'Show',
+              selected: view,
+              onChanged: _pick,
+              segments: const [
+                AkSegment(GoalsView.savings, 'Savings', icon: AkIcons.wallet),
+                AkSegment(GoalsView.budgets, 'Budgets', icon: AkIcons.target),
+              ],
+            ),
+            const SizedBox(height: AkSpace.s5),
+            if (view == GoalsView.savings) ...[
+              // Not "Savings" again: the switch right above already says it.
+              AkSectionTitle(
+                'Savings goals',
+                trailing: AkAddButton(
+                  label: 'New savings goal',
+                  onTap: () => context.push(Routes.goalNew),
+                ),
+              ),
+              const SizedBox(height: AkSpace.s2),
+              const SavingsList(),
+            ] else
+              const _BudgetsSide(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The Budgets side: this month's budgets (what is left overall, what each day allows, and
+/// each budget's place against the day of the month), with + to budget another category.
+class _BudgetsSide extends ConsumerWidget {
+  const _BudgetsSide();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.colors;
-    final t = context.type;
     final today = dateOnly(ref.watch(appNowProvider));
     final calc = ref.watch(periodCalculatorProvider);
     final month = calc.month(today);
@@ -72,61 +176,85 @@ class BudgetsScreen extends ConsumerWidget {
         if (!budgeted.contains(e.key) && e.key != DefaultIds.fees && e.value > 0) e,
     ]..sort((a, b) => b.value.compareTo(a.value));
 
-    return Scaffold(
-      backgroundColor: c.ground,
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
-          children: [
-            Semantics(
-              header: true,
-              child: Text('Budgets', style: t.displayLg.copyWith(color: c.ink)),
-            ),
-            const SizedBox(height: AkSpace.s4),
-            if (failed)
-              const AkEmptyNote('Budgets could not load. Close Akatabo and open it again.')
-            else if (!ready)
-              const SizedBox(height: AkSize.chart)
-            else if (lines.isEmpty)
-              // With no budget set, every spending category is offered, the ones with the most
-              // spent this month first. Seen on the Pixel: one "has no budget" line alone left
-              // the tab looking empty once anything had been spent.
-              _NoBudgetsYet(
-                spent: spentNow,
-                categories:
-                    [
-                      for (final cat in cats)
-                        if (!cat.isSystem && !cat.hidden && cat.kind == CategoryKind.spending) cat,
-                    ]..sort((a, b) {
-                      // Ties keep the Settings order: List.sort is not stable past 32 items.
-                      final bySpend = (spentNow[b.id] ?? 0).compareTo(spentNow[a.id] ?? 0);
-                      return bySpend != 0 ? bySpend : a.sortOrder.compareTo(b.sortOrder);
-                    }),
-              )
-            else ...[
-              if (lines.isNotEmpty) ...[
-                _Summary(month: month, totals: totals, daysLeft: daysLeft, pace: pace),
-                const SizedBox(height: AkSpace.s5),
-              ],
-              for (final l in lines)
-                _BudgetRow(
-                  line: l,
-                  pace: pace,
-                  onTap: () => context.push(Routes.budget(l.category.id)),
-                ),
-              if (unbudgeted.isNotEmpty) ...[
-                const SizedBox(height: AkSpace.s4),
-                _Unbudgeted(
-                  name: names[unbudgeted.first.key]?.name ?? 'Other',
-                  amount: unbudgeted.first.value,
-                  onSet: () => context.push(Routes.budget(unbudgeted.first.key)),
-                ),
-              ],
-            ],
-          ],
+    // What + offers: every spending category still without a budget. Fees and tax are not
+    // budgeted, as on the "Set one" line.
+    final open = [
+      for (final cat in cats)
+        if (!cat.isSystem &&
+            !cat.hidden &&
+            cat.kind == CategoryKind.spending &&
+            cat.id != DefaultIds.fees &&
+            !budgeted.contains(cat.id))
+          cat,
+    ]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AkSectionTitle(
+          "This month's budgets",
+          trailing: ready && !failed && open.isNotEmpty
+              ? AkAddButton(label: 'New budget', onTap: () => _pickCategory(context, open))
+              : null,
         ),
-      ),
+        const SizedBox(height: AkSpace.s2),
+        if (failed)
+          const AkEmptyNote('Budgets could not load. Close Akatabo and open it again.')
+        else if (!ready)
+          const SizedBox(height: AkSize.chart)
+        else if (lines.isEmpty)
+          // With no budget set, every spending category is offered, the ones with the most
+          // spent this month first. Seen on the Pixel: one "has no budget" line alone left
+          // the tab looking empty once anything had been spent.
+          _NoBudgetsYet(
+            spent: spentNow,
+            categories:
+                [
+                  for (final cat in cats)
+                    if (!cat.isSystem && !cat.hidden && cat.kind == CategoryKind.spending) cat,
+                ]..sort((a, b) {
+                  // Ties keep the Settings order: List.sort is not stable past 32 items.
+                  final bySpend = (spentNow[b.id] ?? 0).compareTo(spentNow[a.id] ?? 0);
+                  return bySpend != 0 ? bySpend : a.sortOrder.compareTo(b.sortOrder);
+                }),
+          )
+        else ...[
+          _Summary(month: month, totals: totals, daysLeft: daysLeft, pace: pace),
+          const SizedBox(height: AkSpace.s5),
+          for (final l in lines)
+            _BudgetRow(
+              line: l,
+              pace: pace,
+              onTap: () => context.push(Routes.budget(l.category.id)),
+            ),
+          if (unbudgeted.isNotEmpty) ...[
+            const SizedBox(height: AkSpace.s4),
+            _Unbudgeted(
+              name: names[unbudgeted.first.key]?.name ?? 'Other',
+              amount: unbudgeted.first.value,
+              onSet: () => context.push(Routes.budget(unbudgeted.first.key)),
+            ),
+          ],
+          if (open.isEmpty) ...[
+            const SizedBox(height: AkSpace.s3),
+            Text(
+              'Every spending category has a budget.',
+              style: context.type.caption.copyWith(color: context.colors.inkMuted),
+            ),
+          ],
+        ],
+      ],
     );
+  }
+
+  /// Asks which category to budget, then opens its budget form.
+  Future<void> _pickCategory(BuildContext context, List<Category> open) async {
+    final id = await showAkChoiceSheet<String>(
+      context,
+      title: 'Budget for',
+      options: [for (final cat in open) (cat.id, cat.name)],
+    );
+    if (id != null && context.mounted) await context.push(Routes.budget(id));
   }
 }
 
@@ -160,7 +288,7 @@ class BudgetsAtAGlance extends ConsumerWidget {
         AkSectionTitle(
           'Budgets',
           actionLabel: 'See all',
-          onAction: () => context.go(Routes.budgets),
+          onAction: () => openGoalsTab(context, GoalsView.budgets),
         ),
         const SizedBox(height: AkSpace.s2),
         for (final l in lines.take(3))

@@ -102,6 +102,7 @@ class CategoryDetailScreen extends ConsumerWidget {
                 if (category != null && !category.isSystem)
                   AkPillButton(
                     label: 'Edit',
+                    icon: AkIcons.pencil,
                     onTap: () => context.push(
                       Routes.categoryEdit(category.id, from: CategoryEditFrom.detail.name),
                     ),

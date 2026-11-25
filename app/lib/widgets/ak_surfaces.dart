@@ -165,12 +165,14 @@ class AkEyebrow extends StatelessWidget {
   );
 }
 
-/// A section heading in `title`, with an optional "See all" style link on the right.
+/// A section heading in `title`, with an optional "See all" style link on the right and an
+/// optional [trailing] control after it, such as an [AkAddButton] for "new".
 class AkSectionTitle extends StatelessWidget {
-  const AkSectionTitle(this.title, {super.key, this.actionLabel, this.onAction});
+  const AkSectionTitle(this.title, {super.key, this.actionLabel, this.onAction, this.trailing});
   final String title;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -180,6 +182,7 @@ class AkSectionTitle extends StatelessWidget {
           child: Semantics(header: true, child: Text(title, style: context.type.title)),
         ),
         if (actionLabel != null) AkTextLink(actionLabel!, onTap: onAction),
+        if (trailing != null) ...[const SizedBox(width: AkSpace.s2), trailing!],
       ],
     );
   }

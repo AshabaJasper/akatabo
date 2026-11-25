@@ -44,7 +44,8 @@ const _smallPhone = Size(360, 640);
 final _screens = <String, String>{
   'Home': Routes.home,
   'Insights': Routes.insights,
-  'Budgets': Routes.budgets,
+  'Goals': Routes.budgets,
+  'Goals, budgets': Routes.budgetsList,
   'Settings': Routes.settings,
   'Add': Routes.add,
   'All transactions': Routes.transactions,

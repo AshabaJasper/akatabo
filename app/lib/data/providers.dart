@@ -28,6 +28,9 @@ CategoryRepository categoryRepository(Ref ref) =>
 AccountRepository accountRepository(Ref ref) => AccountRepository(ref.watch(appDatabaseProvider));
 
 @Riverpod(keepAlive: true)
+GoalRepository goalRepository(Ref ref) => GoalRepository(ref.watch(appDatabaseProvider));
+
+@Riverpod(keepAlive: true)
 SettingsRepository settingsRepository(Ref ref) =>
     SettingsRepository(ref.watch(appDatabaseProvider));
 

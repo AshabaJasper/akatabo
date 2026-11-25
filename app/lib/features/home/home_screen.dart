@@ -8,7 +8,6 @@ import '../../app/routes.dart';
 import '../../core/format/money.dart';
 import '../../core/icons/ak_icon.dart';
 import '../../core/theme/ak_theme.dart';
-import '../../core/theme/token_colour.dart';
 import '../../core/time/clock_provider.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
@@ -16,7 +15,6 @@ import '../../data/seed/default_data.dart';
 import '../../data/settings/setting_keys.dart';
 import '../../domain/forecast.dart';
 import '../../domain/spending.dart';
-import '../../widgets/ak_category_choices.dart';
 import '../../widgets/ak_dashed_box.dart';
 import '../../widgets/ak_empty_note.dart';
 import '../../widgets/ak_headline_amount.dart';
@@ -24,11 +22,14 @@ import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_logo.dart';
 import '../../widgets/ak_message.dart';
 import '../../widgets/ak_surfaces.dart';
+import '../../widgets/category_split_row.dart';
 import '../add/add_providers.dart';
 import '../budgets/budgets_providers.dart';
-import '../budgets/budgets_screen.dart' show BudgetsAtAGlance;
+import '../budgets/budgets_screen.dart' show BudgetsAtAGlance, GoalsView, openGoalsTab;
 import '../forecast/forecast_providers.dart';
 import '../forecast/forecast_words.dart';
+import '../goals/goals_entry.dart';
+import '../goals/goals_providers.dart';
 import '../settings/home_layout.dart';
 import '../transactions/transaction_row.dart';
 import 'home_providers.dart';
@@ -75,6 +76,10 @@ class HomeScreen extends ConsumerWidget {
     final parts = moneyOutByCategory(rows);
     final feesAndTax = parts[DefaultIds.fees] ?? 0;
     final budgets = ref.watch(budgetTotalsProvider);
+    // Savings shows once a goal is being saved for; goals are only read while it is on.
+    final savingGoal =
+        layout.savings &&
+        (ref.watch(goalsProvider).value?.any((g) => g.archivedAt == null) ?? false);
     final daysWithEntries = {for (final t in rows) t.localDay}.length;
     final forecastOn = SettingKeys.forecastMonth.decode(
       ref.watch(storedSettingsProvider).value?[SettingKeys.forecastMonth.name],
@@ -106,7 +111,7 @@ class HomeScreen extends ConsumerWidget {
                       _StatTile(
                         label: budgets.left < 0 ? 'Over budget' : 'Left in budgets',
                         value: formatAmount(budgets.left.abs()),
-                        onTap: () => context.go(Routes.budgets),
+                        onTap: () => openGoalsTab(context, GoalsView.budgets),
                         opens: 'Open budgets',
                       ),
                     _StatTile(
@@ -132,6 +137,13 @@ class HomeScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AkSpace.s6),
               child: _WhereItWent(parts: parts, categories: categories, total: totals.moneyOut),
+            ),
+          ],
+          if (savingGoal) ...[
+            const SizedBox(height: AkSpace.s5),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: AkSpace.s6),
+              child: SavingsSection(),
             ),
           ],
           if (layout.latest) ...[
@@ -264,7 +276,7 @@ class _Header extends StatelessWidget {
                 AkHeadlineAmount(
                   figure,
                   hideable: true,
-                  style: t.figureXl.copyWith(color: c.onBrand),
+                  style: t.figureXl.copyWith(color: c.onBrandFigure),
                 ),
                 if (comparison != null) ...[
                   const SizedBox(height: AkSpace.s1),
@@ -453,94 +465,13 @@ class _WhereItWent extends StatelessWidget {
           )
         else
           for (final e in top)
-            _SplitRow(
+            CategorySplitRow(
               category: categories[e.key],
               amount: e.value,
               share: shareOf(e.value, total),
               fraction: e.value / top.first.value,
             ),
       ],
-    );
-  }
-}
-
-class _SplitRow extends ConsumerWidget {
-  const _SplitRow({
-    required this.category,
-    required this.amount,
-    required this.share,
-    required this.fraction,
-  });
-
-  final Category? category;
-  final int amount;
-  final double share;
-  final double fraction;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.colors;
-    final t = context.type;
-    final hidden = ref.watch(amountsHiddenProvider);
-    final amountText = hidden ? hiddenFigure : formatAmount(amount);
-    final name = category?.name ?? 'Other';
-    final colour = colourForToken(c, category?.colourToken ?? 'cat-slate');
-    final ink = categoryIconColour(c, category?.colourToken ?? 'cat-slate');
-    final shareText = formatPercent(share);
-
-    return Semantics(
-      label: '$name, ${hidden ? 'amount hidden' : amountText}, $shareText of money out',
-      container: true,
-      excludeSemantics: true,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: AkSpace.s2h),
-        child: Row(
-          children: [
-            AkIconTile(
-              icon: AkIcons.fromKey(category?.iconKey ?? 'dots'),
-              background: colour,
-              foreground: ink,
-              size: AkSize.tileSm,
-            ),
-            const SizedBox(width: AkSpace.s3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: t.bodySm.copyWith(color: c.ink),
-                        ),
-                      ),
-                      Text(amountText, style: t.figure.copyWith(color: c.ink)),
-                      const SizedBox(width: AkSpace.s1),
-                      Text(shareText, style: t.caption.copyWith(color: c.inkMuted)),
-                    ],
-                  ),
-                  const SizedBox(height: AkSpace.s1),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AkSize.bar),
-                    child: Stack(
-                      children: [
-                        Container(height: AkSize.bar, color: c.line),
-                        FractionallySizedBox(
-                          widthFactor: fraction.clamp(0, 1),
-                          child: Container(height: AkSize.bar, color: colour),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -611,7 +542,7 @@ class _FirstDay extends ConsumerWidget {
                         done: false,
                         title: 'Set one budget',
                         detail: 'Start with the category you worry about most',
-                        onTap: () => context.go(Routes.budgets),
+                        onTap: () => openGoalsTab(context, GoalsView.budgets),
                         last: true,
                       ),
                     ],

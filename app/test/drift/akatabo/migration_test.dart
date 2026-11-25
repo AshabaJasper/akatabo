@@ -11,6 +11,7 @@ import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
+import 'generated/schema_v5.dart' as v5;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -182,4 +183,68 @@ void main() {
       );
     },
   );
+  test('v4 to v5 keeps entries and accounts, and adds empty savings goals that hold their rules', () async {
+    await verifier.testWithDataIntegrity(
+      oldVersion: 4,
+      newVersion: 5,
+      createOld: v4.DatabaseAtV4.new,
+      createNew: v5.DatabaseAtV5.new,
+      openTestedDatabase: AppDatabase.new,
+      createItems: (batch, oldDb) {
+        batch.customStatement(
+          "INSERT INTO accounts (id, created_at, updated_at, name, kind, colour_token) "
+          "VALUES ('acct.cash', 0, 0, 'Cash', 'cash', 'acct-cash')",
+        );
+        batch.customStatement(
+          "INSERT INTO transactions (id, created_at, updated_at, direction, amount, "
+          "account_id, occurred_at, local_day) VALUES "
+          "('tx.1', 0, 0, 'moneyOut', 5000, 'acct.cash', 0, 20261120)",
+        );
+      },
+      validateItems: (newDb) async {
+        final rows = await newDb.select(newDb.transactions).get();
+        expect(rows.single.amount, 5000);
+        expect(await newDb.select(newDb.accounts).get(), hasLength(1));
+        expect(await newDb.select(newDb.goals).get(), isEmpty);
+        expect(await newDb.select(newDb.goalMoves).get(), isEmpty);
+
+        // The new tables take a goal and a move with their defaults...
+        await newDb.customStatement(
+          "INSERT INTO goals (id, created_at, updated_at, name, colour_token, target) "
+          "VALUES ('goal.1', 0, 0, 'School fees', 'cat-1', 500000)",
+        );
+        await newDb.customStatement(
+          "INSERT INTO goal_moves (id, created_at, updated_at, goal_id, account_id, amount, "
+          "occurred_at, local_day) VALUES ('move.1', 0, 0, 'goal.1', 'acct.cash', 100000, 0, "
+          "20261124)",
+        );
+        final goal = (await newDb.select(newDb.goals).get()).single;
+        expect(goal.iconKey, 'wallet');
+        // The schema snapshot stores the raw text; the app's own row maps it to GoalRemind.off.
+        expect(goal.remindEvery, GoalRemind.off.name);
+        expect(
+          (await newDb.select(newDb.goalMoves).get()).single.amount,
+          100000,
+        );
+
+        // ...and refuse a move of nothing and a move into an account that does not exist.
+        await expectLater(
+          newDb.customStatement(
+            "INSERT INTO goal_moves (id, created_at, updated_at, goal_id, account_id, amount, "
+            "occurred_at, local_day) VALUES ('move.2', 0, 0, 'goal.1', 'acct.cash', 0, 0, "
+            "20261124)",
+          ),
+          throwsA(anything),
+        );
+        await expectLater(
+          newDb.customStatement(
+            "INSERT INTO goal_moves (id, created_at, updated_at, goal_id, account_id, amount, "
+            "occurred_at, local_day) VALUES ('move.3', 0, 0, 'goal.1', 'acct.none', 100, 0, "
+            "20261124)",
+          ),
+          throwsA(anything),
+        );
+      },
+    );
+  });
 }

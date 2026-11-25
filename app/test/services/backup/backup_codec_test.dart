@@ -27,6 +27,8 @@ BackupTables _tables() => {
     {'key': 'general.monthStartsOn', 'value': '25', 'updatedAt': 3},
   ],
   'forecastSnapshots': [],
+  'goals': [],
+  'goalMoves': [],
 };
 
 Future<Uint8List> _encode(BackupCodec codec, {String? password, BackupTables? tables}) =>
@@ -121,6 +123,8 @@ void main() {
         'transactions': 2,
         'settings': 1,
         'forecastSnapshots': 0,
+        'goals': 0,
+        'goalMoves': 0,
       });
       expect(h['firstDay'], 20260301);
       expect(h['lastDay'], 20261112);

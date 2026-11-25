@@ -56,7 +56,7 @@ class BudgetEditScreen extends ConsumerWidget {
             ? ListView(
                 padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
                 children: [
-                  AkBackLink('Budgets', onTap: () => closeScreen(context)),
+                  AkBackLink('Goals', onTap: () => closeScreen(context)),
                   const SizedBox(height: AkSpace.s3),
                   const AkEmptyNote('This budget could not load. Close Akatabo and open it again.'),
                 ],
@@ -202,7 +202,7 @@ class _BudgetFormState extends ConsumerState<_BudgetForm> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s2, AkSpace.s6, AkSpace.s6),
       children: [
-        AkBackLink('Budgets', onTap: () => closeScreen(context)),
+        AkBackLink('Goals', onTap: () => closeScreen(context)),
         const SizedBox(height: AkSpace.s3),
         Semantics(
           header: true,

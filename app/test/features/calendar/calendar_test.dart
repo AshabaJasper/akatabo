@@ -1,14 +1,18 @@
 import 'dart:async';
 import 'dart:ui' show Tristate;
 
+import 'package:akatabo/app/routes.dart';
 import 'package:akatabo/core/theme/ak_theme.dart';
 import 'package:akatabo/core/time/clock_provider.dart';
 import 'package:akatabo/core/time/period.dart';
 import 'package:akatabo/data/db/app_database.dart';
 import 'package:akatabo/data/providers.dart';
 import 'package:akatabo/data/repositories/repositories.dart';
+import 'package:akatabo/data/seed/default_data.dart';
 import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/calendar/calendar_screen.dart';
+import 'package:akatabo/features/calendar/period_cards.dart';
+import 'package:akatabo/features/goals/goals_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:clock/clock.dart';
 import 'package:drift/native.dart';
@@ -60,6 +64,9 @@ Future<void> _pump(
   Brightness brightness = Brightness.light,
   TransactionRepository? repo,
   DateTime? now,
+  List<Goal> goals = const [],
+  List<GoalMove> moves = const [],
+  Stream<List<GoalMove>>? movesStream,
 }) async {
   tester.view
     ..physicalSize = const Size(390, 844)
@@ -75,6 +82,8 @@ Future<void> _pump(
         transactionRepositoryProvider.overrideWithValue(repo ?? _PeriodRepo(_rows)),
         allCategoriesProvider.overrideWith((ref) => Stream.value(const <Category>[])),
         enabledAccountsProvider.overrideWith((ref) => Stream.value(const <Account>[])),
+        goalsProvider.overrideWith((ref) => Stream.value(goals)),
+        allGoalMovesProvider.overrideWith((ref) => movesStream ?? Stream.value(moves)),
       ],
       child: MaterialApp(
         theme: buildAkTheme(brightness, const AkAppearance()),
@@ -191,6 +200,164 @@ void main() {
       findsOneWidget,
       reason: 'only October has ended with entries, and November is current',
     );
+  });
+
+  group('cards under each view', () {
+    Goal goal() => Goal(
+      id: 'g1',
+      createdAt: _now,
+      updatedAt: _now,
+      name: 'Phone',
+      iconKey: 'phone',
+      colourToken: 'cat-teal',
+      target: 900000,
+      remindEvery: GoalRemind.off,
+      sortOrder: 0,
+    );
+    GoalMove move(String id, int amount, DateTime at) => GoalMove(
+      id: id,
+      createdAt: at,
+      updatedAt: at,
+      goalId: 'g1',
+      accountId: 'acct.mtn',
+      amount: amount,
+      occurredAt: at,
+      localDay: at.year * 10000 + at.month * 100 + at.day,
+    );
+
+    testWidgets('Month: money in and out, the change on October, and the top categories', (
+      tester,
+    ) async {
+      await _pump(tester);
+      final money = find.text('Spent and received');
+      await tester.scrollUntilVisible(money, 200);
+      expect(money, findsOneWidget);
+      expect(find.bySemanticsLabel('Out, UGX 1,284,000'), findsOneWidget);
+      expect(find.text('UGX 1,284,000 more out than in so far.'), findsOneWidget);
+      // November 1 to 19 against October 1 to 19, which had 70,000.
+      // 1,284,000 is over 18 times 70,000: said as a multiple, not "1734% more".
+      expect(find.text('About 18 times as much out as the same days of October.'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('Top categories'), 200);
+      expect(find.text('Top categories'), findsOneWidget);
+    });
+
+    testWidgets('every period shows the cards and the page scrolls', (tester) async {
+      await _pump(tester);
+      for (final kind in ['Day', 'Week', '3 months', 'Year']) {
+        await tester.scrollUntilVisible(find.text(kind), -200);
+        await tester.tap(find.text(kind));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(find.text('Spent and received'), 200);
+        expect(find.text('Spent and received'), findsOneWidget, reason: kind);
+      }
+    });
+
+    testWidgets('a finished period compares with the whole period before', (tester) async {
+      await _pump(tester);
+      await tester.tap(find.bySemanticsLabel('Earlier'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('Spent and received'), 200);
+      // October against all of September, which had nothing.
+      expect(
+        find.text('Nothing went out in September, so there is nothing to compare with.'),
+        findsOneWidget,
+      );
+      expect(find.text('UGX 70,000 more out than in.'), findsOneWidget, reason: 'not "so far"');
+    });
+
+    testWidgets('Savings shows goal money set aside in the period, only with goals', (
+      tester,
+    ) async {
+      await _pump(tester);
+      expect(find.text('Savings'), findsNothing, reason: 'no goals yet');
+      await tester.pumpWidget(const SizedBox());
+
+      await _pump(
+        tester,
+        goals: [goal()],
+        moves: [
+          move('m1', 50000, DateTime(2026, 11, 3, 9)),
+          move('m2', -10000, DateTime(2026, 11, 10, 9)),
+          move('m3', 99000, DateTime(2026, 10, 30, 9)),
+        ],
+      );
+      await tester.scrollUntilVisible(find.text('Savings'), 200);
+      expect(find.text('UGX 40,000 set aside for goals this month.'), findsOneWidget);
+    });
+
+    testWidgets('a past day with nothing in or out shows no money cards', (tester) async {
+      // Entries run to the 19th; with today the 21st, the 20th is past and empty.
+      await _pump(tester, now: DateTime(2026, 11, 21, 9));
+      await tester.tap(find.text('Day'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Earlier'));
+      await tester.pumpAndSettle();
+      expect(find.text('Friday 20 November'), findsWidgets);
+      expect(find.text('Spent and received'), findsNothing);
+    });
+
+    // Bug review, 25 Nov 2026. Each test names the bug it guards.
+
+    testWidgets('#1 a finished month is compared with all of the month before', (tester) async {
+      // October has 70,000 on the 12th and 100,000 on the 31st. November (30 days) once
+      // ended used to be set against October 1 to 30 only, leaving the 31st out.
+      await _pump(
+        tester,
+        now: DateTime(2026, 12, 5, 9),
+        repo: _PeriodRepo([
+          ..._rows,
+          txRow(id: 'o31', amount: 100000, at: DateTime(2026, 10, 31, 12)),
+        ]),
+      );
+      await tester.tap(find.bySemanticsLabel('Earlier'));
+      await tester.pumpAndSettle();
+      expect(find.text('November 2026'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('Spent and received'), 200);
+      // 1,284,000 against 170,000 is about 8 times; against 70,000 it would say 18.
+      expect(find.text('About 8 times as much out as October.'), findsOneWidget);
+    });
+
+    test('#2 the Fees and tax row opens Fees, other rows their category', () {
+      expect(categoryRoute(DefaultIds.fees), Routes.fees);
+      expect(categoryRoute(DefaultIds.food), Routes.category(DefaultIds.food));
+    });
+
+    testWidgets('#3 #4 top category rows are buttons this month, plain rows in other periods', (
+      tester,
+    ) async {
+      await _pump(tester);
+      final row = find.bySemanticsLabel(RegExp(r'^Other, '));
+      await tester.scrollUntilVisible(row, 200);
+      expect(
+        tester.getSemantics(row),
+        isSemantics(isButton: true, hasTapAction: true),
+        reason: 'this month: it opens the category page',
+      );
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+      await tester.scrollUntilVisible(find.text('Year'), -200);
+      await tester.tap(find.text('Year'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(row, 200);
+      expect(
+        tester.getSemantics(row),
+        isSemantics(isButton: false, hasTapAction: false),
+        reason: "the category page shows this month, not the year's figures",
+      );
+    });
+
+    testWidgets('#6 while goal moves fail to load, Savings says nothing rather than zero', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        goals: [goal()],
+        movesStream: Stream<List<GoalMove>>.error(StateError('read failed')),
+      );
+      await tester.scrollUntilVisible(find.text('Top categories'), 200);
+      expect(find.textContaining('No money set aside'), findsNothing);
+      expect(find.text('Savings'), findsNothing);
+    });
   });
 
   // The design system's floor is 44px (WCAG 2.5.5, Apple's 44pt). Day cells are 45px wide

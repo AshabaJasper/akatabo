@@ -22,6 +22,7 @@ import '../add/add_providers.dart';
 import '../home/home_providers.dart';
 import '../transactions/transaction_row.dart';
 import 'calendar_providers.dart';
+import 'period_cards.dart';
 
 const _kinds = [
   PeriodKind.day,
@@ -248,21 +249,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 ],
               ),
             ),
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(AkSpace.s6, 0, AkSpace.s6, AkSpace.s5),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    body,
-                    if (dayCard != null) ...[
-                      const SizedBox(height: AkSpace.s3),
-                      const Spacer(),
-                      dayCard,
-                    ],
+            // A plain list, not a fill-the-rest column: the cards under each view make the
+            // page taller than the screen, so it scrolls, and the day card sits under the
+            // grid instead of being pushed to the bottom edge.
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(AkSpace.s6, 0, AkSpace.s6, AkSpace.s5),
+              sliver: SliverList.list(
+                children: [
+                  body,
+                  if (dayCard != null) ...[const SizedBox(height: AkSpace.s3), dayCard],
+                  if (loaded) ...[
+                    const SizedBox(height: AkSpace.s5),
+                    PeriodCards(period: period, rows: rows),
                   ],
-                ),
+                ],
               ),
             ),
           ],

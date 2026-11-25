@@ -128,6 +128,10 @@ abstract final class SettingKeys {
 
   /// The three most used budgets on Home. Off until chosen, as drawn.
   static const homeShowBudgets = BoolSetting('home.showBudgets', false);
+
+  /// Savings on Home: the total set aside and up to three goals. On by default; it shows
+  /// only once a goal exists, so a new install sees nothing.
+  static const homeShowSavings = BoolSetting('home.showSavings', true);
   static const opensOn = EnumSetting('home.opensOn', AppOpensOn.home, AppOpensOn.values);
 
   // Smart help

@@ -31,7 +31,8 @@ class ShellScaffold extends StatelessWidget {
   }
 }
 
-/// Home, Insights, the Add disc, Budgets, Settings. 64px, `surface`, a `line` top border.
+/// Home, Insights, the Add disc, Goals (savings and budgets), Settings. 64px, `surface`, a
+/// `line` top border.
 class AkBottomNav extends StatelessWidget {
   const AkBottomNav({
     super.key,
@@ -40,7 +41,7 @@ class AkBottomNav extends StatelessWidget {
     required this.onAdd,
   });
 
-  /// The tab index: 0 Home, 1 Insights, 2 Budgets, 3 Settings.
+  /// The tab index: 0 Home, 1 Insights, 2 Goals, 3 Settings.
   final int currentIndex;
   final ValueChanged<int> onSelect;
   final VoidCallback onAdd;
@@ -77,7 +78,7 @@ class AkBottomNav extends StatelessWidget {
                 Expanded(child: _AddDisc(onTap: onAdd)),
                 _NavItem(
                   icon: AkIcons.target,
-                  label: 'Budgets',
+                  label: 'Goals',
                   selected: currentIndex == 2,
                   onTap: () => onSelect(2),
                 ),

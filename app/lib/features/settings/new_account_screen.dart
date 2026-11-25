@@ -176,31 +176,40 @@ class _NewAccountScreenState extends ConsumerState<NewAccountScreen> {
     await closeScreen(context);
   }
 
-  /// Delete, as the rules say: refused while entries use the account (switching it off is
-  /// offered instead, so those entries keep it), refused for the only account switched on,
-  /// and otherwise
-  /// asked first, because it cannot be undone.
+  /// Delete, as the rules say: refused while entries or savings-goal moves use the account
+  /// (switching it off is offered instead, so those keep it), refused for the only account
+  /// switched on, and otherwise asked first, because it cannot be undone.
   Future<void> _delete() async {
     final a = _original;
     if (a == null || _saving) return;
     setState(() => _problem = null);
     final repo = ref.read(accountRepositoryProvider);
-    final int used;
+    final int entries;
+    final int goalMoves;
+    final int goals;
     try {
-      used = await repo.usedBy(a.id);
+      entries = await repo.entriesIn(a.id);
+      goalMoves = await repo.goalMovesIn(a.id);
+      goals = await repo.goalsIn(a.id);
     } on Object {
       if (mounted) setState(() => _problem = '${a.name} could not be deleted. Try again.');
       return;
     }
     if (!mounted) return;
-    if (used > 0) {
+    if (entries + goalMoves > 0) {
+      // Say what is really there: entries, savings goals, or both. Goals are counted once each,
+      // however many moves they have here.
+      final uses = [
+        if (entries > 0) '$entries ${entries == 1 ? 'entry' : 'entries'}',
+        if (goals > 0) '$goals savings ${goals == 1 ? 'goal' : 'goals'}',
+      ];
       final off = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text('${a.name} is used by $used ${used == 1 ? 'entry' : 'entries'}'),
+          title: Text('${a.name} is used by ${uses.join(' and ')}'),
           content: const Text(
-            'An account with entries cannot be deleted. Switch it off instead: Add stops '
-            'offering it, and its entries keep it.',
+            'An account with entries or savings-goal history cannot be deleted. Switch it off '
+            'instead: Add stops offering it, and its entries and goal moves keep it.',
           ),
           actions: [
             TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),

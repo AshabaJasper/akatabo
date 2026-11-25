@@ -76,6 +76,13 @@ class _HomeSettingsScreenState extends ConsumerState<HomeSettingsScreen> {
               SettingKeys.homeShowLatest,
               divider: true,
             ),
+            _switchRow(
+              context,
+              'Savings goals',
+              layout.savings,
+              SettingKeys.homeShowSavings,
+              divider: true,
+            ),
             _switchRow(context, 'Budgets at a glance', layout.budgets, SettingKeys.homeShowBudgets),
           ],
         ),

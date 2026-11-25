@@ -4,6 +4,70 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
+### [bug-review] Calendar Savings card leaves the Calendar behind
+
+- **Where:** `app/lib/features/calendar/period_cards.dart` (`_SavingsCard`, `openGoalsTab`)
+- **What happens:** tapping the Savings card switches to the Goals tab with `go`, so the Calendar and the period chosen on it are gone; back lands on Home. The Top category rows on the same screen use `push` and come back.
+- **How to trigger:** Home, Calendar, step back to an earlier month, tap Savings, press back.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** push the full-screen Savings goals list (`Routes.goals`) from Calendar, or keep the tab switch and say so in the design notes.
+- **Found:** 25 November 2026, bug review of the Home savings, Goals switch and Calendar cards
+
+### [bug-review] Calendar money card hints at figures while amounts are hidden
+
+- **Where:** `app/lib/features/calendar/period_cards.dart` (`_Figure` colour, `_MoneyCard` net sentence)
+- **What happens:** with Hide amounts on, the Out and In figures are still muted for nothing and coloured otherwise, and the sentence still says "more in than out" or "more out than in". Someone looking over a shoulder can tell whether money came in and which side was bigger.
+- **How to trigger:** hide amounts, open Calendar on a period with spending and no income.
+- **Score:** frequency 3 x severity 1 = 3
+- **Suggested fix:** while hidden, draw both figures in `ink-muted` (as Insights does) and leave the net sentence out.
+- **Found:** 25 November 2026, bug review of the Home savings, Goals switch and Calendar cards
+
+### [bug-review] Goal moves list order is not stable for moves on the same day
+
+- **Where:** `app/lib/features/goals/goal_detail_screen.dart` (`_MovesCard`, the sort of moves by day)
+- **What happens:** moves are sorted by `localDay` alone. Dart's `List.sort` is not stable above 32 items, so moves made on the same day can swap places between rebuilds once a goal has more than 32 moves.
+- **How to trigger:** a goal with 33 or more moves, several on one day; open it, then add another move.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** sort by `localDay`, then `occurredAt`, then `id`.
+- **Found:** 24 November 2026, second bug review of the goal screens
+
+### [bug-review] The move sheet's over-balance warning is not announced
+
+- **Where:** `app/lib/features/goals/move_sheet.dart` (the "This is more than is free in ..." caption)
+- **What happens:** the warning appears as plain text under the amount field. A screen reader user typing the amount is not told it appeared.
+- **How to trigger:** with TalkBack on, type an amount larger than the account's free money in Set aside.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** wrap the caption in `Semantics(liveRegion: true)`.
+- **Found:** 24 November 2026, second bug review of the goal screens
+
+### [bug-review] Goal percent rounds up to 100% before the goal is reached
+
+- **Where:** `app/lib/features/goals/goal_detail_screen.dart` (`_Block`, the percent figure) and `app/lib/features/goals/goal_widgets.dart` (`GoalBar`, the spoken value)
+- **What happens:** `(progress * 100).round()` shows "100% saved", and reads "100 percent saved", while the goal is still short, next to "UGX 400 to go".
+- **How to trigger:** a goal of UGX 100,000 with UGX 99,600 set aside; open it.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** use `floor()`, or cap at 99 while the goal is not reached, in both places.
+- **Found:** 24 November 2026, bug review of the goal screens and Goals tab
+
+### [bug-review] Savings goal money can be set aside in an account that is switched off
+
+- **Where:** `app/lib/data/repositories/repositories.dart` (`GoalRepository.addMove`)
+- **What happens:** `addMove` only checks that the account exists, so a positive move into a switched-off account is accepted. Add stops offering that account, but a goal can still put money in it.
+- **How to trigger:** switch an account off, then `addMove(goalId: g, accountId: offAccount, amount: 1000)`. It succeeds.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** refuse with `StateError('Account … is switched off')` when `amount > 0 && !account.enabled`. Keep take-outs allowed so the money can come back out.
+- **Found:** 24 November 2026, savings goals bug review
+- **Since:** the goal move sheet offers only switched-on accounts for Set aside, so the screens cannot reach it. The repository still accepts it.
+
+### [bug-review] GoalRepository.delete doc says "while money is set aside" but any move blocks it
+
+- **Where:** `app/lib/data/repositories/repositories.dart` (`GoalRepository.delete` doc comment)
+- **What happens:** the doc says delete is refused only while money is set aside. The code refuses whenever any move exists, even if they net to zero, which is the intended rule (test `a goal with any moves cannot be deleted`). A screen built from the doc would offer Delete on a goal at zero saved and then hit a `StateError`.
+- **How to trigger:** add 1,000, take out 1,000, then `delete(goalId)`. It throws.
+- **Score:** frequency 2 x severity 1 = 2
+- **Suggested fix:** change the doc to "Refused, and nothing changes, while the goal has any moves (its history keeps them): archive it instead."
+- **Found:** 24 November 2026, savings goals bug review
+
 ### [bug-review] Forecast day labels shift a day after the clocks go back
 
 - **Where:** `app/lib/features/forecast/forecast_screen.dart` (the chart's `dayLabelOf`)
@@ -530,6 +594,16 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Found:** 24 November 2026, bug review of the permissions page
 
 ## Fixed
+
+### [bug-review] Goal move sheet can call setState after it closes, or stay stuck on an unexpected error
+
+- **Found:** 24 November 2026, goal screens bug review. Filed at 1 x 4 = 4, then rescored 2 x 5 = 10 in the second review because a stuck button blocks the main action.
+- **Fixed:** 24 November 2026. `_save` returns early when the sheet is gone, and an `on Object` branch turns the button back on with "That could not be saved. Try again." Test: "the move sheet recovers from an unexpected error and lets the person retry" in `app/test/features/goals/goals_screens_test.dart`.
+
+### [bug-review] Deleting an account that holds goal money fails with a misleading message
+
+- **Found:** 24 November 2026, savings goals v5 bug review. Score 1 x 4 = 4.
+- **Fixed:** 24 November 2026, with the goal repository. `AccountRepository.usedBy` counts goal moves as well as entries, `delete` refuses with a `StateError` while either exists, and the Settings dialog counts both (`goalMovesIn`). Tests in `app/test/data/goal_repository_test.dart`: "an account with money set aside in it cannot be deleted" and "an account with no entries and no goal money can still be deleted".
 
 ### [bug-review] Settings search tests do not check each keyword against its page
 

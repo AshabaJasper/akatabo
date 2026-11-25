@@ -11,13 +11,22 @@ export 'tables.dart';
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Transactions, Categories, Accounts, RegularPayments, Settings, ForecastSnapshots],
+  tables: [
+    Transactions,
+    Categories,
+    Accounts,
+    RegularPayments,
+    Settings,
+    ForecastSnapshots,
+    Goals,
+    GoalMoves,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _open());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   /// The database lives in the app's private support folder. Android backup is off for it.
   static QueryExecutor _open() => driftDatabase(
@@ -59,6 +68,14 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(schema.transactions, schema.transactions.foreignCurrency);
         await m.addColumn(schema.transactions, schema.transactions.foreignAmountMinor);
         await m.addColumn(schema.transactions, schema.transactions.rateMicros);
+      },
+      // v5: savings goals. A goal and the moves that set money aside for it inside an account,
+      // kept apart from transactions so totals, budgets and the forecast never count them.
+      from4To5: (m, schema) async {
+        await m.createTable(schema.goals);
+        await m.createTable(schema.goalMoves);
+        await m.createIndex(schema.goalMoveGoal);
+        await m.createIndex(schema.goalMoveAccount);
       },
     ),
     beforeOpen: (details) async {

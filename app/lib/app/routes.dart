@@ -4,6 +4,16 @@ abstract final class Routes {
   static const insights = '/insights';
   static const budgets = '/budgets';
   static String budget(String id) => '$budgets/$id';
+
+  /// The Goals tab opened on one side of its Savings | Budgets switch.
+  static const budgetsList = '$budgets?view=budgets';
+  static const savingsList = '$budgets?view=savings';
+
+  /// Savings goals: the list, one goal, and the new and edit forms. Reached from Budgets.
+  static const goals = '/goals';
+  static const goalNew = '$goals/new';
+  static String goal(String id) => '$goals/$id';
+  static String goalEdit(String id) => '$goals/$id/edit';
   static const settings = '/settings';
   static const settingsGeneral = '/settings/general';
   static const settingsAppearance = '/settings/appearance';

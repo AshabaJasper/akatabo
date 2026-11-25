@@ -615,3 +615,42 @@ class AkPillButton extends StatelessWidget {
     );
   }
 }
+
+/// A round "+" that starts something new, such as a savings goal or a budget. 44px so it is
+/// easy to tap. [label] says what it makes ("New savings goal"), since the icon has no words.
+class AkAddButton extends StatelessWidget {
+  const AkAddButton({super.key, required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    // Its own node with its own tap: excludeSemantics drops the InkWell's action, and without
+    // container the button merged into the heading beside it, leaving nothing to activate.
+    return Semantics(
+      button: true,
+      container: true,
+      enabled: onTap != null,
+      label: label,
+      onTap: onTap,
+      excludeSemantics: true,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Container(
+          width: AkSize.target,
+          height: AkSize.target,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: c.surface,
+            border: Border.all(color: c.lineStrong),
+          ),
+          child: AkIcon(AkIcons.plus, color: c.brandText),
+        ),
+      ),
+    );
+  }
+}

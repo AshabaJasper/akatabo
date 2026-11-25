@@ -144,7 +144,7 @@ class _Step extends StatelessWidget {
                     children: [
                       Semantics(
                         header: true,
-                        child: Text(title, style: t.figureLg.copyWith(color: c.onBrand)),
+                        child: Text(title, style: t.figureLg.copyWith(color: c.onBrandFigure)),
                       ),
                       const SizedBox(height: AkSpace.s2h),
                       Text(body, style: t.bodyLg.copyWith(color: c.onDeep)),

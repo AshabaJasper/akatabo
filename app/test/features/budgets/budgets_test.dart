@@ -10,8 +10,10 @@ import 'package:akatabo/features/add/add_providers.dart';
 import 'package:akatabo/features/budgets/budget_edit_screen.dart';
 import 'package:akatabo/features/budgets/budgets_providers.dart';
 import 'package:akatabo/features/budgets/budgets_screen.dart';
+import 'package:akatabo/features/goals/goals_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/widgets/ak_controls.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -61,6 +63,8 @@ Future<void> _pump(
       retry: (_, _) => null,
       overrides: [
         storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+        goalsProvider.overrideWith((ref) => Stream.value(const <Goal>[])),
+        allGoalMovesProvider.overrideWith((ref) => Stream.value(const <GoalMove>[])),
         appearanceProvider.overrideWithValue(const AkAppearance()),
         appNowProvider.overrideWithValue(now ?? _now),
         periodCalculatorProvider.overrideWithValue(calc),
@@ -69,6 +73,63 @@ Future<void> _pump(
         ...data,
       ],
       child: MaterialApp(theme: buildAkTheme(brightness, const AkAppearance()), home: screen),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+/// The Goals tab inside a router, so + and the links can be followed. `/budgets` reads `view`
+/// as the app's router does; the forms are stand-in text.
+Future<void> _pumpRouted(
+  WidgetTester tester, {
+  String start = '/budgets',
+  List<Category>? categories,
+  List<Override> data = const [],
+}) async {
+  final router = GoRouter(
+    initialLocation: start,
+    routes: [
+      GoRoute(
+        path: '/budgets',
+        builder: (_, s) => BudgetsScreen(
+          initialView: switch (s.uri.queryParameters['view']) {
+            'budgets' => GoalsView.budgets,
+            'savings' => GoalsView.savings,
+            _ => null,
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/budgets/:id',
+        builder: (_, s) => Text('Budget for ${s.pathParameters['id']}'),
+      ),
+      GoRoute(path: '/goals/new', builder: (_, _) => const Text('New goal form')),
+    ],
+  );
+  addTearDown(router.dispose);
+  tester.view
+    ..physicalSize = const Size(390, 844)
+    ..devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(
+    ProviderScope(
+      retry: (_, _) => null,
+      overrides: [
+        storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+        goalsProvider.overrideWith((ref) => Stream.value(const <Goal>[])),
+        allGoalMovesProvider.overrideWith((ref) => Stream.value(const <GoalMove>[])),
+        appearanceProvider.overrideWithValue(const AkAppearance()),
+        appNowProvider.overrideWithValue(_now),
+        periodCalculatorProvider.overrideWithValue(const PeriodCalculator()),
+        allCategoriesProvider.overrideWith((ref) => Stream.value(categories ?? _categories)),
+        enabledAccountsProvider.overrideWith((ref) => Stream.value(_accounts)),
+        allAccountsProvider.overrideWith((ref) => Stream.value(_accounts)),
+        ...data,
+      ],
+      child: MaterialApp.router(
+        theme: buildAkTheme(Brightness.light, const AkAppearance()),
+        routerConfig: router,
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -118,7 +179,7 @@ void main() {
     ) async {
       await _pump(
         tester,
-        const BudgetsScreen(),
+        const BudgetsScreen(initialView: GoalsView.budgets),
         data: _rows(),
         categories: [
           categoryRow(id: DefaultIds.food, name: 'Food'),
@@ -142,7 +203,10 @@ void main() {
     testWidgets('a category in the empty list opens its own Set a budget screen', (tester) async {
       final router = GoRouter(
         routes: [
-          GoRoute(path: '/', builder: (_, _) => const BudgetsScreen()),
+          GoRoute(
+            path: '/',
+            builder: (_, _) => const BudgetsScreen(initialView: GoalsView.budgets),
+          ),
           GoRoute(
             path: '/budgets/:id',
             builder: (_, s) => Text('Budget for ${s.pathParameters['id']}'),
@@ -159,6 +223,8 @@ void main() {
           retry: (_, _) => null,
           overrides: [
             storedSettingsProvider.overrideWith((ref) => Stream.value(const {})),
+            goalsProvider.overrideWith((ref) => Stream.value(const <Goal>[])),
+            allGoalMovesProvider.overrideWith((ref) => Stream.value(const <GoalMove>[])),
             appearanceProvider.overrideWithValue(const AkAppearance()),
             appNowProvider.overrideWithValue(_now),
             periodCalculatorProvider.overrideWithValue(const PeriodCalculator()),
@@ -181,7 +247,11 @@ void main() {
     });
 
     testWidgets('the overall figure and the day allowance match the drawn screen', (tester) async {
-      await _pump(tester, const BudgetsScreen(), data: _rows(month: _thisMonth()));
+      await _pump(
+        tester,
+        const BudgetsScreen(initialView: GoalsView.budgets),
+        data: _rows(month: _thisMonth()),
+      );
       expect(find.text('Left to spend in November'), findsOneWidget);
       expect(find.text('UGX 54,000'), findsOneWidget);
       expect(find.text('A day, for 11 days'), findsOneWidget);
@@ -190,7 +260,11 @@ void main() {
     });
 
     testWidgets('each budget shows its spend and its status in words', (tester) async {
-      await _pump(tester, const BudgetsScreen(), data: _rows(month: _thisMonth()));
+      await _pump(
+        tester,
+        const BudgetsScreen(initialView: GoalsView.budgets),
+        data: _rows(month: _thisMonth()),
+      );
       expect(find.text('236,000 of 200,000'), findsOneWidget);
       expect(find.text('Over by 36,000'), findsOneWidget);
       expect(find.text('Nearly used'), findsOneWidget, reason: 'Food, 92% used');
@@ -198,7 +272,11 @@ void main() {
     });
 
     testWidgets('a category with spending and no budget offers to set one', (tester) async {
-      await _pump(tester, const BudgetsScreen(), data: _rows(month: _thisMonth()));
+      await _pump(
+        tester,
+        const BudgetsScreen(initialView: GoalsView.budgets),
+        data: _rows(month: _thisMonth()),
+      );
       expect(find.text('School fees has no budget'), findsOneWidget);
       expect(find.text('You spent 350,000 on it this month'), findsOneWidget);
       expect(find.text('Set one'), findsOneWidget);
@@ -214,7 +292,7 @@ void main() {
       ];
       await _pump(
         tester,
-        const BudgetsScreen(),
+        const BudgetsScreen(initialView: GoalsView.budgets),
         data: _rows(month: month),
         categories: [
           categoryRow(id: DefaultIds.food, name: 'Food'),
@@ -233,7 +311,11 @@ void main() {
 
     testWidgets('fees and tax are never offered as a budget', (tester) async {
       final month = [txRow(id: 'fee', amount: 45000, fee: 1000, day: 20261118, at: _now)];
-      await _pump(tester, const BudgetsScreen(), data: _rows(month: month));
+      await _pump(
+        tester,
+        const BudgetsScreen(initialView: GoalsView.budgets),
+        data: _rows(month: month),
+      );
       expect(find.text('Fees and tax has no budget'), findsNothing);
     });
 
@@ -242,7 +324,7 @@ void main() {
       // on 84% of the month is on track; read against the 19th it would look ahead.
       await _pump(
         tester,
-        const BudgetsScreen(),
+        const BudgetsScreen(initialView: GoalsView.budgets),
         calc: const PeriodCalculator(monthStartsOn: 25),
         categories: [categoryRow(id: DefaultIds.food, name: 'Food', monthlyBudget: 100000)],
         data: _rows(
@@ -258,7 +340,7 @@ void main() {
     ) async {
       await _pump(
         tester,
-        const BudgetsScreen(),
+        const BudgetsScreen(initialView: GoalsView.budgets),
         categories: [
           categoryRow(
             id: DefaultIds.transport,
@@ -281,7 +363,7 @@ void main() {
     testWidgets('a budget set this month carries nothing in yet', (tester) async {
       await _pump(
         tester,
-        const BudgetsScreen(),
+        const BudgetsScreen(initialView: GoalsView.budgets),
         categories: [
           categoryRow(
             id: DefaultIds.transport,
@@ -304,7 +386,7 @@ void main() {
     testWidgets('on the last day of the month it says what is left for today', (tester) async {
       await _pump(
         tester,
-        const BudgetsScreen(),
+        const BudgetsScreen(initialView: GoalsView.budgets),
         now: DateTime(2026, 11, 30, 9),
         data: _rows(month: _thisMonth()),
       );
@@ -315,7 +397,7 @@ void main() {
     testWidgets('a database error says so instead of loading forever', (tester) async {
       await _pump(
         tester,
-        const BudgetsScreen(),
+        const BudgetsScreen(initialView: GoalsView.budgets),
         data: [
           monthRowsProvider.overrideWith((ref) => Stream.error(StateError('disk'))),
           previousMonthRowsProvider.overrideWith((ref) => Stream.value(const [])),
@@ -329,7 +411,7 @@ void main() {
       testWidgets('budgets golden, ${b.name}', (tester) async {
         await _pump(
           tester,
-          const BudgetsScreen(),
+          const BudgetsScreen(initialView: GoalsView.budgets),
           data: _rows(month: _thisMonth()),
           brightness: b,
         );
@@ -545,6 +627,89 @@ void main() {
         find.text('This budget could not load. Close Akatabo and open it again.'),
         findsOneWidget,
       );
+    });
+  });
+
+  group('Goals tab switch', () {
+    testWidgets('opens on Savings, and its + opens a new savings goal', (tester) async {
+      await _pumpRouted(tester, data: _rows(month: _thisMonth()));
+      expect(find.textContaining('Set money aside for something you want'), findsOneWidget);
+      expect(find.text('Left to spend in November'), findsNothing);
+      // Its own button with a tap action, not merged into the Savings heading.
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('New savings goal')),
+        isSemantics(label: 'New savings goal', isButton: true, hasTapAction: true),
+      );
+      await tester.tap(find.bySemanticsLabel('New savings goal'));
+      await tester.pumpAndSettle();
+      expect(find.text('New goal form'), findsOneWidget);
+    });
+
+    testWidgets('Budgets shows this month\'s budgets, however many goals there are', (
+      tester,
+    ) async {
+      await _pumpRouted(tester, data: _rows(month: _thisMonth()));
+      await tester.tap(find.text('Budgets').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Left to spend in November'), findsOneWidget);
+      expect(find.textContaining('Set money aside for something you want'), findsNothing);
+    });
+
+    testWidgets('?view=budgets opens the Budgets side directly', (tester) async {
+      await _pumpRouted(
+        tester,
+        start: '/budgets?view=budgets',
+        data: _rows(month: _thisMonth()),
+      );
+      expect(find.text('Left to spend in November'), findsOneWidget);
+    });
+
+    testWidgets('Budgets + offers only spending categories without a budget', (tester) async {
+      await _pumpRouted(
+        tester,
+        start: '/budgets?view=budgets',
+        data: _rows(month: _thisMonth()),
+      );
+      await tester.tap(find.bySemanticsLabel('New budget'));
+      await tester.pumpAndSettle();
+      expect(find.text('Budget for'), findsOneWidget);
+      final sheet = find.byType(BottomSheet);
+      expect(find.descendant(of: sheet, matching: find.text('School fees')), findsOneWidget);
+      expect(find.descendant(of: sheet, matching: find.text('Transport')), findsNothing);
+      expect(find.descendant(of: sheet, matching: find.text('Fees and tax')), findsNothing);
+      await tester.tap(find.descendant(of: sheet, matching: find.text('School fees')));
+      await tester.pumpAndSettle();
+      expect(find.text('Budget for ${DefaultIds.school}'), findsOneWidget);
+    });
+
+    testWidgets('with every category budgeted, + is gone and a line says so', (tester) async {
+      await _pumpRouted(
+        tester,
+        start: '/budgets?view=budgets',
+        categories: [
+          for (final c in _categories)
+            c.id == DefaultIds.school ? c.copyWith(monthlyBudget: const Value(100000)) : c,
+        ],
+        data: _rows(month: _thisMonth()),
+      );
+      expect(find.bySemanticsLabel('New budget'), findsNothing);
+      expect(find.text('Every spending category has a budget.'), findsOneWidget);
+    });
+    testWidgets('a link to a side opens it even after the person switched away', (tester) async {
+      // Bug review #5: Savings "See all" a second time used to leave the tab on Budgets.
+      await _pumpRouted(
+        tester,
+        start: '/budgets?view=savings',
+        data: _rows(month: _thisMonth()),
+      );
+      await tester.tap(find.text('Budgets').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Left to spend in November'), findsOneWidget);
+
+      openGoalsTab(tester.element(find.byType(BudgetsScreen)), GoalsView.savings);
+      await tester.pumpAndSettle();
+      expect(find.text('Left to spend in November'), findsNothing);
+      expect(find.textContaining('Set money aside for something you want'), findsOneWidget);
     });
   });
 }
