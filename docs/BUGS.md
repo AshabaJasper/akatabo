@@ -4,6 +4,15 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
+### [bug-review] HingeSafe pads the content but leaves the system insets in MediaQuery
+
+- **Where:** `app/lib/app/adaptive.dart` (`HingeSafe`)
+- **What happens:** on a phone half-open like a laptop, `HingeSafe` keeps the content off the fold with `Padding`. The content below still reads the full window's `MediaQuery` padding, so a `SafeArea` or bottom gap inside it adds the system bar's height again and leaves a little extra empty space above the hinge.
+- **How to trigger:** a foldable in tabletop posture, Home scrolled to its end.
+- **Score:** frequency 1 x severity 2 = 2
+- **Suggested fix:** wrap the child in `MediaQuery.removePadding` for the side the hinge takes, as Flutter's `DisplayFeatureSubScreen` does.
+- **Found:** 25 November 2026, bug review of the tablet and foldable layout
+
 ### [bug-review] Calendar Savings card leaves the Calendar behind
 
 - **Where:** `app/lib/features/calendar/period_cards.dart` (`_SavingsCard`, `openGoalsTab`)
@@ -594,6 +603,11 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Found:** 24 November 2026, bug review of the permissions page
 
 ## Fixed
+
+### [bug-review] Rail labels could wrap mid-word at large text sizes
+
+- **Found:** 25 November 2026, bug review of the tablet and foldable layout, frequency 2 x severity 2 = 4.
+- **Fixed:** 25 November 2026, with the scrolling rail. Each label is one line in a `FittedBox` that shrinks it to the rail's width, and the rail scrolls when the window is short. Test: "a short landscape window at a large text size can still reach Settings" in `app/test/app/shell_wide_test.dart`; switching the scroll off makes it fail with an overflow.
 
 ### [bug-review] Goal move sheet can call setState after it closes, or stay stuck on an unexpected error
 

@@ -15,6 +15,7 @@ import 'package:akatabo/features/goals/goals_providers.dart';
 import 'package:akatabo/features/home/home_providers.dart';
 import 'package:akatabo/features/home/home_screen.dart';
 import 'package:akatabo/features/regular/regular_providers.dart';
+import 'package:akatabo/features/transactions/transaction_row.dart';
 import 'package:akatabo/services/security/privacy_settings.dart';
 import 'package:akatabo/smart/forecast/forecast_range.dart';
 import 'package:akatabo/widgets/ak_hidden_amount.dart';
@@ -46,9 +47,10 @@ Future<void> _pumpHome(
   List<Override> extra = const [],
   List<Category>? categories,
   List<Goal> goals = const [],
+  Size size = const Size(390, 844),
 }) async {
   tester.view
-    ..physicalSize = const Size(390, 844)
+    ..physicalSize = size
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
@@ -206,6 +208,68 @@ void main() {
       );
       semantics.dispose();
     });
+  });
+
+  testWidgets('a tablet shows Latest beside the summary; a phone stacks them', (tester) async {
+    final (a, b, c, _) = _filled();
+    await _pumpHome(tester, latest: [a, b, c], month: [a, b, c], size: const Size(1280, 800));
+    expect(tester.takeException(), isNull);
+    final whereWide = tester.getTopLeft(find.text('Where it went'));
+    final latestWide = tester.getTopLeft(find.text('Latest'));
+    // Side by side: the Latest title is to the right and about level with the summary.
+    expect(latestWide.dx, greaterThan(whereWide.dx));
+    expect(latestWide.dy, lessThan(whereWide.dy + 200));
+
+    await _pumpHome(tester, latest: [a, b, c], month: [a, b, c]);
+    expect(tester.takeException(), isNull);
+    final wherePhone = tester.getTopLeft(find.text('Where it went'));
+    final latestPhone = tester.getTopLeft(find.text('Latest'));
+    // Stacked: the Latest title sits below the summary, in the same column.
+    expect(latestPhone.dx, closeTo(wherePhone.dx, 1));
+    expect(latestPhone.dy, greaterThan(wherePhone.dy));
+  });
+
+  testWidgets('on a wide window the last Latest row clears the system bar', (tester) async {
+    tester.view.padding = const FakeViewPadding(bottom: 48);
+    final rows = [
+      for (var i = 0; i < 20; i++)
+        txRow(
+          id: 'r$i',
+          amount: 1000 + i,
+          day: 20261119,
+          at: _now.subtract(Duration(minutes: i)),
+        ),
+    ];
+    await _pumpHome(tester, latest: rows, month: rows, size: const Size(1280, 800));
+    final list = find.ancestor(
+      of: find.byType(TransactionRow).first,
+      matching: find.byType(ListView),
+    );
+    final scroll = tester.state<ScrollableState>(
+      find.descendant(of: list, matching: find.byType(Scrollable)).first,
+    );
+    scroll.position.jumpTo(scroll.position.maxScrollExtent);
+    await tester.pumpAndSettle();
+    // The list ends with the usual gap plus the bar's 48, so the last row can scroll clear of it.
+    expect(
+      find.descendant(
+        of: list,
+        matching: find.byWidgetPredicate((w) => w is SizedBox && w.height == AkSpace.s6 + 48),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the header sets light status-bar icons on a phone only', (tester) async {
+    final (a, b, c, _) = _filled();
+    Finder regions() => find.descendant(
+      of: find.byType(HomeScreen),
+      matching: find.byWidgetPredicate((w) => w is AnnotatedRegion<SystemUiOverlayStyle>),
+    );
+    await _pumpHome(tester, latest: [a, b, c], month: [a, b, c]);
+    expect(regions(), findsWidgets);
+    await _pumpHome(tester, latest: [a, b, c], month: [a, b, c], size: const Size(1280, 800));
+    expect(regions(), findsNothing);
   });
 
   testWidgets('a switched-off Latest section leaves the rest of Home', (tester) async {

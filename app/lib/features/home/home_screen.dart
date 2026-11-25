@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../app/adaptive.dart';
 import '../../app/routes.dart';
 import '../../core/format/money.dart';
 import '../../core/icons/ak_icon.dart';
@@ -85,101 +86,130 @@ class HomeScreen extends ConsumerWidget {
       ref.watch(storedSettingsProvider).value?[SettingKeys.forecastMonth.name],
     );
 
+    final head = <Widget>[
+      _Header(
+        monthName: monthName,
+        caption: 'Money out, 1 to ${now.day} $monthName',
+        figure: totals.moneyOut,
+        comparison: change == null || previousOut == 0
+            ? null
+            : change >= 0
+            ? '$change% above this point in $prevName'
+            : '${-change}% below this point in $prevName',
+        tiles: layout.headerTiles
+            ? [
+                _StatTile(
+                  label: 'Money in',
+                  value: formatShort(totals.moneyIn),
+                  valueColour: context.colors.moneyInOnBrand,
+                ),
+                // Only once a budget is set: with none, "0 left" would mislead.
+                if (budgets != null)
+                  _StatTile(
+                    label: budgets.left < 0 ? 'Over budget' : 'Left in budgets',
+                    value: formatAmount(budgets.left.abs()),
+                    onTap: () => openGoalsTab(context, GoalsView.budgets),
+                    opens: 'Open budgets',
+                  ),
+                _StatTile(
+                  label: 'Fees and tax',
+                  value: formatAmount(feesAndTax),
+                  onTap: () => context.push(Routes.fees),
+                  opens: 'Open fees and tax',
+                ),
+              ]
+            : const [],
+      ),
+      // The forecast card, as Main.html draws it, once seven days have entries and while
+      // "Forecast the month" is on. Its providers are only read once it can show.
+      if (layout.forecast && daysWithEntries >= forecastMinDays && forecastOn) ...[
+        const SizedBox(height: AkSpace.s3h),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: AkSpace.s6),
+          child: _ForecastCard(),
+        ),
+      ],
+      if (layout.whereItWent) ...[
+        const SizedBox(height: AkSpace.s5),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AkSpace.s6),
+          child: _WhereItWent(parts: parts, categories: categories, total: totals.moneyOut),
+        ),
+      ],
+      if (savingGoal) ...[
+        const SizedBox(height: AkSpace.s5),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: AkSpace.s6),
+          child: SavingsSection(),
+        ),
+      ],
+    ];
+    final latestBlock = <Widget>[
+      if (layout.latest) ...[
+        const SizedBox(height: AkSpace.s5),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AkSpace.s6),
+          child: AkSectionTitle(
+            'Latest',
+            actionLabel: 'See all',
+            onAction: () => context.push(Routes.transactions),
+          ),
+        ),
+        const SizedBox(height: AkSpace.s1),
+        for (final tx in latest)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AkSpace.s6),
+            child: TransactionRow(
+              transaction: tx,
+              now: now,
+              category: categories[tx.categoryId],
+              accountName: accounts[tx.accountId] ?? '',
+              toAccountName: tx.toAccountId == null ? null : accounts[tx.toAccountId],
+              onTap: () => context.push(Routes.transaction(tx.id)),
+            ),
+          ),
+      ],
+    ];
+    final budgetBlock = <Widget>[
+      // Draws nothing until a budget is set, so its gap goes inside it.
+      if (layout.budgets && budgets != null) ...[
+        const SizedBox(height: AkSpace.s5),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: AkSpace.s6),
+          child: BudgetsAtAGlance(),
+        ),
+      ],
+    ];
+    // On a wide window there is no bottom bar to take the system bar's space, so the last rows
+    // also clear the 3-button bar or a taskbar. On a phone this inset is already 0.
+    final bottomGap = SizedBox(height: AkSpace.s6 + MediaQuery.paddingOf(context).bottom);
+
+    // A wide window shows the summary and the Latest list side by side; a phone keeps one
+    // column, in the same order as before.
+    if (isWide(context) && layout.latest) {
+      return Scaffold(
+        backgroundColor: context.colors.ground,
+        body: WidePanes(
+          primary: ListView(
+            padding: EdgeInsets.zero,
+            children: [...head, ...budgetBlock, bottomGap],
+          ),
+          secondary: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              const SizedBox(height: AkSpace.s6),
+              ...latestBlock,
+              bottomGap,
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: context.colors.ground,
       body: ListView(
         padding: EdgeInsets.zero,
-        children: [
-          _Header(
-            monthName: monthName,
-            caption: 'Money out, 1 to ${now.day} $monthName',
-            figure: totals.moneyOut,
-            comparison: change == null || previousOut == 0
-                ? null
-                : change >= 0
-                ? '$change% above this point in $prevName'
-                : '${-change}% below this point in $prevName',
-            tiles: layout.headerTiles
-                ? [
-                    _StatTile(
-                      label: 'Money in',
-                      value: formatShort(totals.moneyIn),
-                      valueColour: context.colors.moneyInOnBrand,
-                    ),
-                    // Only once a budget is set: with none, "0 left" would mislead.
-                    if (budgets != null)
-                      _StatTile(
-                        label: budgets.left < 0 ? 'Over budget' : 'Left in budgets',
-                        value: formatAmount(budgets.left.abs()),
-                        onTap: () => openGoalsTab(context, GoalsView.budgets),
-                        opens: 'Open budgets',
-                      ),
-                    _StatTile(
-                      label: 'Fees and tax',
-                      value: formatAmount(feesAndTax),
-                      onTap: () => context.push(Routes.fees),
-                      opens: 'Open fees and tax',
-                    ),
-                  ]
-                : const [],
-          ),
-          // The forecast card, as Main.html draws it, once seven days have entries and while
-          // "Forecast the month" is on. Its providers are only read once it can show.
-          if (layout.forecast && daysWithEntries >= forecastMinDays && forecastOn) ...[
-            const SizedBox(height: AkSpace.s3h),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: AkSpace.s6),
-              child: _ForecastCard(),
-            ),
-          ],
-          if (layout.whereItWent) ...[
-            const SizedBox(height: AkSpace.s5),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AkSpace.s6),
-              child: _WhereItWent(parts: parts, categories: categories, total: totals.moneyOut),
-            ),
-          ],
-          if (savingGoal) ...[
-            const SizedBox(height: AkSpace.s5),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: AkSpace.s6),
-              child: SavingsSection(),
-            ),
-          ],
-          if (layout.latest) ...[
-            const SizedBox(height: AkSpace.s5),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AkSpace.s6),
-              child: AkSectionTitle(
-                'Latest',
-                actionLabel: 'See all',
-                onAction: () => context.push(Routes.transactions),
-              ),
-            ),
-            const SizedBox(height: AkSpace.s1),
-            for (final tx in latest)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AkSpace.s6),
-                child: TransactionRow(
-                  transaction: tx,
-                  now: now,
-                  category: categories[tx.categoryId],
-                  accountName: accounts[tx.accountId] ?? '',
-                  toAccountName: tx.toAccountId == null ? null : accounts[tx.toAccountId],
-                  onTap: () => context.push(Routes.transaction(tx.id)),
-                ),
-              ),
-          ],
-          // Draws nothing until a budget is set, so its gap goes inside it.
-          if (layout.budgets && budgets != null) ...[
-            const SizedBox(height: AkSpace.s5),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: AkSpace.s6),
-              child: BudgetsAtAGlance(),
-            ),
-          ],
-          const SizedBox(height: AkSpace.s6),
-        ],
+        children: [...head, ...latestBlock, ...budgetBlock, bottomGap],
       ),
     );
   }
@@ -208,110 +238,116 @@ class _Header extends StatelessWidget {
     // clock and icons above it are light whatever the theme says. `brand-deep` equals `brand`
     // in light; in dark it is the darker fill MainDark.html draws, which keeps the muted
     // caption readable for every main colour.
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: c.brandDeep.withValues(alpha: 0)),
-      child: Container(
-        color: c.brandDeep,
-        child: SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s3, AkSpace.s6, AkSpace.s5),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // A Wrap, so at a large text size the month moves under the name instead of
-                // running off the screen; with room, it sits at the right as drawn.
-                SizedBox(
-                  width: double.infinity,
-                  child: Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: AkSpace.s3,
-                    runSpacing: AkSpace.s2,
-                    children: [
-                      AkLogo(style: t.displaySm.copyWith(color: c.onBrand)),
-                      Semantics(
-                        button: true,
-                        label: '$monthName, open the calendar',
-                        container: true,
-                        excludeSemantics: true,
-                        onTap: () => context.push(Routes.calendar),
-                        // The header is a plain coloured box, so the ripple needs its own
-                        // Material to paint on; without it the ink draws under the green.
-                        child: Material(
-                          type: MaterialType.transparency,
-                          // IntrinsicWidth: the centred box would otherwise take the Wrap's
-                          // whole width and drop under the name even when there is room.
-                          child: InkWell(
-                            onTap: () => context.push(Routes.calendar),
-                            borderRadius: BorderRadius.circular(context.metrics.pill),
-                            child: IntrinsicWidth(
-                              child: Container(
-                                constraints: const BoxConstraints(minHeight: AkSize.target),
-                                padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3h),
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(context.metrics.pill),
-                                  border: Border.all(color: c.onBrandMuted),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    AkIcon(AkIcons.calendar, color: c.onBrand, size: AkSize.iconSm),
-                                    const SizedBox(width: AkSpace.s2),
-                                    Text(monthName, style: t.bodyMd.copyWith(color: c.onBrand)),
-                                  ],
-                                ),
+    // On a wide window the header no longer reaches the status bar (the shell keeps a surface
+    // strip there), so the app's own icon colour applies and no light style is set here.
+    final header = Container(
+      color: c.brandDeep,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(AkSpace.s6, AkSpace.s3, AkSpace.s6, AkSpace.s5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // A Wrap, so at a large text size the month moves under the name instead of
+              // running off the screen; with room, it sits at the right as drawn.
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AkSpace.s3,
+                  runSpacing: AkSpace.s2,
+                  children: [
+                    AkLogo(style: t.displaySm.copyWith(color: c.onBrand)),
+                    Semantics(
+                      button: true,
+                      label: '$monthName, open the calendar',
+                      container: true,
+                      excludeSemantics: true,
+                      onTap: () => context.push(Routes.calendar),
+                      // The header is a plain coloured box, so the ripple needs its own
+                      // Material to paint on; without it the ink draws under the green.
+                      child: Material(
+                        type: MaterialType.transparency,
+                        // IntrinsicWidth: the centred box would otherwise take the Wrap's
+                        // whole width and drop under the name even when there is room.
+                        child: InkWell(
+                          onTap: () => context.push(Routes.calendar),
+                          borderRadius: BorderRadius.circular(context.metrics.pill),
+                          child: IntrinsicWidth(
+                            child: Container(
+                              constraints: const BoxConstraints(minHeight: AkSize.target),
+                              padding: const EdgeInsets.symmetric(horizontal: AkSpace.s3h),
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(context.metrics.pill),
+                                border: Border.all(color: c.onBrandMuted),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  AkIcon(AkIcons.calendar, color: c.onBrand, size: AkSize.iconSm),
+                                  const SizedBox(width: AkSpace.s2),
+                                  Text(monthName, style: t.bodyMd.copyWith(color: c.onBrand)),
+                                ],
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AkSpace.s3h),
-                Text(caption, style: t.bodySm.copyWith(color: c.onBrandMuted)),
+              ),
+              const SizedBox(height: AkSpace.s3h),
+              Text(caption, style: t.bodySm.copyWith(color: c.onBrandMuted)),
+              const SizedBox(height: AkSpace.s1),
+              AkHeadlineAmount(
+                figure,
+                hideable: true,
+                style: t.figureXl.copyWith(color: c.onBrandFigure),
+              ),
+              if (comparison != null) ...[
                 const SizedBox(height: AkSpace.s1),
-                AkHeadlineAmount(
-                  figure,
-                  hideable: true,
-                  style: t.figureXl.copyWith(color: c.onBrandFigure),
-                ),
-                if (comparison != null) ...[
-                  const SizedBox(height: AkSpace.s1),
-                  Text(comparison!, style: t.bodySm.copyWith(color: c.accent)),
-                ],
-                const SizedBox(height: AkSpace.s4),
-                // Side by side and the same height, as drawn, even when one label takes two
-                // lines; at a large text size they stack so no figure is squeezed.
-                if (MediaQuery.textScalerOf(context).scale(1) > 1.3)
-                  Column(
+                Text(comparison!, style: t.bodySm.copyWith(color: c.accent)),
+              ],
+              const SizedBox(height: AkSpace.s4),
+              // Side by side and the same height, as drawn, even when one label takes two
+              // lines; at a large text size they stack so no figure is squeezed.
+              if (MediaQuery.textScalerOf(context).scale(1) > 1.3)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final (i, tile) in tiles.indexed) ...[
+                      if (i > 0) const SizedBox(height: AkSpace.s2),
+                      tile,
+                    ],
+                  ],
+                )
+              else
+                IntrinsicHeight(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (final (i, tile) in tiles.indexed) ...[
-                        if (i > 0) const SizedBox(height: AkSpace.s2),
-                        tile,
+                        if (i > 0) const SizedBox(width: AkSpace.s2),
+                        Expanded(child: tile),
                       ],
                     ],
-                  )
-                else
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (final (i, tile) in tiles.indexed) ...[
-                          if (i > 0) const SizedBox(width: AkSpace.s2),
-                          Expanded(child: tile),
-                        ],
-                      ],
-                    ),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
       ),
+    );
+    if (isWide(context)) return header;
+    // The header sits under the status bar and is the deep main colour in both themes, so the
+    // clock and icons above it are light whatever the theme says.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: c.brandDeep.withValues(alpha: 0)),
+      child: header,
     );
   }
 }
