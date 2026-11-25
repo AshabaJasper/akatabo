@@ -79,7 +79,7 @@ The set. Each entry is the content of `<svg viewBox="0 0 24 24" fill="none" stro
 | --- | --- | --- |
 | home | navigation | `<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>` |
 | chart | Insights | `<path d="M5 20V10"/><path d="M12 20V4"/><path d="M19 20v-7"/>` |
-| target | Budgets (the Budgets side of Goals) | `<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>` |
+| target | Budgets | `<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>` |
 | chip | Models, anything computed by a model | `<rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/>` |
 | sent | money sent | `<path d="M7 17L17 7"/><path d="M9 7h8v8"/>` |
 | received | money received | `<path d="M17 7L7 17"/><path d="M15 17H7V9"/>` |
