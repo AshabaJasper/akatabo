@@ -14,7 +14,10 @@ import '../../widgets/ak_hidden_amount.dart';
 import '../../widgets/ak_surfaces.dart';
 import 'goal_summary.dart';
 
-final _dayFormat = DateFormat('d MMMM yyyy', 'en');
+// No locale argument: the built-in English data is always loaded, while naming 'en' needs
+// initializeDateFormatting first, which the app never runs at startup. That crashed the
+// Moves list on a real phone (LocaleDataException) even though the widget tests passed.
+final _dayFormat = DateFormat('d MMMM yyyy');
 
 /// A local day (yyyymmdd) written the way the screens show dates: `1 March 2027`.
 String dayText(int localDay) => _dayFormat.format(fromLocalDay(localDay));
