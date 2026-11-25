@@ -620,16 +620,39 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Found:** 25 November 2026, goal reminders bug review. Score 1 x 3 = 3.
 - **Where:** `app/lib/services/notifications/notifications_service.dart` (`replaceAll`) with `nextMonthlyAt` and `nextWeeklyAt` in `reminder_plan.dart`.
 - **What happens:** reminders are scheduled inexactly, so the 1st 09:00 goal reminder can still be pending at 09:05. If Akatabo is opened or hidden then, `replaceAll` cancels it and the next time is a month away, so that month's reminder is lost. The daily and weekly reminders behave the same way.
-- **Suggested fix:** in `replaceAll`, keep a reminder whose time passed in the last 15 minutes and has not fired, or show it at once.
+- **Fixed:** 25 November 2026. `replaceAll` no longer cancels everything and schedules it again. Each scheduled reminder carries a signature of its kind and time as its payload, and `reminderChanges` (in `reminder_plan.dart`) decides what to cancel and what to schedule. An unchanged reminder is left alone, and so is one whose time came within the last 30 minutes (`lateAlarmGrace`) when its words changed, or a one-time reminder the plan dropped because its time passed, so a late alarm is not lost. A repeating reminder the plan dropped was switched off and is cancelled at once (the re-review found keeping it made it go off once more, score 12; test "a repeating reminder switched off just after its time is cancelled"). The first sync after each start still schedules everything, because a restart or force-stop drops the alarms while the plugin's pending list survives (found by the follow-up review, score 48, fixed in the same change). Tests: groups "reminderChanges" and "lastDueOf" in `app/test/services/reminder_plan_test.dart`; breaking either rule turns its test red.
+- **Still open:** see the three entries below, filed by the re-review.
 
 ### [bug-review] The Android "Reminders" channel description leaves out goal reminders
 
 - **Found:** 25 November 2026, goal reminders bug review. Score 2 x 1 = 2.
 - **Where:** `app/lib/services/notifications/notifications_service.dart`, the `reminders` channel.
 - **What happens:** Android's notification settings for Akatabo describe Reminders as the daily nudge, regular payments and the weekly summary, but goal reminders go there too.
-- **Suggested fix:** add goals to the description. Android updates an existing channel's description on the next start.
+- **Fixed:** 25 November 2026. The description now reads "Daily nudge, regular payments, savings goals and the weekly summary". Android reads it when the channel is first created, so a phone that already has the channel may keep the old text until the app is reinstalled.
 
 ### [bug-review] Goal reminders were not set again after a goal changed
 
 - **Found:** 25 November 2026, goal reminders bug review. Score 1 x 2 = 2.
 - **Fixed:** 25 November 2026. `rescheduleRemindersAtStart` also listens to goals and goal moves, so a save, archive, put-back or move sets the reminders again. Test: "after start, saving a goal or giving it money sets the reminders again" in `app/test/services/goal_reminders_test.dart`.
+
+### [bug-review] The first sync after any cold start can still lose a late alarm
+
+- **Found:** 25 November 2026, re-review of the reminder fix. Score 1 x 3 = 3.
+- **Where:** `app/lib/services/notifications/notifications_service.dart` (`_scheduledThisRun`).
+- **What happens:** every new process starts untrusted, not only after a restart: Android killing the app in the background counts too. The first sync sets every reminder again, so an alarm that is late inside the 30-minute window moves a whole period away. Opening Akatabo at 09:05 on the 1st is often a cold start.
+- **Suggested fix:** on that first sync, if a pending reminder is just due and `getActiveNotifications()` does not show its id, show it at once before scheduling again.
+
+### [bug-review] A just-due regular payment reminder is replaced when a later payment takes its id
+
+- **Found:** 25 November 2026, re-review of the reminder fix. Score 1 x 3 = 3.
+- **Where:** `app/lib/services/notifications/reminder_plan.dart` (ids given by position, 100 + n) with `reminderChanges`.
+- **What happens:** a payment whose reminder time has passed is left out of the plan, so the next payment takes id 100 and scheduling it replaces the late Rent alarm.
+- **How to trigger:** Rent due 2 December and Water due 10 December. The 1 December 09:00 Rent reminder runs late, and Akatabo is opened at 09:05.
+- **Suggested fix:** base regular payment reminder ids on the payment, or skip an id that holds a just-due one-time reminder.
+
+### [bug-review] Words changed within 30 minutes of a reminder's time stay old for the next period
+
+- **Found:** 25 November 2026, re-review of the reminder fix. Score 2 x 2 = 4.
+- **Where:** `app/lib/services/notifications/reminder_plan.dart`, `keep` in `reminderChanges`.
+- **What happens:** a repeating reminder whose words changed inside the window is kept with its old words. If the app does not sync again later, the next week or month shows the old amount, or another goal's name when a goal moved into an archived goal's id.
+- **Suggested fix:** keep through the window only when the title is the same; the weekly summary's title never changes, so it stays protected.

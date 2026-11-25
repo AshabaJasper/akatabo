@@ -17,8 +17,9 @@ abstract interface class NotificationsService {
   /// the phone's settings after switching a reminder on.
   Future<bool> areAllowed();
 
-  /// Cancels every scheduled reminder, then schedules [reminders]. Notifications already
-  /// shown, such as a budget warning, stay where they are.
+  /// Makes the scheduled reminders exactly [reminders]: any no longer planned are cancelled,
+  /// any unchanged are left alone (so one still waiting on a delayed alarm is not lost), and
+  /// the rest are scheduled. Notifications already shown, such as a budget warning, stay.
   Future<void> replaceAll(List<PlannedReminder> reminders);
 
   /// Shows a notification now. A later one with the same [id] replaces it.
@@ -32,11 +33,16 @@ final notificationsServiceProvider = Provider<NotificationsService>(
 /// [NotificationsService] on `flutter_local_notifications`.
 ///
 /// Scheduling is inexact (`inexactAllowWhileIdle`): no exact-alarm permission, so a reminder
-/// can arrive a few minutes late. There is no boot receiver either; the app reschedules every
-/// reminder each time it starts.
+/// can arrive a few minutes late. There is no boot receiver either: the first sync after the
+/// app starts schedules every reminder again, because a phone restart or a force-stop drops
+/// the alarms while the plugin's list of pending reminders survives.
 class LocalNotificationsService implements NotificationsService {
   LocalNotificationsService({FlutterLocalNotificationsPlugin? plugin})
     : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
+
+  /// Whether every reminder has been scheduled since the app started. Until then the plugin's
+  /// pending list may describe alarms that no longer exist.
+  bool _scheduledThisRun = false;
 
   final FlutterLocalNotificationsPlugin _plugin;
   Future<void>? _ready;
@@ -48,7 +54,7 @@ class LocalNotificationsService implements NotificationsService {
     android: AndroidNotificationDetails(
       'reminders',
       'Reminders',
-      channelDescription: 'Daily nudge, regular payments and the weekly summary',
+      channelDescription: 'Daily nudge, regular payments, savings goals and the weekly summary',
       largeIcon: DrawableResourceAndroidBitmap('ic_notification_large'),
     ),
     iOS: DarwinNotificationDetails(),
@@ -125,10 +131,20 @@ class LocalNotificationsService implements NotificationsService {
   @override
   Future<void> replaceAll(List<PlannedReminder> reminders) async {
     await _init();
-    // Only the scheduled ones: cancelAll would also clear a budget warning already shown.
-    await _plugin.cancelAllPendingNotifications();
+    // Only the scheduled ones are touched: cancelling everything would also clear a budget
+    // warning already shown, and would lose an alarm that is late but has not gone off.
+    final pending = await _plugin.pendingNotificationRequests();
     final now = DateTime.now();
-    for (final r in reminders) {
+    final changes = reminderChanges(
+      reminders,
+      [for (final p in pending) (id: p.id, title: p.title, body: p.body, payload: p.payload)],
+      now: now,
+      trustPending: _scheduledThisRun,
+    );
+    for (final id in changes.cancel) {
+      await _plugin.cancel(id: id);
+    }
+    for (final r in changes.schedule) {
       final (DateTime at, DateTimeComponents? repeat) = switch (r) {
         DailyReminder(:final hour, :final minute) => (
           nextDailyAt(now, hour, minute),
@@ -153,8 +169,11 @@ class LocalNotificationsService implements NotificationsService {
         notificationDetails: _details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         matchDateTimeComponents: repeat,
+        payload: reminderSignature(r),
       );
     }
+    // Only once both steps worked: a failure part-way leaves the next sync to set them all.
+    _scheduledThisRun = true;
   }
 
   @override

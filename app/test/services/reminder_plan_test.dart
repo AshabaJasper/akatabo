@@ -157,6 +157,146 @@ void main() {
     });
   });
 
+  group('reminderChanges', () {
+    const monthly = MonthlyReminder(
+      id: 200,
+      title: 'Set aside for Phone',
+      body: 'Put aside about UGX 200,000 for Phone this month.',
+      day: 1,
+      hour: 9,
+      minute: 0,
+    );
+    const daily = DailyReminder(id: 1, title: 't', body: 'b', hour: 8, minute: 0);
+    PendingReminder pendingOf(PlannedReminder r, {String? body}) =>
+        (id: r.id, title: r.title, body: body ?? r.body, payload: reminderSignature(r));
+    // The 1st at 09:05: the 09:00 alarm may still be waiting to go off.
+    final justAfter = DateTime(2026, 12, 1, 9, 5);
+
+    test('a reminder already scheduled and unchanged is left alone, even just after its time', () {
+      final changes = reminderChanges([monthly], [pendingOf(monthly)], now: justAfter);
+      expect(changes.cancel, isEmpty);
+      expect(changes.schedule, isEmpty);
+    });
+
+    test('just after its time, changed words do not move it: the late alarm is kept', () {
+      final changes = reminderChanges(
+        [monthly],
+        [pendingOf(monthly, body: 'Older amount.')],
+        now: justAfter,
+      );
+      expect(changes.schedule, isEmpty);
+    });
+
+    test('well after its time, changed words are scheduled again', () {
+      final changes = reminderChanges(
+        [monthly],
+        [pendingOf(monthly, body: 'Older amount.')],
+        now: now,
+      );
+      expect(changes.schedule, [monthly]);
+    });
+
+    test('a new reminder is scheduled', () {
+      final changes = reminderChanges([monthly], const [], now: now);
+      expect(changes.schedule, [monthly]);
+      expect(changes.cancel, isEmpty);
+    });
+
+    test('a reminder no longer planned is cancelled, and only that one', () {
+      final changes = reminderChanges([monthly], [pendingOf(monthly), pendingOf(daily)], now: now);
+      expect(changes.cancel, [1]);
+      expect(changes.schedule, isEmpty);
+    });
+
+    test('a one-time reminder dropped just after its time is kept until it has gone off', () {
+      final rent = OnceReminder(id: 100, title: 'Rent', body: 'b', at: DateTime(2026, 12, 1, 9));
+      expect(reminderChanges(const [], [pendingOf(rent)], now: justAfter).cancel, isEmpty);
+      expect(reminderChanges(const [], [pendingOf(rent)], now: DateTime(2026, 12, 1, 10)).cancel, [
+        100,
+      ]);
+    });
+
+    test('a repeating reminder switched off just after its time is cancelled', () {
+      // Daily 08:00 arrived, and at 08:05 the person switched it off: it must not come again.
+      expect(
+        reminderChanges(const [], [pendingOf(daily)], now: DateTime(2026, 11, 19, 8, 5)).cancel,
+        [1],
+      );
+      expect(reminderChanges(const [], [pendingOf(monthly)], now: justAfter).cancel, [200]);
+    });
+
+    test('a changed time is scheduled again, and so is one set by an older version', () {
+      const later = MonthlyReminder(
+        id: 200,
+        title: 'Set aside for Phone',
+        body: 'Put aside about UGX 200,000 for Phone this month.',
+        day: 1,
+        hour: 10,
+        minute: 0,
+      );
+      expect(reminderChanges([later], [pendingOf(monthly)], now: justAfter).schedule, [later]);
+      expect(
+        reminderChanges(
+          [monthly],
+          [(id: 200, title: monthly.title, body: monthly.body, payload: null)],
+          now: now,
+        ).schedule,
+        [monthly],
+      );
+    });
+
+    test('on the first sync after a start, every planned reminder is scheduled again', () {
+      // A restart or force-stop drops the alarms but not the plugin's pending list.
+      final changes = reminderChanges(
+        [monthly],
+        [pendingOf(monthly), pendingOf(daily)],
+        now: justAfter,
+        trustPending: false,
+      );
+      expect(changes.schedule, [monthly]);
+      expect(changes.cancel, [1]);
+    });
+
+    test('each kind has its own signature', () {
+      final signatures = {
+        reminderSignature(daily),
+        reminderSignature(
+          const WeeklyReminder(id: 2, title: '', body: '', weekday: 7, hour: 9, minute: 0),
+        ),
+        reminderSignature(monthly),
+        reminderSignature(OnceReminder(id: 100, title: '', body: '', at: DateTime(2026, 12, 1, 9))),
+      };
+      expect(signatures.length, 4);
+    });
+  });
+
+  group('lastDueOf', () {
+    test('daily: today once its time has come, otherwise yesterday', () {
+      expect(lastDueOf('daily:8:0', now), DateTime(2026, 11, 19, 8));
+      expect(lastDueOf('daily:20:30', now), DateTime(2026, 11, 18, 20, 30));
+    });
+
+    test('weekly: the most recent matching weekday', () {
+      // `now` is a Thursday; the last Sunday 18:00 was 15 November.
+      expect(lastDueOf('weekly:7:18:0', now), DateTime(2026, 11, 15, 18));
+      expect(lastDueOf('weekly:4:9:0', now), DateTime(2026, 11, 19, 9));
+    });
+
+    test('monthly: this month once its time has come, otherwise last month, across a year', () {
+      expect(lastDueOf('monthly:1:9:0', now), DateTime(2026, 11, 1, 9));
+      expect(lastDueOf('monthly:1:9:0', DateTime(2027, 1, 1, 8)), DateTime(2026, 12, 1, 9));
+    });
+
+    test('once: its time if it has passed; nothing for one still to come or unknown', () {
+      expect(lastDueOf('once:2026-11-19T09:00:00.000', now), DateTime(2026, 11, 19, 9));
+      expect(lastDueOf('once:2026-11-20T09:00:00.000', now), isNull);
+      expect(lastDueOf(null, now), isNull);
+      expect(lastDueOf('yearly:1:1', now), isNull);
+      expect(lastDueOf('daily:x:0', now), isNull);
+      expect(lastDueOf('daily:8', now), isNull, reason: 'too short: no error, just unknown');
+    });
+  });
+
   group('nextMonthlyAt', () {
     test('this month while it is still to come, next month once it has passed', () {
       expect(nextMonthlyAt(DateTime(2026, 11, 1, 8), 1, 9, 0), DateTime(2026, 11, 1, 9));

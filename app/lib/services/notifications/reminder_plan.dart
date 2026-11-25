@@ -220,6 +220,117 @@ List<PlannedReminder> planReminders({
   return plan;
 }
 
+/// A reminder the phone already has scheduled, as far as the comparison needs it.
+typedef PendingReminder = ({int id, String? title, String? body, String? payload});
+
+/// What a reminder is and when it repeats, kept with the scheduled notification so a later
+/// sync can tell that it is unchanged.
+String reminderSignature(PlannedReminder r) => switch (r) {
+  DailyReminder(:final hour, :final minute) => 'daily:$hour:$minute',
+  WeeklyReminder(:final weekday, :final hour, :final minute) => 'weekly:$weekday:$hour:$minute',
+  MonthlyReminder(:final day, :final hour, :final minute) => 'monthly:$day:$hour:$minute',
+  OnceReminder(:final at) => 'once:${at.toIso8601String()}',
+};
+
+/// What to do to bring the phone's scheduled reminders in line with the plan.
+class ReminderChanges {
+  const ReminderChanges({required this.cancel, required this.schedule});
+
+  /// Ids scheduled on the phone that the plan no longer has.
+  final List<int> cancel;
+
+  /// Reminders that are new, or whose words or schedule changed.
+  final List<PlannedReminder> schedule;
+}
+
+/// How long after its time a scheduled reminder is still treated as waiting to go off.
+/// Scheduling is inexact, so an alarm can come a few minutes late.
+const lateAlarmGrace = Duration(minutes: 30);
+
+/// The most recent time, at or before [now], that the reminder with this [payload] signature
+/// was due. Null for a signature this version does not know, such as one set by an older
+/// version, or a one-time reminder still to come.
+DateTime? lastDueOf(String? payload, DateTime now) {
+  final parts = payload?.split(':');
+  if (parts == null || parts.length < 2) return null;
+  int n(int i) => int.parse(parts[i]);
+  try {
+    switch (parts.first) {
+      case 'daily':
+        final today = DateTime(now.year, now.month, now.day, n(1), n(2));
+        return today.isAfter(now) ? DateTime(now.year, now.month, now.day - 1, n(1), n(2)) : today;
+      case 'weekly':
+        var at = DateTime(now.year, now.month, now.day, n(2), n(3));
+        for (var i = 0; i < 8 && (at.weekday != n(1) || at.isAfter(now)); i++) {
+          at = DateTime(at.year, at.month, at.day - 1, n(2), n(3));
+        }
+        return at;
+      case 'monthly':
+        final thisMonth = DateTime(now.year, now.month, n(1), n(2), n(3));
+        return thisMonth.isAfter(now)
+            ? DateTime(now.year, now.month - 1, n(1), n(2), n(3))
+            : thisMonth;
+      case 'once':
+        final at = DateTime.parse(payload!.substring('once:'.length));
+        return at.isAfter(now) ? null : at;
+    }
+  } on Object {
+    // A payload this version did not write, such as a short or garbled one.
+    return null;
+  }
+  return null;
+}
+
+/// Compares the plan with what the phone has scheduled.
+///
+/// A reminder that is unchanged is left alone. So is one whose time came within
+/// [lateAlarmGrace] before [now] and whose words changed since, and a one-time reminder the
+/// plan dropped because its time has passed:
+/// cancelling or setting it again then would lose an inexact alarm that is late but has not
+/// gone off, and push that reminder a whole day, week or month away. It is brought up to date
+/// on a later sync, once its time is well past. A repeating reminder the plan dropped was
+/// switched off, so it is cancelled at once; kept, it would go off again a period later.
+///
+/// [trustPending] is false on the first sync after the app starts. Android forgets every
+/// alarm when the phone restarts or the app is force-stopped, but the plugin's list of
+/// pending reminders survives, so that list cannot be taken to mean the alarms exist: every
+/// planned reminder is scheduled again, which also takes up a new time zone.
+ReminderChanges reminderChanges(
+  List<PlannedReminder> planned,
+  List<PendingReminder> pending, {
+  required DateTime now,
+  bool trustPending = true,
+}) {
+  final plannedIds = {for (final r in planned) r.id};
+  final pendingById = {for (final p in pending) p.id: p};
+  bool justDue(PendingReminder p) {
+    final last = lastDueOf(p.payload, now);
+    return last != null &&
+        !now.difference(last).isNegative &&
+        now.difference(last) <= lateAlarmGrace;
+  }
+
+  bool lateOnce(PendingReminder p) => (p.payload?.startsWith('once:') ?? false) && justDue(p);
+
+  bool keep(PlannedReminder r) {
+    if (!trustPending) return false;
+    final p = pendingById[r.id];
+    if (p == null || p.payload != reminderSignature(r)) return false;
+    return (p.title == r.title && p.body == r.body) || justDue(p);
+  }
+
+  return ReminderChanges(
+    cancel: [
+      for (final p in pending)
+        if (!plannedIds.contains(p.id) && !(trustPending && lateOnce(p))) p.id,
+    ],
+    schedule: [
+      for (final r in planned)
+        if (!keep(r)) r,
+    ],
+  );
+}
+
 /// The next time after [now] that falls on [day] of a month at [hour]:[minute]. If that moment
 /// this month has not yet come, it is this month's; otherwise next month's.
 DateTime nextMonthlyAt(DateTime now, int day, int hour, int minute) {

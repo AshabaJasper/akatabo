@@ -15,8 +15,9 @@ import 'reminder_plan.dart';
 
 final reminderSchedulerProvider = Provider<ReminderScheduler>(ReminderScheduler.new);
 
-/// Called once when the app starts, after the first frame is requested. A phone restart
-/// clears scheduled notifications and there is no boot receiver, so they are set again here.
+/// Called once when the app starts, after the first frame is requested. A phone restart or a
+/// force-stop drops the scheduled alarms and there is no boot receiver, so this first sync
+/// sets every reminder again.
 ///
 /// It also reschedules whenever the regular payments or the savings goals change while the
 /// app is open, so a payment or goal that changes never keeps an old reminder. And it
@@ -60,7 +61,7 @@ Future<void> _syncReporting(ReminderScheduler scheduler) async {
 
 /// Brings the scheduled reminders in line with the stored settings.
 ///
-/// Runs when the app starts (there is no boot receiver, so a phone restart clears them),
+/// Runs when the app starts (there is no boot receiver, so a phone restart drops them),
 /// when it goes to the background, and after each change on the Smart help page. Figures in
 /// the reminders are read at that moment.
 class ReminderScheduler {
