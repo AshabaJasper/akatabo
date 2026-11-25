@@ -260,8 +260,13 @@ List<DateTime> regularDuesIn(
 }) {
   if (p.intervalDays <= 0 || p.dismissed) return const [];
   final anchor = fromLocalDay(p.nextDueOn);
+  // A day interval starts counting just before [from], so a payment that started years ago
+  // still has its dates within the step limit. Months and years step from the anchor, which
+  // keeps the day of the month (a short month moves only that one date).
+  final calendar = p.intervalDays == monthlyIntervalDays || p.intervalDays == yearlyIntervalDays;
+  final first = calendar ? 0 : math.max(0, daysBetween(anchor, from) ~/ p.intervalDays - 1);
   final dues = <DateTime>[];
-  for (var n = 0; n < _maxDuesPerPayment; n++) {
+  for (var n = first; n < first + _maxDuesPerPayment; n++) {
     final due = switch (p.intervalDays) {
       monthlyIntervalDays => _addMonths(anchor, n),
       yearlyIntervalDays => _addMonths(anchor, 12 * n),

@@ -68,7 +68,42 @@ void main() {
       expect(once.at, DateTime(2026, 11, 20, regularReminderHour));
       expect(once.title, 'Data bundle is due tomorrow');
       expect(once.body, 'Usually about UGX 10,000.');
+      // The other two reminders are over half an hour past, so they take no place.
       expect(once.id, ReminderIds.regularFirst);
+    });
+
+    test('payments whose reminder is long past take no id', () {
+      final plan = planReminders(
+        settings: _settings({SettingKeys.regularReminder: true}),
+        now: DateTime(2026, 12, 1, 8),
+        regular: [
+          for (var i = 1; i <= 25; i++)
+            DueRegularPayment(label: 'Old $i', typicalAmount: 1000, nextDueOn: 20261000 + i),
+          const DueRegularPayment(label: 'Water', typicalAmount: 40000, nextDueOn: 20261210),
+        ],
+      );
+      expect(plan.single.id, ReminderIds.regularFirst);
+      expect(plan.single.title, 'Water is due tomorrow');
+    });
+
+    test('a later payment keeps its id when an earlier one passes', () {
+      const rent = DueRegularPayment(label: 'Rent', typicalAmount: 300000, nextDueOn: 20261202);
+      const water = DueRegularPayment(label: 'Water', typicalAmount: 40000, nextDueOn: 20261210);
+      final settings = _settings({SettingKeys.regularReminder: true});
+      final before = planReminders(
+        settings: settings,
+        now: DateTime(2026, 12, 1, 8),
+        regular: const [rent, water],
+      );
+      final after = planReminders(
+        settings: settings,
+        now: DateTime(2026, 12, 1, 9, 5),
+        regular: const [rent, water],
+      );
+      expect(before.map((r) => r.id), [ReminderIds.regularFirst, ReminderIds.regularFirst + 1]);
+      // Rent's 09:00 time has passed. Water keeps 101, and 100 is left to Rent's late alarm.
+      expect(after.single.id, ReminderIds.regularFirst + 1);
+      expect((after.single as OnceReminder).title, 'Water is due tomorrow');
     });
 
     test('regular payment reminders stop at the cap', () {
@@ -187,6 +222,18 @@ void main() {
       expect(changes.schedule, isEmpty);
     });
 
+    test('just after its time, a different title is scheduled: another reminder took the id', () {
+      const other = MonthlyReminder(
+        id: 200,
+        title: 'Set aside for Land',
+        body: 'Put aside about UGX 90,000 for Land this month.',
+        day: 1,
+        hour: 9,
+        minute: 0,
+      );
+      expect(reminderChanges([other], [pendingOf(monthly)], now: justAfter).schedule, [other]);
+    });
+
     test('well after its time, changed words are scheduled again', () {
       final changes = reminderChanges(
         [monthly],
@@ -267,6 +314,57 @@ void main() {
         reminderSignature(OnceReminder(id: 100, title: '', body: '', at: DateTime(2026, 12, 1, 9))),
       };
       expect(signatures.length, 4);
+    });
+  });
+
+  group('missedLateAlarms', () {
+    const monthly = MonthlyReminder(
+      id: 200,
+      title: 'Set aside for Phone',
+      body: 'Put aside about UGX 200,000 for Phone this month.',
+      day: 1,
+      hour: 9,
+      minute: 0,
+    );
+    final rent = OnceReminder(
+      id: 100,
+      title: 'Rent is due tomorrow',
+      body: 'b',
+      at: DateTime(2026, 12, 1, 9),
+    );
+    PendingReminder pendingOf(PlannedReminder r) =>
+        (id: r.id, title: r.title, body: r.body, payload: reminderSignature(r));
+    final justAfter = DateTime(2026, 12, 1, 9, 5);
+
+    test('a just-due one-time reminder still pending, not on screen, is shown', () {
+      final missed = missedLateAlarms([pendingOf(rent)], now: justAfter, shownIds: const {});
+      expect(missed.map((p) => p.id), [100]);
+    });
+
+    test('one already on screen is not shown twice', () {
+      expect(missedLateAlarms([pendingOf(rent)], now: justAfter, shownIds: const {100}), isEmpty);
+    });
+
+    test('one that is not just due is not shown', () {
+      expect(
+        missedLateAlarms([pendingOf(rent)], now: DateTime(2026, 12, 1, 10), shownIds: const {}),
+        isEmpty,
+      );
+    });
+
+    test('a repeating reminder is never shown: it stays listed after it has gone off', () {
+      expect(missedLateAlarms([pendingOf(monthly)], now: justAfter, shownIds: const {}), isEmpty);
+    });
+
+    test('a reminder from an older version, with no signature, is not shown', () {
+      expect(
+        missedLateAlarms(
+          [(id: 100, title: rent.title, body: rent.body, payload: null)],
+          now: justAfter,
+          shownIds: const {},
+        ),
+        isEmpty,
+      );
     });
   });
 

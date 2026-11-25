@@ -4,10 +4,12 @@ import 'package:flutter/widgets.dart' show AppLifecycleListener;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/time/period.dart';
+import '../../data/db/app_database.dart' show RegularPayment;
 import '../../data/db/tables.dart' show GoalRemind;
 import '../../data/providers.dart';
 import '../../data/repositories/repositories.dart';
 import '../../data/settings/setting_keys.dart';
+import '../../domain/forecast.dart' show regularDuesIn;
 import '../../domain/goals.dart';
 import '../../domain/spending.dart';
 import 'notifications_service.dart';
@@ -59,6 +61,37 @@ Future<void> _syncReporting(ReminderScheduler scheduler) async {
   }
 }
 
+/// Each regular payment with the due date its next reminder is for, in due order.
+///
+/// A payment's stored `nextDueOn` is where its schedule starts, not a date that moves on: the
+/// later dates come from stepping by its interval, as Coming up and the forecast do. The date
+/// used is the first whose reminder (the morning before) is still to come, or came within
+/// [lateAlarmGrace]. When that one is just due, the date after it is listed too: the just-due
+/// entry keeps its id safe for the late alarm, and the next one is still scheduled. Payments
+/// with no such date in the next 400 days are left out.
+List<DueRegularPayment> upcomingRegular(List<RegularPayment> rows, DateTime now) {
+  final today = dateOnly(now);
+  final since = now.subtract(lateAlarmGrace);
+  final out = <DueRegularPayment>[];
+  for (final r in rows) {
+    DueRegularPayment entry(DateTime due) => DueRegularPayment(
+      label: r.label,
+      typicalAmount: r.typicalAmount,
+      nextDueOn: toLocalDay(due),
+    );
+    final dues = regularDuesIn(r, from: today, through: addDays(today, 400));
+    for (var i = 0; i < dues.length; i++) {
+      final at = regularReminderAt(toLocalDay(dues[i]));
+      if (!at.isAfter(since)) continue;
+      out.add(entry(dues[i]));
+      if (!at.isAfter(now) && i + 1 < dues.length) out.add(entry(dues[i + 1]));
+      break;
+    }
+  }
+  out.sort((a, b) => a.nextDueOn.compareTo(b.nextDueOn));
+  return out;
+}
+
 /// Brings the scheduled reminders in line with the stored settings.
 ///
 /// Runs when the app starts (there is no boot receiver, so a phone restart drops them),
@@ -82,10 +115,7 @@ class ReminderScheduler {
     if (on(SettingKeys.regularReminder)) {
       final db = _ref.read(appDatabaseProvider);
       final rows = await RegularPaymentRepository(db).watchActive().first;
-      regular = [
-        for (final r in rows)
-          DueRegularPayment(label: r.label, typicalAmount: r.typicalAmount, nextDueOn: r.nextDueOn),
-      ];
+      regular = upcomingRegular(rows, now);
     }
 
     var weekOut = 0;

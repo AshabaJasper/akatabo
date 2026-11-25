@@ -621,7 +621,7 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Where:** `app/lib/services/notifications/notifications_service.dart` (`replaceAll`) with `nextMonthlyAt` and `nextWeeklyAt` in `reminder_plan.dart`.
 - **What happens:** reminders are scheduled inexactly, so the 1st 09:00 goal reminder can still be pending at 09:05. If Akatabo is opened or hidden then, `replaceAll` cancels it and the next time is a month away, so that month's reminder is lost. The daily and weekly reminders behave the same way.
 - **Fixed:** 25 November 2026. `replaceAll` no longer cancels everything and schedules it again. Each scheduled reminder carries a signature of its kind and time as its payload, and `reminderChanges` (in `reminder_plan.dart`) decides what to cancel and what to schedule. An unchanged reminder is left alone, and so is one whose time came within the last 30 minutes (`lateAlarmGrace`) when its words changed, or a one-time reminder the plan dropped because its time passed, so a late alarm is not lost. A repeating reminder the plan dropped was switched off and is cancelled at once (the re-review found keeping it made it go off once more, score 12; test "a repeating reminder switched off just after its time is cancelled"). The first sync after each start still schedules everything, because a restart or force-stop drops the alarms while the plugin's pending list survives (found by the follow-up review, score 48, fixed in the same change). Tests: groups "reminderChanges" and "lastDueOf" in `app/test/services/reminder_plan_test.dart`; breaking either rule turns its test red.
-- **Still open:** see the three entries below, filed by the re-review.
+- **Follow-ups:** the re-review filed three more, all fixed since: "The first sync after any cold start can still lose a late alarm", "A just-due regular payment reminder is replaced when a later payment takes its id" and "Words changed within 30 minutes of a reminder's time stay old for the next period".
 
 ### [bug-review] The Android "Reminders" channel description leaves out goal reminders
 
@@ -641,6 +641,8 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Where:** `app/lib/services/notifications/notifications_service.dart` (`_scheduledThisRun`).
 - **What happens:** every new process starts untrusted, not only after a restart: Android killing the app in the background counts too. The first sync sets every reminder again, so an alarm that is late inside the 30-minute window moves a whole period away. Opening Akatabo at 09:05 on the 1st is often a cold start.
 - **Suggested fix:** on that first sync, if a pending reminder is just due and `getActiveNotifications()` does not show its id, show it at once before scheduling again.
+- **Fixed for one-time reminders:** 25 November 2026. On the first sync after a start, `replaceAll` in `notifications_service.dart` shows a one-time reminder (a regular payment's) that came due in the last 30 minutes and is still in the plugin's pending list. Android takes a one-time reminder off that list when it goes off, so one still listed has not been shown. It is shown after the cancels, because cancelling an id also clears a notification on screen with that id (the review of the first version found it shown and then cleared, score 8; test `app/test/services/late_alarm_service_test.dart`). Nothing is shown when a notification launched the app, for an id already on screen, or when either plugin call fails. The decision is the pure `missedLateAlarms` in `reminder_plan.dart`; tests: group "missedLateAlarms".
+- **Still open, for repeating reminders (score 3):** a repeating reminder stays in the pending list after it goes off, so "lost" cannot be told from "already shown". Showing it again would repeat one the person has often read already (the review of the first version scored that 10), so it is not shown. A daily, weekly or goal reminder that is late inside the 30-minute window when a cold start happens is still lost for that period.
 
 ### [bug-review] A just-due regular payment reminder is replaced when a later payment takes its id
 
@@ -649,6 +651,15 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **What happens:** a payment whose reminder time has passed is left out of the plan, so the next payment takes id 100 and scheduling it replaces the late Rent alarm.
 - **How to trigger:** Rent due 2 December and Water due 10 December. The 1 December 09:00 Rent reminder runs late, and Akatabo is opened at 09:05.
 - **Suggested fix:** base regular payment reminder ids on the payment, or skip an id that holds a just-due one-time reminder.
+- **Fixed:** 25 November 2026. A payment's id is its place among the payments whose reminder is still to come or came in the last 30 minutes. A just-due one keeps its place, so the later payments' ids do not slide onto it, and payments whose reminder is long past take no place, so they never use up the 20 ids (the review of the first version found they could, score 8). Tests: "a later payment keeps its id when an earlier one passes" and "payments whose reminder is long past take no id" in `reminder_plan_test.dart`.
+
+### [bug-review] Regular payment reminders only ever came for the first due date
+
+- **Score:** 48 (found by the review of the reminder fixes; fixed, not filed).
+- **Where:** `app/lib/services/notifications/reminder_scheduler.dart`.
+- **What happened:** the scheduler passed a payment's stored `nextDueOn`, which is where its schedule starts, not a date that moves on. Once that first date passed, the payment was never reminded of again.
+- **Fixed:** 25 November 2026. `upcomingRegular` steps each payment forward with `regularDuesIn`, as Coming up and the forecast do, and uses the first due date whose reminder is still to come or came in the last 30 minutes. Tests: `app/test/services/upcoming_regular_test.dart`; it fails if the stored date is passed again.
+- **Found by the next review and fixed in the same change:** a sync between 09:00 and 09:30 on a reminder morning picked the just-due date and stopped, so the payment's next date was not set (score 12). The date after a just-due one is now listed too (test "just after its reminder, the next date is listed too and is the one scheduled"). And `regularDuesIn` in `app/lib/domain/forecast.dart` counted its 400 steps from the start date, so a payment every 5 days that started over five years ago had no dates at all, in reminders, the forecast and Coming up (score 6). A day interval now starts counting just before the window (test "a payment every 5 days that started years ago still has its next date").
 
 ### [bug-review] Words changed within 30 minutes of a reminder's time stay old for the next period
 
@@ -656,3 +667,26 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 - **Where:** `app/lib/services/notifications/reminder_plan.dart`, `keep` in `reminderChanges`.
 - **What happens:** a repeating reminder whose words changed inside the window is kept with its old words. If the app does not sync again later, the next week or month shows the old amount, or another goal's name when a goal moved into an archived goal's id.
 - **Suggested fix:** keep through the window only when the title is the same; the weekly summary's title never changes, so it stays protected.
+- **Fixed:** 25 November 2026. `reminderChanges` keeps a pending reminder through the window only when its title is unchanged. Test: "just after its time, a different title is scheduled: another reminder took the id"; it fails if the title rule is removed.
+
+### [bug-review] A late one-time reminder is lost when the app is opened from another notification
+
+- **Score:** 4 (frequency 1 x severity 4).
+- **Where:** `app/lib/services/notifications/notifications_service.dart` (`_missedAlarms`).
+- **What happens:** when any notification launched the app, no missed reminder is shown, and the first sync then cancels a late one-time reminder that is still pending. The tapped one has already gone off and left the pending list, so the check only ever hides other late ones.
+- **How to trigger:** a regular payment's 09:00 alarm runs late, and the daily reminder is tapped at 09:05 to open the app.
+- **Suggested fix:** skip only the id in `launch.notificationResponse?.id`.
+
+### [bug-review] An old notification on screen hides a missed reminder with the same id
+
+- **Score:** 4 (frequency 1 x severity 4).
+- **Where:** `app/lib/services/notifications/notifications_service.dart` (`_missedAlarms`) and `missedLateAlarms` in `reminder_plan.dart`.
+- **What happens:** last cycle's id-100 notification is still on screen when this cycle's id-100 reminder is late and pending. It counts as shown, is skipped, and the cancel of id 100 then clears both, so nothing is seen.
+- **Suggested fix:** count a notification as shown only when its title and body match too.
+
+### [bug-review] A reminder can alert twice if its alarm goes off while the app is starting
+
+- **Score:** 2 (frequency 1 x severity 2).
+- **Where:** `app/lib/services/notifications/notifications_service.dart` (`replaceAll`).
+- **What happens:** the pending list is read before the alarm removes its entry, and the screen is read before its notification is posted, so `show` posts it again under the same id and it sounds twice.
+- **Suggested fix:** use `onlyAlertOnce: true` in the details for the missed-reminder `show`.

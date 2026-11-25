@@ -135,6 +135,11 @@ class LocalNotificationsService implements NotificationsService {
     // warning already shown, and would lose an alarm that is late but has not gone off.
     final pending = await _plugin.pendingNotificationRequests();
     final now = DateTime.now();
+    // Worked out before anything changes, shown after the cancels: cancelling an id also
+    // clears a notification on screen with that id.
+    final missed = _scheduledThisRun
+        ? const <PendingReminder>[]
+        : await _missedAlarms(pending, now);
     final changes = reminderChanges(
       reminders,
       [for (final p in pending) (id: p.id, title: p.title, body: p.body, payload: p.payload)],
@@ -143,6 +148,13 @@ class LocalNotificationsService implements NotificationsService {
     );
     for (final id in changes.cancel) {
       await _plugin.cancel(id: id);
+    }
+    for (final p in missed) {
+      try {
+        await _plugin.show(id: p.id, title: p.title, body: p.body, notificationDetails: _details);
+      } on Object catch (error, stack) {
+        _report(error, stack);
+      }
     }
     for (final r in changes.schedule) {
       final (DateTime at, DateTimeComponents? repeat) = switch (r) {
@@ -175,6 +187,37 @@ class LocalNotificationsService implements NotificationsService {
     // Only once both steps worked: a failure part-way leaves the next sync to set them all.
     _scheduledThisRun = true;
   }
+
+  /// On the first sync after a start, the one-time reminders due in the last 30 minutes whose
+  /// alarm may have been lost: setting every reminder again would drop them. None when the app
+  /// was opened by tapping a notification (the person has seen it), and none still on screen.
+  /// Anything that cannot be read means "show nothing", so the worst case is the old
+  /// behaviour, never a repeat.
+  Future<List<PendingReminder>> _missedAlarms(
+    List<PendingNotificationRequest> pending,
+    DateTime now,
+  ) async {
+    try {
+      final launch = await _plugin.getNotificationAppLaunchDetails();
+      if (launch == null || launch.didNotificationLaunchApp) return const [];
+      final shown = {
+        for (final a in await _plugin.getActiveNotifications())
+          if (a.id != null) a.id!,
+      };
+      return missedLateAlarms(
+        [for (final p in pending) (id: p.id, title: p.title, body: p.body, payload: p.payload)],
+        now: now,
+        shownIds: shown,
+      );
+    } on Object catch (error, stack) {
+      _report(error, stack);
+      return const [];
+    }
+  }
+
+  static void _report(Object error, StackTrace stack) => FlutterError.reportError(
+    FlutterErrorDetails(exception: error, stack: stack, library: 'akatabo reminders'),
+  );
 
   @override
   Future<void> showNow(int id, String title, String body) async {

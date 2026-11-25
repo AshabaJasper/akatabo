@@ -166,12 +166,17 @@ List<PlannedReminder> planReminders({
   }
 
   if (on(SettingKeys.regularReminder)) {
-    var n = 0;
-    for (final p in regular) {
-      if (n >= ReminderIds.regularMax) break;
-      final due = fromLocalDay(p.nextDueOn);
-      final dayBefore = addDays(due, -1);
-      final at = DateTime(dayBefore.year, dayBefore.month, dayBefore.day, regularReminderHour);
+    // A payment's id is its place among those whose reminder is still to come or came in the
+    // last [lateAlarmGrace]. One that is just due keeps its place, so the later payments' ids
+    // do not slide onto the id of a reminder that may still be waiting to go off. Payments
+    // whose reminder is long past take no place, so they never use up the ids.
+    final live = [
+      for (final p in regular)
+        if (regularReminderAt(p.nextDueOn).isAfter(now.subtract(lateAlarmGrace))) p,
+    ];
+    for (var n = 0; n < live.length && n < ReminderIds.regularMax; n++) {
+      final p = live[n];
+      final at = regularReminderAt(p.nextDueOn);
       if (!at.isAfter(now)) continue;
       plan.add(
         OnceReminder(
@@ -181,7 +186,6 @@ List<PlannedReminder> planReminders({
           at: at,
         ),
       );
-      n++;
     }
   }
 
@@ -281,6 +285,33 @@ DateTime? lastDueOf(String? payload, DateTime now) {
   return null;
 }
 
+/// Whether [p]'s reminder came due within [lateAlarmGrace] before [now], so its alarm may
+/// still be on its way.
+bool isJustDue(PendingReminder p, DateTime now) {
+  final last = lastDueOf(p.payload, now);
+  if (last == null) return false;
+  final since = now.difference(last);
+  return !since.isNegative && since <= lateAlarmGrace;
+}
+
+/// The just-due one-time reminders whose alarm may have been lost when the app started.
+/// Used on the first sync after a start, which sets every reminder again.
+///
+/// Only one-time reminders count. Android takes a one-time reminder off its pending list when
+/// it goes off, so one still listed and just due has not been shown. A repeating reminder
+/// stays listed after it goes off, so "lost" cannot be told from "already shown", and showing
+/// it would often repeat one the person has read. A reminder on screen ([shownIds]) is skipped
+/// too. The caller must not call this when the app was opened by tapping a notification.
+List<PendingReminder> missedLateAlarms(
+  List<PendingReminder> pending, {
+  required DateTime now,
+  required Set<int> shownIds,
+}) => [
+  for (final p in pending)
+    if ((p.payload?.startsWith('once:') ?? false) && !shownIds.contains(p.id) && isJustDue(p, now))
+      p,
+];
+
 /// Compares the plan with what the phone has scheduled.
 ///
 /// A reminder that is unchanged is left alone. So is one whose time came within
@@ -303,12 +334,7 @@ ReminderChanges reminderChanges(
 }) {
   final plannedIds = {for (final r in planned) r.id};
   final pendingById = {for (final p in pending) p.id: p};
-  bool justDue(PendingReminder p) {
-    final last = lastDueOf(p.payload, now);
-    return last != null &&
-        !now.difference(last).isNegative &&
-        now.difference(last) <= lateAlarmGrace;
-  }
+  bool justDue(PendingReminder p) => isJustDue(p, now);
 
   bool lateOnce(PendingReminder p) => (p.payload?.startsWith('once:') ?? false) && justDue(p);
 
@@ -316,7 +342,9 @@ ReminderChanges reminderChanges(
     if (!trustPending) return false;
     final p = pendingById[r.id];
     if (p == null || p.payload != reminderSignature(r)) return false;
-    return (p.title == r.title && p.body == r.body) || justDue(p);
+    // Within the window only the words may differ: a different title is a different thing
+    // that has taken over the id, and its own reminder must be set.
+    return p.title == r.title && (p.body == r.body || justDue(p));
   }
 
   return ReminderChanges(
@@ -329,6 +357,12 @@ ReminderChanges reminderChanges(
         if (!keep(r)) r,
     ],
   );
+}
+
+/// When a regular payment due on [dueOn] (yyyymmdd) is reminded of: the morning before.
+DateTime regularReminderAt(int dueOn) {
+  final dayBefore = addDays(fromLocalDay(dueOn), -1);
+  return DateTime(dayBefore.year, dayBefore.month, dayBefore.day, regularReminderHour);
 }
 
 /// The next time after [now] that falls on [day] of a month at [hour]:[minute]. If that moment
