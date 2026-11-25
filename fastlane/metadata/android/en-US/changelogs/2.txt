@@ -1,0 +1,8 @@
+What's new in 0.2.0:
+
+- Payments in other currencies, with a rate you type and the shilling amount kept.
+- Forecast: safe to spend per day, pace against last month, and the payments it counts.
+- App lock: a status card, fingerprint or face unlock, and clear wait times after wrong PINs.
+- Reminders and Smart help are now two pages, each showing what it is doing.
+- Permissions page and Settings search.
+- Red for money out and green for money in, with an option to switch back to orange and blue.
