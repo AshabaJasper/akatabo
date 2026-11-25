@@ -188,6 +188,92 @@ void main() {
     expect(repo.drafts, isEmpty);
   });
 
+  testWidgets('the amount problem sits on the amount field, not repeated in the list', (
+    tester,
+  ) async {
+    await _pumpAdd(tester);
+    await tester.tap(find.text('Save transaction'));
+    await tester.pumpAndSettle();
+    final amount = tester.widget<TextField>(
+      find.byWidgetPredicate((w) => w is TextField && w.decoration?.hintText == '0'),
+    );
+    expect(amount.decoration?.errorText, 'Enter an amount above zero.');
+    expect(find.text('Enter an amount above zero.'), findsOneWidget, reason: 'shown once');
+  });
+
+  testWidgets('a foreign amount with no rate says so under the rate box', (tester) async {
+    await _pumpAdd(tester, height: 1100);
+    await tester.tap(find.text('UGX')); // the currency chip
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('USD'));
+    await tester.pumpAndSettle();
+    await _enterAmount(tester, '100');
+    await tester.tap(find.text('Save transaction'));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter the USD amount and its rate.'), findsOneWidget);
+    expect(
+      find.text('Enter the foreign amount and its rate.'),
+      findsNothing,
+      reason: 'one message',
+    );
+  });
+
+  testWidgets('a field problem goes once that field is put right', (tester) async {
+    await _pumpAdd(tester);
+    await tester.tap(find.text('Save transaction'));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter an amount above zero.'), findsOneWidget);
+
+    await _enterAmount(tester, '45000');
+    final amount = tester.widget<TextField>(
+      find.byWidgetPredicate((w) => w is TextField && w.decoration?.hintText == '0'),
+    );
+    expect(amount.decoration?.errorText, isNull, reason: 'not marking 45,000 as wrong');
+    expect(find.text('Enter an amount above zero.'), findsNothing);
+    expect(find.text('Choose a category.'), findsOneWidget, reason: 'other problems stay');
+  });
+
+  testWidgets('"two different accounts" goes once another To account is chosen', (tester) async {
+    await _pumpAdd(tester);
+    await tester.tap(find.text('Move money'));
+    await tester.pumpAndSettle();
+    await _enterAmount(tester, '100000');
+    await tester.tap(find.text('MTN MoMo').last);
+    await tester.pump();
+    await tester.tap(find.text('Save transaction'));
+    await tester.pumpAndSettle();
+    expect(find.text('Choose two different accounts.'), findsOneWidget);
+
+    await tester.tap(find.text('Cash').last);
+    await tester.pump();
+    expect(find.text('Choose two different accounts.'), findsNothing);
+  });
+
+  testWidgets('Save brings a field problem into view and says it', (tester) async {
+    // Short enough that the amount scrolls with the form instead of staying pinned.
+    await _pumpAdd(tester, height: 480);
+    tester.takeAnnouncements();
+    // The list builds Save only once it is scrolled near it.
+    await tester.dragUntilVisible(
+      find.text('Save transaction'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
+    final amountField = find.byWidgetPredicate(
+      (w) => w is TextField && w.decoration?.hintText == '0',
+    );
+    // Precondition: the amount has scrolled so far that the list no longer builds it.
+    expect(amountField, findsNothing);
+
+    await tester.tap(find.text('Save transaction'));
+    await tester.pumpAndSettle();
+    final error = tester.getRect(find.text('Enter an amount above zero.'));
+    expect(error.top, greaterThanOrEqualTo(0), reason: 'the problem is on screen');
+    expect(error.bottom, lessThanOrEqualTo(480));
+    expect(tester.takeAnnouncements().map((a) => a.message), ['Enter an amount above zero.']);
+  });
+
   testWidgets('an amount, a few words and one category save and close Add', (tester) async {
     final repo = await _pumpAdd(tester);
     await _enterAmount(tester, '45000');

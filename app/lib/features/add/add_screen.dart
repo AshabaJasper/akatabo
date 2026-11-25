@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -80,6 +81,9 @@ class _AddScreenState extends ConsumerState<AddScreen> {
   /// or closes. The key carries its element across, so the field keeps its focus, cursor and
   /// keyboard instead of being built afresh and grabbing focus again through `autofocus`.
   final _amountKey = GlobalKey(debugLabel: 'amount');
+  final _accountsKey = GlobalKey(debugLabel: 'accounts');
+  // The form list, so a problem on the amount can bring it back once the list has let it go.
+  final _formScroll = ScrollController();
   final _amountFocus = FocusNode(debugLabel: 'amount');
   List<String> _problems = const [];
 
@@ -200,6 +204,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
     _tick?.cancel();
     _amountFocus.dispose();
     _amount.dispose();
+    _formScroll.dispose();
     _rate.dispose();
     _what.dispose();
     _fee.dispose();
@@ -254,6 +259,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
     ];
     if (problems.isNotEmpty) {
       setState(() => _problems = problems);
+      _showProblems(problems);
       return;
     }
 
@@ -333,6 +339,53 @@ class _AddScreenState extends ConsumerState<AddScreen> {
 
   /// The rate typed, in micros, or null while it is not a valid rate.
   int? get _rateMicros => parseRateMicros(_rate.text);
+
+  // Some problems belong to one field and show under it; the rest stay in the list above Save.
+  static bool _isAmountProblem(String p) => p == 'Enter an amount above zero.';
+  static bool _isRateProblem(String p) => p.startsWith('Enter the ');
+  static bool _isFromProblem(String p) => p == 'Choose an account.';
+  static bool _isToProblem(String p) =>
+      p == 'Choose where the money went.' || p == 'Choose two different accounts.';
+
+  String? _problemFor(bool Function(String) test) => _problems.where(test).firstOrNull;
+  String? get _amountProblem => _problemFor(_isAmountProblem);
+  String? get _rateProblem => _problemFor(_isRateProblem);
+  String? get _fromProblem => _problemFor(_isFromProblem);
+  String? get _toProblem => _problemFor(_isToProblem);
+
+  /// Drops the problems [test] picks out, once the field they are about has changed.
+  void _clearProblems(bool Function(String) test) => _problems = [
+    for (final p in _problems)
+      if (!test(p)) p,
+  ];
+
+  /// A problem under its field may be scrolled out of view, far from Save: bring the field
+  /// into view and say the first problem, so the tap on Save is never met with silence.
+  void _showProblems(List<String> problems) {
+    final key = problems.any((p) => _isAmountProblem(p) || _isRateProblem(p))
+        ? _amountKey
+        : problems.any((p) => _isFromProblem(p) || _isToProblem(p))
+        ? _accountsKey
+        : null;
+    if (key != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final target = key.currentContext;
+        if (target != null) {
+          Scrollable.ensureVisible(target, alignment: 0.1);
+        } else if (key == _amountKey && _formScroll.hasClients) {
+          // Scrolled far enough that the list no longer builds it: it is the list's first row.
+          _formScroll.jumpTo(0);
+        }
+      });
+    }
+    SemanticsService.sendAnnouncement(View.of(context), problems.first, Directionality.of(context));
+  }
+
+  List<String> get _unplacedProblems => [
+    for (final p in _problems)
+      if (!(_isAmountProblem(p) || _isRateProblem(p) || _isFromProblem(p) || _isToProblem(p))) p,
+  ];
 
   /// The shillings this entry comes to: the amount typed, or for a foreign payment its
   /// conversion at the rate typed. Zero while a foreign entry is incomplete.
@@ -464,7 +517,12 @@ class _AddScreenState extends ConsumerState<AddScreen> {
               keyboardType: _foreign
                   ? const TextInputType.numberWithOptions(decimal: true)
                   : TextInputType.number,
-              onChanged: (_) => setState(() {}),
+              // In a foreign currency the "Enter the USD amount and its rate" problem is
+              // about the amount too.
+              onChanged: (_) => setState(() {
+                _clearProblems(_isAmountProblem);
+                _clearProblems(_isRateProblem);
+              }),
               inputFormatters: _foreign
                   ? const [ForeignAmountFormatter()]
                   : const [NoDecimalPointFormatter(), ThousandsFormatter()],
@@ -475,6 +533,8 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                 contentPadding: const EdgeInsets.symmetric(vertical: AkSpace.s2),
                 hintText: '0',
                 hintStyle: t.figureXl.copyWith(color: c.inkMuted),
+                errorText: _amountProblem,
+                errorStyle: t.bodySm.copyWith(color: c.moneyOut),
                 enabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: c.brand, width: 2),
                 ),
@@ -493,7 +553,8 @@ class _AddScreenState extends ConsumerState<AddScreen> {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: const [ForeignAmountFormatter(decimals: rateDecimals)],
             hint: '3,720',
-            onChanged: (_) => setState(() {}),
+            errorText: _rateProblem,
+            onChanged: (_) => setState(() => _clearProblems(_isRateProblem)),
           ),
           const SizedBox(height: AkSpace.s2),
           // The live conversion: the shillings this entry is saved as.
@@ -543,6 +604,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                   return false;
                 },
                 child: ListView(
+                  controller: _formScroll,
                   padding: const EdgeInsets.fromLTRB(
                     AkSpace.s6,
                     AkSpace.s2,
@@ -622,13 +684,27 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                       ),
                     ],
                     const SizedBox(height: AkSpace.s5),
-                    AkEyebrowLabel(isTransfer ? 'From' : (isMoneyIn ? 'Paid into' : 'Paid from')),
+                    KeyedSubtree(
+                      key: _accountsKey,
+                      child: AkEyebrowLabel(
+                        isTransfer ? 'From' : (isMoneyIn ? 'Paid into' : 'Paid from'),
+                      ),
+                    ),
                     const SizedBox(height: AkSpace.s2),
                     _AccountChoices(
                       accounts: accounts,
                       selectedId: fromId,
-                      onChanged: (id) => setState(() => _fromId = id),
+                      // A new From account can also settle "two different accounts".
+                      onChanged: (id) => setState(() {
+                        _fromId = id;
+                        _clearProblems(_isFromProblem);
+                        _clearProblems(_isToProblem);
+                      }),
                     ),
+                    if (_fromProblem != null) ...[
+                      const SizedBox(height: AkSpace.s2),
+                      Text(_fromProblem!, style: t.bodySm.copyWith(color: c.moneyOut)),
+                    ],
                     if (isTransfer) ...[
                       const SizedBox(height: AkSpace.s5),
                       const AkEyebrowLabel('To'),
@@ -636,8 +712,15 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                       _AccountChoices(
                         accounts: accounts,
                         selectedId: _toId ?? _otherAccount(accounts, fromId)?.id,
-                        onChanged: (id) => setState(() => _toId = id),
+                        onChanged: (id) => setState(() {
+                          _toId = id;
+                          _clearProblems(_isToProblem);
+                        }),
                       ),
+                      if (_toProblem != null) ...[
+                        const SizedBox(height: AkSpace.s2),
+                        Text(_toProblem!, style: t.bodySm.copyWith(color: c.moneyOut)),
+                      ],
                     ],
                     if (!isMoneyIn && feeUpFront) ...[const SizedBox(height: AkSpace.s5), feeField],
                     const SizedBox(height: AkSpace.s4),
@@ -688,9 +771,9 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                         }),
                       ),
                     ],
-                    if (_problems.isNotEmpty) ...[
+                    if (_unplacedProblems.isNotEmpty) ...[
                       const SizedBox(height: AkSpace.s4),
-                      for (final p in _problems)
+                      for (final p in _unplacedProblems)
                         Padding(
                           padding: const EdgeInsets.only(bottom: AkSpace.s1),
                           child: Text(p, style: t.bodySm.copyWith(color: c.moneyOut)),
