@@ -4,6 +4,24 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
+### [bug-review] Screenshot test leaves old numbered store images behind
+
+- **Where:** `app/test/screenshots/readme_screenshots_test.dart` (`_storeOrder`, `_Shot.save`)
+- **What happens:** the test writes `phoneScreenshots/N.png` and `tenInchScreenshots/N.png` only for the names in `_storeOrder` and never deletes the others. If the list gets shorter, or a shot moves between phone and tablet, the old highest-numbered image stays and F-Droid and IzzyOnDroid keep showing it.
+- **How to trigger:** remove `'phone-calendar-light'` from `_storeOrder`, draw the screenshots again, and `phoneScreenshots/6.png` is still there.
+- **Score:** frequency 2 x severity 2 = 4
+- **Suggested fix:** when `AKATABO_SCREENSHOTS=1`, delete `*.png` in both store folders in `setUpAll` before the shots run.
+- **Found:** 26 November 2026, bug review of the README screenshots
+
+### [bug-review] Screens opened above the tabs do not avoid a half-open fold
+
+- **Where:** `app/lib/app/router.dart` (root-navigator routes) and `app/lib/app/adaptive.dart` (`HingeSafe`)
+- **What happens:** `HingeSafe` wraps only the tab shell. Add, Calendar, Forecast, goal editing and the Settings pages open on the root navigator, so on a phone half-open like a laptop they draw across the fold. On a phone open flat, their single centred column can also cross a vertical fold.
+- **How to trigger:** a foldable in tabletop posture, tap Add.
+- **Score:** frequency 1 x severity 3 = 3
+- **Suggested fix:** wrap the root navigator's pages in `HingeSafe` (in the router's page builder or `MaterialApp.builder`), and keep a single column on one side of a vertical fold.
+- **Found:** 26 November 2026, bug review of the README screenshots (the README had claimed nothing is drawn across a fold; the wording now matches the code)
+
 ### [bug-review] HingeSafe pads the content but leaves the system insets in MediaQuery
 
 - **Where:** `app/lib/app/adaptive.dart` (`HingeSafe`)

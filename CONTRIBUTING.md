@@ -59,6 +59,28 @@ flutter test --update-goldens test/features/<area>/<file>_test.dart
 
 Look at each changed image before you commit it, and name the updated goldens in the commit message. When a golden fails, Flutter writes the difference images to `failures/` folders, which git ignores.
 
+## Screen sizes: phones, tablets and foldables
+
+The app has one layout that adapts, set in `app/lib/app/adaptive.dart` and `app/lib/app/shell_scaffold.dart`:
+
+- Below 840dp wide (`AkSize.wide`), the tabs are a bottom bar. Most phones held upright are here.
+- At 840dp or more, the tabs move to a navigation rail and the content is capped at `AkSize.contentMax` and centred. Screens with two parts can use `WidePanes` to put them side by side.
+- A fold or hinge comes from `MediaQuery.displayFeaturesOf`. A vertical fold sets where `WidePanes` splits, and `HingeSafe` keeps the tab screens off a horizontal fold. Screens opened above the tabs (Add, Settings pages and others) do not use it yet.
+
+When you change a screen, check it at a phone size and at a wide size. Widget tests can set both: `tester.view.physicalSize` for the window, and `MediaQueryData(displayFeatures: [...])` for a fold. `test/app/adaptive_test.dart` and `test/app/shell_wide_test.dart` show how. Also try a large text size (`textScaleFactorTestValue = 2`) on a short landscape window, where space runs out first.
+
+## Screenshots
+
+The README and store screenshots are drawn from the real app by `test/screenshots/readme_screenshots_test.dart`, with made-up entries on an in-memory database. Never use screenshots of a real phone: they can show someone's money.
+
+If your change alters a screen that appears in them, draw them again on Windows from `app/` and commit the images with the change:
+
+```powershell
+$env:AKATABO_SCREENSHOTS = '1'; flutter test test/screenshots; Remove-Item Env:AKATABO_SCREENSHOTS
+```
+
+This writes `docs/screenshots/*.png` and the numbered copies in `fastlane/metadata/android/en-US/images/`. Look at each image before you commit it. To add a screen, add a `_shot(...)` line to the test, and add its name to `_storeOrder` if the store listings should show it.
+
 ## Design tokens: no hard-coded values
 
 `design/tokens.json` is the only source of every colour, text style, spacing step, radius and component size. Screens read these values through the theme (`AkColors`, `AkType`, `AkMetrics`). Do not type a colour, font size or spacing value directly in a widget.

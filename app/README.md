@@ -72,6 +72,7 @@ The first run writes the mark SVGs and `design/brand/colours.json`. The Python s
 | --- | --- |
 | `lib/domain/`, `lib/smart/` | Every calculation and the four on-device models. No Flutter imports. |
 | `lib/data/` | drift database, repositories, typed settings, default data |
+| `lib/app/` | Start-up, routes, the tab shell, and the adaptive layout for tablets and foldables (`adaptive.dart`, `shell_scaffold.dart`) |
 | `lib/features/` | One folder per screen or group of screens |
 | `lib/widgets/` | Shared controls, charts and messages, the month grid and the date and time dialogs (`ak_month_grid.dart`, `ak_pickers.dart`) |
 | `lib/core/theme/` | Generated tokens (`tokens.g.dart`), the theme, motion timing (`ak_motion.dart`) and still page transitions |

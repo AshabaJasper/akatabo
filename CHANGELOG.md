@@ -21,6 +21,8 @@ The first public release. The app is built for Android; it is not on a store yet
 - **Set a budget** has a "Carry over what is left" row with its own switch.
 - **A new logo and icon set,** including the themed icon, the splash screen and the notification icon.
 - **Money colours.** Red for money out and green for money in, with an option in Appearance to switch back to orange and blue.
+- **Tablets and foldables.** At 840dp wide or more, the tabs move to a navigation rail with Add at the top, the content is capped and centred, and Home shows the latest entries beside the summary. On a foldable, the fold sets where Home's two panes split, and on a phone half-open like a laptop the tab screens stay on one half. Phones held upright are unchanged.
+- **Screenshots** in the README and the store listings, drawn from the real app with made-up entries by a test, so they can be drawn again after a change.
 
 ### Changed
 
