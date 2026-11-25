@@ -80,6 +80,7 @@ The goldens (screenshot tests) are made on Windows and only match there. CI runs
 
 These record how the app was planned and built, including what was tested and what was not.
 
+- [`CHANGELOG.md`](CHANGELOG.md): what changed in each version.
 - [`PRODUCT.md`](PRODUCT.md): who the app is for and how it should feel.
 - [`PLAN.md`](PLAN.md): the build plan and the decisions made along the way.
 - [`PROGRESS.md`](PROGRESS.md): what each phase delivered and how it was checked.
