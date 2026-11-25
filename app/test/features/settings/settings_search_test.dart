@@ -32,11 +32,15 @@ const _items = [
 
 List<String> _labels(List<SearchableSetting> list) => [for (final e in list) e.label];
 
-Future<void> _pump(WidgetTester tester, {double textScale = 1}) async {
+Future<void> _pump(
+  WidgetTester tester, {
+  double textScale = 1,
+  Size size = const Size(390, 844),
+}) async {
   final db = AppDatabase(NativeDatabase.memory());
   addTearDown(db.close);
   tester.view
-    ..physicalSize = const Size(390, 844)
+    ..physicalSize = size
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   // Each page the hub opens is a stand-in that names itself, so a tap can go there and back.
@@ -122,6 +126,9 @@ void main() {
         'predictions': {'Smart help'},
         'biometric': {'App lock'},
         'hide amounts': {'Privacy and security'},
+        'gpl': {'About Akatabo'},
+        'github': {'About Akatabo'},
+        'license': {'About Akatabo'},
       };
       expected.forEach((term, pages) {
         final found = filterSettings(settingsEntries, term).map((e) => e.label).toSet();
@@ -134,7 +141,8 @@ void main() {
     testWidgets('typing shows only the matching rows, and clearing brings all back', (
       tester,
     ) async {
-      await _pump(tester);
+      // The hub is a lazy list: tall enough that every row is built and can be counted.
+      await _pump(tester, size: const Size(390, 1600));
       expect(find.byType(AkIconTile), findsNWidgets(settingsEntries.length));
 
       await tester.enterText(find.byType(TextField), 'backup');
@@ -147,7 +155,10 @@ void main() {
       await tester.enterText(find.byType(TextField), '');
       await tester.pump();
       expect(find.byType(AkIconTile), findsNWidgets(settingsEntries.length));
-      expect(find.byType(AkCard), findsNWidgets(3));
+      expect(
+        find.byType(AkCard),
+        findsNWidgets(settingsEntries.map((e) => e.group).toSet().length),
+      );
       expect(find.byType(AkEmptyNote), findsNothing);
     });
 

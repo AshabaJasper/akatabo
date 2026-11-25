@@ -23,6 +23,7 @@ import '../features/onboarding/welcome_screen.dart';
 import '../features/privacy/privacy_data_screen.dart';
 import '../features/regular/regular_new_screen.dart';
 import '../features/regular/regular_payments_screen.dart';
+import '../features/settings/about_screen.dart';
 import '../features/settings/accounts_settings_screen.dart';
 import '../features/settings/appearance_settings_screen.dart';
 import '../features/settings/categories_settings_screen.dart';
@@ -175,6 +176,7 @@ GoRouter buildRouter({String initialLocation = Routes.home}) {
       GoRoute(path: Routes.settingsSmart, builder: (_, _) => const SmartHelpScreen()),
       GoRoute(path: Routes.settingsReminders, builder: (_, _) => const RemindersScreen()),
       GoRoute(path: Routes.settingsPermissions, builder: (_, _) => const PermissionsScreen()),
+      GoRoute(path: Routes.settingsAbout, builder: (_, _) => const AboutScreen()),
       GoRoute(path: Routes.settingsCurrencies, builder: (_, _) => const CurrenciesScreen()),
       GoRoute(
         path: Routes.settingsPrivacy,

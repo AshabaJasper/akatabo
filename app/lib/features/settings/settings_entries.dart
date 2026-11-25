@@ -116,4 +116,12 @@ const settingsEntries = <SettingsEntry>[
     route: Routes.settingsData,
     keywords: ['backup', 'password', 'CSV', 'Excel', 'PDF'],
   ),
+  SettingsEntry(
+    group: 3,
+    icon: AkIcons.book,
+    label: 'About Akatabo',
+    description: 'Version, licence, project page',
+    route: Routes.settingsAbout,
+    keywords: ['version', 'licence', 'license', 'GPL', 'open source', 'source code', 'github'],
+  ),
 ];

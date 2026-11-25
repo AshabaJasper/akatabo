@@ -141,18 +141,22 @@ void main() {
       expect(find.text('Cash, MTN MoMo, Airtel Money, bank'), findsOneWidget);
     });
 
-    testWidgets('the hub is three cards, each row with a tile and a chevron, and a footer', (
+    testWidgets('the hub is four cards, each row with a tile and a chevron, and a footer', (
       tester,
     ) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       await _pump(tester, const SettingsScreen(), db);
-      // Three groups: 3 + 4 + 4 pages, App lock and Phone permissions each with a row.
-      expect(find.byType(AkCard), findsNWidgets(3));
-      expect(find.byType(AkIconTile), findsNWidgets(11));
-      expect(find.byType(AkIcon), findsNWidgets(22), reason: 'a tile icon and a chevron per row');
+      // The hub is a lazy list: tall enough that every card is built and can be counted.
+      tester.view.physicalSize = const Size(390, 1600);
+      await tester.pumpAndSettle();
+      expect(find.text('About Akatabo'), findsOneWidget, reason: 'the last card is there');
+      // Four groups: 3 + 4 + 4 + 1 pages, About Akatabo alone in the last card.
+      expect(find.byType(AkCard), findsNWidgets(4));
+      expect(find.byType(AkIconTile), findsNWidgets(12));
+      expect(find.byType(AkIcon), findsNWidgets(24), reason: 'a tile icon and a chevron per row');
       // The version cannot be read in a test, so the footer is the plain line. It sits below
-      // the search field and three cards, past the bottom of the test screen.
+      // the search field and four cards, past the bottom of the test screen.
       await tester.scrollUntilVisible(
         find.text('Free, with no account and no adverts.'),
         200,

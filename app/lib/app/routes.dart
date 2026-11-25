@@ -34,6 +34,9 @@ abstract final class Routes {
   /// Phone permissions: what the phone allows Akatabo, read live, and what it never asks for.
   static const settingsPermissions = '/settings/permissions';
 
+  /// About Akatabo: the version, the licence and where the code lives.
+  static const settingsAbout = '/settings/about';
+
   /// Privacy and data: app lock, hidden amounts, data and backup, about. One page reached
   /// from both hub rows; the Data and backup row opens it at that section.
   static const settingsPrivacy = '/settings/privacy';

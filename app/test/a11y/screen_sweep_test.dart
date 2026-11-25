@@ -69,6 +69,7 @@ final _screens = <String, String>{
   'Smart help': Routes.settingsSmart,
   'Reminders': Routes.settingsReminders,
   'Phone permissions': Routes.settingsPermissions,
+  'About Akatabo': Routes.settingsAbout,
   'Privacy and data': Routes.settingsPrivacy,
   'Export and backup': Routes.dataExport,
   'Restore': Routes.dataRestore,

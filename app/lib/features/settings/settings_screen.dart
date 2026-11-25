@@ -15,7 +15,7 @@ import 'settings_entries.dart';
 import 'settings_page.dart';
 import 'settings_search.dart';
 
-/// The Settings tab (Settings.html): a search field, then the pages in three groups, each row
+/// The Settings tab (Settings.html): a search field, then the pages in four groups, each row
 /// with a tile, a name, a line saying what it holds and a chevron.
 ///
 /// The search field is undrawn (flagged in PLAN.md). Typing keeps only the matching rows, in

@@ -34,17 +34,20 @@ class AboutSection extends ConsumerWidget {
         SettingsValueRow(
           title: 'Open-source licences',
           value: '',
-          onTap: () => showLicensePage(
-            context: context,
-            applicationName: 'Akatabo',
-            applicationVersion: version.isEmpty ? null : version,
-            applicationIcon: Padding(
-              padding: const EdgeInsets.all(8),
-              child: AkLogo(style: context.type.figureXl, on: AkLogoOn.ground, wordmark: false),
-            ),
-          ),
+          onTap: () => openLicences(context, version),
         ),
       ],
     );
   }
 }
+
+/// The licences of Akatabo and of every package it uses, on the stock licence page.
+void openLicences(BuildContext context, String version) => showLicensePage(
+  context: context,
+  applicationName: 'Akatabo',
+  applicationVersion: version.isEmpty ? null : version,
+  applicationIcon: Padding(
+    padding: const EdgeInsets.all(8),
+    child: AkLogo(style: context.type.figureXl, on: AkLogoOn.ground, wordmark: false),
+  ),
+);
