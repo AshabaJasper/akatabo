@@ -614,3 +614,22 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 - **Found:** 20 November 2026, Phase 8 TalkBack tree check. Score 2 x 2 = 4.
 - **Fixed:** 21 November 2026. Empty Budgets lists each spending category with "Set a budget", opening that category's Set a budget screen (`test/features/budgets/budgets_test.dart`).
+
+### [bug-review] A sync just after a reminder's time can push that reminder to the next period
+
+- **Found:** 25 November 2026, goal reminders bug review. Score 1 x 3 = 3.
+- **Where:** `app/lib/services/notifications/notifications_service.dart` (`replaceAll`) with `nextMonthlyAt` and `nextWeeklyAt` in `reminder_plan.dart`.
+- **What happens:** reminders are scheduled inexactly, so the 1st 09:00 goal reminder can still be pending at 09:05. If Akatabo is opened or hidden then, `replaceAll` cancels it and the next time is a month away, so that month's reminder is lost. The daily and weekly reminders behave the same way.
+- **Suggested fix:** in `replaceAll`, keep a reminder whose time passed in the last 15 minutes and has not fired, or show it at once.
+
+### [bug-review] The Android "Reminders" channel description leaves out goal reminders
+
+- **Found:** 25 November 2026, goal reminders bug review. Score 2 x 1 = 2.
+- **Where:** `app/lib/services/notifications/notifications_service.dart`, the `reminders` channel.
+- **What happens:** Android's notification settings for Akatabo describe Reminders as the daily nudge, regular payments and the weekly summary, but goal reminders go there too.
+- **Suggested fix:** add goals to the description. Android updates an existing channel's description on the next start.
+
+### [bug-review] Goal reminders were not set again after a goal changed
+
+- **Found:** 25 November 2026, goal reminders bug review. Score 1 x 2 = 2.
+- **Fixed:** 25 November 2026. `rescheduleRemindersAtStart` also listens to goals and goal moves, so a save, archive, put-back or move sets the reminders again. Test: "after start, saving a goal or giving it money sets the reminders again" in `app/test/services/goal_reminders_test.dart`.

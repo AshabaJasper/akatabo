@@ -95,6 +95,79 @@ void main() {
     });
   });
 
+  group('goal reminders', () {
+    test('a weekly goal is a repeating Sunday-evening reminder with the amount to put aside', () {
+      final plan = planReminders(
+        settings: const {},
+        now: now,
+        goals: const [
+          GoalReminderInput(
+            name: 'Phone',
+            cadence: GoalReminderCadence.weekly,
+            periodAmount: 50000,
+          ),
+        ],
+      );
+      final weekly = plan.single as WeeklyReminder;
+      expect(weekly.id, ReminderIds.goalFirst);
+      expect((weekly.weekday, weekly.hour, weekly.minute), (DateTime.sunday, 18, 0));
+      expect(weekly.title, 'Set aside for Phone');
+      expect(weekly.body, 'Put aside about UGX 50,000 for Phone this week.');
+    });
+
+    test('a monthly goal repeats on the 1st at 9 in the morning', () {
+      final plan = planReminders(
+        settings: const {},
+        now: now,
+        goals: const [
+          GoalReminderInput(
+            name: 'School',
+            cadence: GoalReminderCadence.monthly,
+            periodAmount: 200000,
+          ),
+        ],
+      );
+      final monthly = plan.single as MonthlyReminder;
+      expect((monthly.day, monthly.hour, monthly.minute), (1, 9, 0));
+      expect(monthly.body, 'Put aside about UGX 200,000 for School this month.');
+    });
+
+    test('a goal with no date only nudges, with no amount', () {
+      final plan = planReminders(
+        settings: const {},
+        now: now,
+        goals: const [GoalReminderInput(name: 'Land', cadence: GoalReminderCadence.weekly)],
+      );
+      expect((plan.single as WeeklyReminder).body, 'Add to Land this week.');
+    });
+
+    test('goals are numbered from goalFirst and no more than goalMax are planned', () {
+      final plan = planReminders(
+        settings: const {},
+        now: now,
+        goals: [
+          for (var i = 0; i < ReminderIds.goalMax + 5; i++)
+            GoalReminderInput(name: 'G$i', cadence: GoalReminderCadence.weekly),
+        ],
+      );
+      expect(plan.length, ReminderIds.goalMax);
+      expect(plan.map((r) => r.id), [
+        for (var i = 0; i < ReminderIds.goalMax; i++) ReminderIds.goalFirst + i,
+      ]);
+    });
+  });
+
+  group('nextMonthlyAt', () {
+    test('this month while it is still to come, next month once it has passed', () {
+      expect(nextMonthlyAt(DateTime(2026, 11, 1, 8), 1, 9, 0), DateTime(2026, 11, 1, 9));
+      expect(nextMonthlyAt(DateTime(2026, 11, 1, 10), 1, 9, 0), DateTime(2026, 12, 1, 9));
+    });
+
+    test('December rolls over into January of the next year', () {
+      expect(nextMonthlyAt(DateTime(2026, 12, 20), 1, 9, 0), DateTime(2027, 1, 1, 9));
+    });
+  });
+
   group('next times', () {
     test('a daily time later today is today, an earlier one is tomorrow', () {
       expect(nextDailyAt(now, 20, 0), DateTime(2026, 11, 19, 20));

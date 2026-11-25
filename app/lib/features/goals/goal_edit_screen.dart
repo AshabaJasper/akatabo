@@ -11,6 +11,7 @@ import '../../core/time/period.dart';
 import '../../data/db/app_database.dart';
 import '../../data/providers.dart';
 import '../../domain/goals.dart';
+import '../../services/notifications/notifications_service.dart';
 import '../../services/security/hidden_amounts.dart';
 import '../../widgets/ak_controls.dart';
 import '../../widgets/ak_pickers.dart';
@@ -33,6 +34,13 @@ const _colourNames = {
 
 /// Makes a new savings goal ([goalId] null) or changes one. Changing it can also archive it;
 /// a goal with moves cannot be deleted, so archiving is the way to put it away.
+
+/// Shown when the phone refuses notifications for a goal that asks to remind. The goal is not
+/// saved, so it never says it will remind when it cannot.
+const goalRemindersRefusedMessage =
+    'Notifications are off for Akatabo, so this goal cannot remind you. Allow them in your '
+    "phone's settings for Akatabo, or choose Off, then save again.";
+
 class GoalEditScreen extends ConsumerStatefulWidget {
   const GoalEditScreen({super.key, this.goalId});
 
@@ -53,6 +61,9 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
   String _colour = _goalColours.first;
   String _iconKey = 'wallet';
   GoalRemind _remind = GoalRemind.off;
+
+  /// The choice as loaded, so permission is asked only when the reminder is newly switched on.
+  GoalRemind _loadedRemind = GoalRemind.off;
   bool _filled = false;
   bool _saving = false;
   String? _nameError;
@@ -78,6 +89,7 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
     _colour = goal.colourToken;
     _iconKey = goal.iconKey;
     _remind = goal.remindEvery;
+    _loadedRemind = goal.remindEvery;
   }
 
   bool _validate(int today) {
@@ -98,6 +110,23 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
   Future<void> _save(int today) async {
     if (_saving || !_validate(today)) return;
     setState(() => _saving = true);
+    if (_remind != GoalRemind.off && _remind != _loadedRemind) {
+      var allowed = false;
+      try {
+        allowed = await ref.read(notificationsServiceProvider).requestPermission();
+      } on Object {
+        allowed = false;
+      }
+      if (!allowed) {
+        if (mounted) {
+          setState(() {
+            _saving = false;
+            _problem = goalRemindersRefusedMessage;
+          });
+        }
+        return;
+      }
+    }
     final repo = ref.read(goalRepositoryProvider);
     final name = _name.text.trim();
     final target = parseAmount(_target.text);
@@ -300,9 +329,21 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
                   ),
               ],
             ),
-            // No "Remind me" choice yet: nothing schedules goal reminders, and a setting that
-            // never fires is a broken promise. [_remind] still carries a stored value through an
-            // edit, so the choice can come back once the reminder scheduler plans goals.
+            const SizedBox(height: AkSpace.s4),
+            const AkEyebrowLabel('Remind me'),
+            const SizedBox(height: AkSpace.s2),
+            AkSegmented<GoalRemind>(
+              semanticLabel: 'Remind me',
+              selected: _remind,
+              onChanged: (v) => setState(() => _remind = v),
+              segments: const [
+                AkSegment(GoalRemind.off, 'Off'),
+                AkSegment(GoalRemind.weekly, 'Weekly'),
+                AkSegment(GoalRemind.monthly, 'Monthly'),
+              ],
+            ),
+            const SizedBox(height: AkSpace.s1),
+            Text('A reminder to add to this goal.', style: t.caption.copyWith(color: c.inkMuted)),
             const SizedBox(height: AkSpace.s5),
             if (!_isNew)
               AkCard(

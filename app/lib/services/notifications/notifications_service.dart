@@ -138,6 +138,10 @@ class LocalNotificationsService implements NotificationsService {
           nextWeeklyAt(now, weekday, hour, minute),
           DateTimeComponents.dayOfWeekAndTime,
         ),
+        MonthlyReminder(:final day, :final hour, :final minute) => (
+          nextMonthlyAt(now, day, hour, minute),
+          DateTimeComponents.dayOfMonthAndTime,
+        ),
         OnceReminder(:final at) => (at, null),
       };
       if (!at.isAfter(now)) continue;

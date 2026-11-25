@@ -9,6 +9,7 @@ import 'package:akatabo/features/goals/goal_detail_screen.dart';
 import 'package:akatabo/features/goals/goal_edit_screen.dart';
 import 'package:akatabo/features/goals/goals_entry.dart';
 import 'package:akatabo/features/goals/goals_screen.dart';
+import 'package:akatabo/services/notifications/notifications_service.dart';
 import 'package:akatabo/services/security/privacy_settings.dart';
 import 'package:akatabo/widgets/ak_controls.dart';
 import 'package:akatabo/widgets/ak_surfaces.dart';
@@ -20,6 +21,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
+
+import '../../support/fake_notifications.dart';
 
 final _today = DateTime(2026, 11, 24, 10);
 
@@ -200,12 +203,57 @@ void main() {
     await _leave(tester);
   });
 
+  testWidgets('choosing Weekly asks the phone for notifications, then saves', (tester) async {
+    final phone = FakeNotifications();
+    await _pump(
+      tester,
+      db,
+      const GoalEditScreen(),
+      overrides: [notificationsServiceProvider.overrideWithValue(phone)],
+    );
+    await _settle(tester);
+    await tester.enterText(find.byType(TextField).at(0), 'Phone');
+    await tester.enterText(find.byType(TextField).at(1), '800000');
+    await tester.tap(find.text('Weekly'));
+    await tester.pump();
+    await tester.tap(find.text('Save goal'));
+    await _settle(tester);
+
+    expect(phone.asks, 1);
+    final saved = await tester.runAsync(() => goals.watchActive().first);
+    expect(saved!.single.remindEvery, GoalRemind.weekly);
+    await _leave(tester);
+  });
+
+  testWidgets('a phone that refuses notifications keeps the goal unsaved and says why', (
+    tester,
+  ) async {
+    final phone = FakeNotifications(allow: false);
+    await _pump(
+      tester,
+      db,
+      const GoalEditScreen(),
+      overrides: [notificationsServiceProvider.overrideWithValue(phone)],
+    );
+    await _settle(tester);
+    await tester.enterText(find.byType(TextField).at(0), 'Phone');
+    await tester.enterText(find.byType(TextField).at(1), '800000');
+    await tester.tap(find.text('Monthly'));
+    await tester.pump();
+    await tester.tap(find.text('Save goal'));
+    await _settle(tester);
+
+    expect(phone.asks, 1);
+    expect(find.text(goalRemindersRefusedMessage), findsOneWidget);
+    expect(await tester.runAsync(() => goals.watchActive().first), isEmpty);
+    await _leave(tester);
+  });
+
   testWidgets('the edit form refuses an empty name, then saves a new goal', (tester) async {
     await _pump(tester, db, const GoalEditScreen());
     await _settle(tester);
-    // Nothing schedules goal reminders yet, so the form does not offer one.
-    expect(find.text('Weekly'), findsNothing);
-    expect(find.text('A reminder to add to this goal.'), findsNothing);
+    expect(find.text('Weekly'), findsOneWidget);
+    expect(find.text('Monthly'), findsOneWidget);
 
     await tester.tap(find.text('Save goal'));
     await _settle(tester);

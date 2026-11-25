@@ -44,6 +44,21 @@ final class WeeklyReminder extends PlannedReminder {
   final int minute;
 }
 
+/// Every month on [day] at [hour]:[minute].
+final class MonthlyReminder extends PlannedReminder {
+  const MonthlyReminder({
+    required super.id,
+    required super.title,
+    required super.body,
+    required this.day,
+    required this.hour,
+    required this.minute,
+  });
+  final int day;
+  final int hour;
+  final int minute;
+}
+
 /// Once, at [at].
 final class OnceReminder extends PlannedReminder {
   const OnceReminder({
@@ -75,6 +90,22 @@ abstract final class ReminderIds {
   static const weekly = 2;
   static const regularFirst = 100;
   static const regularMax = 20;
+  static const goalFirst = 200;
+  static const goalMax = 20;
+}
+
+/// How often a goal asks for money to be set aside. Mirrors the goal's "Remind me" choice.
+enum GoalReminderCadence { weekly, monthly }
+
+/// A goal that asks to be reminded, with what to set aside in its next period. [weeklyAmount]
+/// or [monthlyAmount] is null when the goal has no date, so the reminder only nudges.
+class GoalReminderInput {
+  const GoalReminderInput({required this.name, required this.cadence, this.periodAmount});
+  final String name;
+  final GoalReminderCadence cadence;
+
+  /// Whole shillings for one week or one month, as [cadence] says. Null with no date.
+  final int? periodAmount;
 }
 
 /// The weekly summary goes out in the evening, at this hour.
@@ -82,6 +113,12 @@ const weeklySummaryHour = 19;
 
 /// A regular payment's reminder goes out the morning before it is due, at this hour.
 const regularReminderHour = 9;
+
+/// Goal reminders: weekly on Sunday evening, monthly on the 1st in the morning.
+const goalWeeklyWeekday = DateTime.sunday;
+const goalWeeklyHour = 18;
+const goalMonthlyDay = 1;
+const goalMonthlyHour = regularReminderHour;
 
 /// The reminders the settings ask for.
 ///
@@ -93,6 +130,7 @@ List<PlannedReminder> planReminders({
   required DateTime now,
   List<DueRegularPayment> regular = const [],
   int weekMoneyOut = 0,
+  List<GoalReminderInput> goals = const [],
 }) {
   bool on(BoolSetting key) => key.decode(settings[key.name]);
   final plan = <PlannedReminder>[];
@@ -147,7 +185,46 @@ List<PlannedReminder> planReminders({
     }
   }
 
+  var g = 0;
+  for (final goal in goals) {
+    if (g >= ReminderIds.goalMax) break;
+    final id = ReminderIds.goalFirst + g;
+    final weekly = goal.cadence == GoalReminderCadence.weekly;
+    final amount = goal.periodAmount;
+    final period = weekly ? 'this week' : 'this month';
+    final body = amount == null
+        ? 'Add to ${goal.name} $period.'
+        : 'Put aside about ${formatUgx(amount)} for ${goal.name} $period.';
+    plan.add(
+      weekly
+          ? WeeklyReminder(
+              id: id,
+              title: 'Set aside for ${goal.name}',
+              body: body,
+              weekday: goalWeeklyWeekday,
+              hour: goalWeeklyHour,
+              minute: 0,
+            )
+          : MonthlyReminder(
+              id: id,
+              title: 'Set aside for ${goal.name}',
+              body: body,
+              day: goalMonthlyDay,
+              hour: goalMonthlyHour,
+              minute: 0,
+            ),
+    );
+    g++;
+  }
+
   return plan;
+}
+
+/// The next time after [now] that falls on [day] of a month at [hour]:[minute]. If that moment
+/// this month has not yet come, it is this month's; otherwise next month's.
+DateTime nextMonthlyAt(DateTime now, int day, int hour, int minute) {
+  final thisMonth = DateTime(now.year, now.month, day, hour, minute);
+  return thisMonth.isAfter(now) ? thisMonth : DateTime(now.year, now.month + 1, day, hour, minute);
 }
 
 /// The next time after [now] that reads [hour]:[minute] on the clock.
