@@ -300,21 +300,9 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
                   ),
               ],
             ),
-            const SizedBox(height: AkSpace.s4),
-            const AkEyebrowLabel('Remind me'),
-            const SizedBox(height: AkSpace.s2),
-            AkSegmented<GoalRemind>(
-              semanticLabel: 'Remind me',
-              selected: _remind,
-              onChanged: (v) => setState(() => _remind = v),
-              segments: const [
-                AkSegment(GoalRemind.off, 'Off'),
-                AkSegment(GoalRemind.weekly, 'Weekly'),
-                AkSegment(GoalRemind.monthly, 'Monthly'),
-              ],
-            ),
-            const SizedBox(height: AkSpace.s1),
-            Text('A reminder to add to this goal.', style: t.caption.copyWith(color: c.inkMuted)),
+            // No "Remind me" choice yet: nothing schedules goal reminders, and a setting that
+            // never fires is a broken promise. [_remind] still carries a stored value through an
+            // edit, so the choice can come back once the reminder scheduler plans goals.
             const SizedBox(height: AkSpace.s5),
             if (!_isNew)
               AkCard(

@@ -203,6 +203,9 @@ void main() {
   testWidgets('the edit form refuses an empty name, then saves a new goal', (tester) async {
     await _pump(tester, db, const GoalEditScreen());
     await _settle(tester);
+    // Nothing schedules goal reminders yet, so the form does not offer one.
+    expect(find.text('Weekly'), findsNothing);
+    expect(find.text('A reminder to add to this goal.'), findsNothing);
 
     await tester.tap(find.text('Save goal'));
     await _settle(tester);
