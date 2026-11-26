@@ -46,7 +46,7 @@ An iOS project is in place but has not been built, because the work so far has b
 - **Reports** as PDF, CSV and Excel files, and **backups** as a single `.akatabo` file you can protect with a password.
 - **App lock** with a PIN, and fingerprint or face unlock where the phone has it. Amounts can be hidden on screen and in the app switcher.
 - **Reminders** for the daily entry, budgets, savings goals and regular payments.
-- **Phones, tablets and foldables.** On a wide screen the tabs move to a side rail and Home shows the latest entries beside the summary. On a foldable, Home splits its two panes at the fold, and the tab screens keep clear of a half-open fold.
+- **Phones, tablets and foldables.** On a wide screen the tabs move to a side rail and Home shows the latest entries and savings beside the summary. On a foldable, Home splits its two panes at the fold, and the tab screens keep clear of a half-open fold.
 - **Made to be read.** Light and dark themes, a text size setting, red and green for money out and in with an option for orange and blue, and screen reader support.
 
 Four small models run on the phone to suggest a category, forecast the month, flag unusual payments and spot regular ones. They learn from your own entries and send nothing anywhere.
@@ -68,7 +68,7 @@ Four small models run on the phone to suggest a category, forecast the month, fl
 
 On a tablet or an unfolded foldable, the same app uses the extra width:
 
-<img src="docs/screenshots/tablet-home-light.png" alt="Home on a tablet: a navigation rail on the left, the summary in the middle and the latest entries on the right" width="100%">
+<img src="docs/screenshots/tablet-home-light.png" alt="Home on a tablet: a navigation rail on the left, the summary, forecast and where it went in the middle, and the latest entries and savings on the right" width="100%">
 
 <img src="docs/screenshots/tablet-insights-dark.png" alt="Insights on a tablet in dark mode, with the navigation rail on the left" width="100%">
 

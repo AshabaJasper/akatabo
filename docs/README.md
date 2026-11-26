@@ -23,5 +23,5 @@ The project's main notes are at the repository root: [`CHANGELOG.md`](../CHANGEL
 
 | Tablet (1280 by 800dp) | |
 | --- | --- |
-| `tablet-home-light.png` | Home with the navigation rail, and Latest beside the summary |
+| `tablet-home-light.png` | Home with the navigation rail, and Latest and Savings beside the summary |
 | `tablet-insights-dark.png` | Insights with the navigation rail |

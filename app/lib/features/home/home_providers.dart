@@ -34,6 +34,15 @@ final latestRowsProvider = StreamProvider<List<Transaction>>(
   (ref) => ref.watch(transactionRepositoryProvider).watchLatest(3),
 );
 
+/// How many entries Latest shows on a wide window, where it has a pane to itself.
+const wideLatestCount = 6;
+
+/// The newest [wideLatestCount] entries, for the wide window's Latest pane. Only read while
+/// Home is wide, so a phone never asks for the extra rows.
+final latestWideRowsProvider = StreamProvider<List<Transaction>>(
+  (ref) => ref.watch(transactionRepositoryProvider).watchLatest(wideLatestCount),
+);
+
 /// Every category, including the reserved fees one, to name the rows of a split.
 final allCategoriesProvider = StreamProvider<List<Category>>(
   (ref) => ref.watch(categoryRepositoryProvider).watchAll(),

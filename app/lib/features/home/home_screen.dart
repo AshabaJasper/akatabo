@@ -136,6 +136,8 @@ class HomeScreen extends ConsumerWidget {
           child: _WhereItWent(parts: parts, categories: categories, total: totals.moneyOut),
         ),
       ],
+    ];
+    final savingsBlock = <Widget>[
       if (savingGoal) ...[
         const SizedBox(height: AkSpace.s5),
         const Padding(
@@ -144,6 +146,9 @@ class HomeScreen extends ConsumerWidget {
         ),
       ],
     ];
+    // A wide window gives Latest a pane of its own, so it can show more than a phone's three.
+    final wide = isWide(context) && layout.latest;
+    final latestShown = wide ? (ref.watch(latestWideRowsProvider).value ?? latest) : latest;
     final latestBlock = <Widget>[
       if (layout.latest) ...[
         const SizedBox(height: AkSpace.s5),
@@ -156,7 +161,7 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: AkSpace.s1),
-        for (final tx in latest)
+        for (final tx in latestShown)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AkSpace.s6),
             child: TransactionRow(
@@ -184,9 +189,10 @@ class HomeScreen extends ConsumerWidget {
     // also clear the 3-button bar or a taskbar. On a phone this inset is already 0.
     final bottomGap = SizedBox(height: AkSpace.s6 + MediaQuery.paddingOf(context).bottom);
 
-    // A wide window shows the summary and the Latest list side by side; a phone keeps one
-    // column, in the same order as before.
-    if (isWide(context) && layout.latest) {
+    // A wide window puts the summary, forecast and budgets on the left and what happened on the
+    // right: Latest, then what is set aside. A phone keeps one column, in the same order as
+    // before.
+    if (wide) {
       return Scaffold(
         backgroundColor: context.colors.ground,
         body: WidePanes(
@@ -199,6 +205,7 @@ class HomeScreen extends ConsumerWidget {
             children: [
               const SizedBox(height: AkSpace.s6),
               ...latestBlock,
+              ...savingsBlock,
               bottomGap,
             ],
           ),
@@ -209,7 +216,7 @@ class HomeScreen extends ConsumerWidget {
       backgroundColor: context.colors.ground,
       body: ListView(
         padding: EdgeInsets.zero,
-        children: [...head, ...latestBlock, ...budgetBlock, bottomGap],
+        children: [...head, ...savingsBlock, ...latestBlock, ...budgetBlock, bottomGap],
       ),
     );
   }

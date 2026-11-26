@@ -4,6 +4,15 @@ Bugs scoring under 5 (frequency x severity, each 1 to 10) are filed here and lef
 
 ## Open
 
+### [bug-review] Wide Home shows three Latest rows for a moment before six
+
+- **Where:** `app/lib/features/home/home_screen.dart` (`latestShown`)
+- **What happens:** the first time a window goes wide in a session, `latestWideRowsProvider` has no value yet, so the pane shows the phone's three rows and then grows to six when the query answers. Savings below it moves down once.
+- **How to trigger:** open Home in portrait with at least four entries and a savings goal, then turn the phone to landscape (840dp or wider) or unfold a foldable.
+- **Score:** frequency 4 x severity 1 = 4
+- **Suggested fix:** accept it (it lasts about a frame), or keep the wide provider alive from the start so it is already loaded.
+- **Found:** 26 November 2026, bug review of the tablet Home pane
+
 ### [bug-review] Screenshot test leaves old numbered store images behind
 
 - **Where:** `app/test/screenshots/readme_screenshots_test.dart` (`_storeOrder`, `_Shot.save`)

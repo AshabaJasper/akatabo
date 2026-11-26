@@ -62,7 +62,12 @@ Future<void> _pumpHome(
         appNowProvider.overrideWithValue(_now),
         // The default calculator: "Month starts on" the 1st, weeks start on Sunday.
         periodCalculatorProvider.overrideWithValue(const PeriodCalculator()),
-        latestRowsProvider.overrideWith((ref) => Stream.value(latest)),
+        // The same limits the real providers put on the query: three for a phone, more for
+        // the wide window's Latest pane.
+        latestRowsProvider.overrideWith((ref) => Stream.value(latest.take(3).toList())),
+        latestWideRowsProvider.overrideWith(
+          (ref) => Stream.value(latest.take(wideLatestCount).toList()),
+        ),
         monthRowsProvider.overrideWith((ref) => Stream.value(month)),
         previousSameDaysRowsProvider.overrideWith((ref) => Stream.value(previous)),
         allCategoriesProvider.overrideWith((ref) => Stream.value(categories ?? _categories)),
@@ -227,6 +232,49 @@ void main() {
     // Stacked: the Latest title sits below the summary, in the same column.
     expect(latestPhone.dx, closeTo(wherePhone.dx, 1));
     expect(latestPhone.dy, greaterThan(wherePhone.dy));
+  });
+
+  testWidgets('a tablet fills the Latest pane and moves Savings beside it', (tester) async {
+    final rows = [
+      for (var i = 0; i < 10; i++)
+        txRow(
+          id: 'r$i',
+          amount: 1000 + i,
+          day: 20261119,
+          at: _now.subtract(Duration(minutes: i)),
+        ),
+    ];
+    final goal = Goal(
+      id: 'g1',
+      createdAt: _now,
+      updatedAt: _now,
+      name: 'School fees term 1',
+      iconKey: 'book',
+      colourToken: 'cat-teal',
+      target: 500000,
+      remindEvery: GoalRemind.off,
+      sortOrder: 0,
+    );
+    await _pumpHome(tester, latest: rows, month: rows, goals: [goal], size: const Size(1280, 800));
+    expect(tester.takeException(), isNull);
+    // The pane shows the wide count, not a phone's three and not every entry.
+    expect(find.byType(TransactionRow), findsNWidgets(wideLatestCount));
+    final latest = tester.getTopLeft(find.text('Latest'));
+    final where = tester.getTopLeft(find.text('Where it went'));
+    final savings = tester.getTopLeft(find.text('Savings'));
+    // Savings is in the right pane, under Latest, not in the summary's pane.
+    expect(savings.dx, closeTo(latest.dx, 1));
+    expect(savings.dx, greaterThan(where.dx));
+    expect(savings.dy, greaterThan(latest.dy));
+
+    // A phone still shows three rows and keeps Savings in its old place, above Latest.
+    await tester.pumpWidget(const SizedBox());
+    await _pumpHome(tester, latest: rows, month: rows, goals: [goal]);
+    expect(find.byType(TransactionRow), findsNWidgets(3));
+    expect(
+      tester.getTopLeft(find.text('Savings')).dy,
+      lessThan(tester.getTopLeft(find.text('Latest')).dy),
+    );
   });
 
   testWidgets('on a wide window the last Latest row clears the system bar', (tester) async {
